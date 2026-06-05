@@ -52,7 +52,7 @@ export async function saveSignal2({
 
   await client.query(
     `
-    INSERT INTO signals2 (
+    INSERT INTO signals_upgraded (
       symbol,
       timeframe,
       type,
