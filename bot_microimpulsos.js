@@ -121,20 +121,23 @@ export async function processSymbol(symbol, timeframe) {
     );
 
     // 🔥 AVALUACIÓ FIAT 2.0 (mini‑Pine)
-    const pineOK = evaluateWithPine(candles, sig);
+    // 🔥 AVALUACIÓ FIAT‑UPGRADED (pinets)
+    const pineOK = await evaluateWithPine(candles, sig);
 
     if (!pineOK) {
-      console.log("[FIAT‑PRO] Rebutjat per Pine:", symbol, timeframe, sig.type, sig.timestamp);
+      console.log("[FIAT‑UPGRADED] Error a evaluateWithPine:", symbol, timeframe, sig.type, sig.timestamp);
       continue;
     }
 
     // 🔥 COLOR EXACTE segons FIAT‑UPGRADED
     let color;
-    if (sig.isGood) {
+    if (pineOK.isGood) {
       color = sig.type === "M" ? "green" : "red";   // M good = verd, E good = vermell
     } else {
       color = "blue";                               // discard = blau
     }
+
+
     
     await saveSignal2({
       symbol,
