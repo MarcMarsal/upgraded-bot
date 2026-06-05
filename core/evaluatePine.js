@@ -12,14 +12,13 @@ const pineCode = fs.readFileSync("./pine/fiat21_mini_eval.pine", "utf8");
 const compiled = PineJS.compile(pineCode);
 
 export async function evaluateWithPine(candles, sig) {
-  // candles = [{ open, high, low, close, volume, time }, ...]
+  // candles = [{ open, high, low, close, volume, timestamp }, ...]
 
-  // Executem el Pine amb les veles
   const result = await PineJS.run(compiled, {
     symbol: sig.symbol,
     timeframe: sig.timeframe,
     candles: candles.map(c => ({
-      time: c.timestamp,
+      time: c.timestamp,   // pinets usa "time"
       open: c.open,
       high: c.high,
       low: c.low,
@@ -28,25 +27,18 @@ export async function evaluateWithPine(candles, sig) {
     }))
   });
 
-  // El Pine té 4 sèries ocultes:
-  // - scoreMS
-  // - scoreES
-  // - isGoodMS
-  // - isGoodES
-
+  // Llegim les sèries ocultes del Pine
   const isGoodMS = result.series["isGoodMS"];
   const isGoodES = result.series["isGoodES"];
 
-  // Determinem si la senyal és bona o descartada
+  // Determinar si la senyal és bona segons el tipus
   let isGood = false;
 
   if (sig.type === "M") isGood = isGoodMS === 1;
   if (sig.type === "E") isGood = isGoodES === 1;
 
-  const discard = !isGood;
-
   return {
     isGood,
-    discard
+    discard: !isGood
   };
 }
