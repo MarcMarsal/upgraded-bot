@@ -14,6 +14,7 @@ export async function saveSignal2({
   symbol,
   timeframe,
   type,        // "M" o "E"
+  color,
   entry,
   entryr,
   tp,
@@ -56,6 +57,7 @@ export async function saveSignal2({
       symbol,
       timeframe,
       type,
+      color,
       entry,
       entryr,
       tp,
@@ -72,7 +74,7 @@ export async function saveSignal2({
       $1,$2,$3,
       $4,$5,$6,$7,
       $8,$9,$10,$11,$12,
-      $13,
+      $13,$14
       false
     )
     ON CONFLICT DO NOTHING
@@ -81,6 +83,7 @@ export async function saveSignal2({
       symbol,
       timeframe,
       type,
+      color,
       entry,
       entryr,
       tp,
