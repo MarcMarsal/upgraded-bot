@@ -11,7 +11,7 @@
     "pg": "^8.11.0",
     "node-cron": "^3.0.2",
     "express": "^4.18.2",
-    "@backtest-kit/pinets": "^1.0.0"
+    "@backtest-kit/pinets": "0.0.14"
   },
   "engines": {
     "node": ">=18"
