@@ -127,11 +127,20 @@ export async function processSymbol(symbol, timeframe) {
       console.log("[FIAT‑PRO] Rebutjat per Pine:", symbol, timeframe, sig.type, sig.timestamp);
       continue;
     }
+
+    // 🔥 COLOR EXACTE segons FIAT‑UPGRADED
+    let color;
+    if (sig.isGood) {
+      color = sig.type === "M" ? "green" : "red";   // M good = verd, E good = vermell
+    } else {
+      color = "blue";                               // discard = blau
+    }
     
     await saveSignal2({
       symbol,
       timeframe,
       type: sig.type,     // només M o E
+      color,
       entry,
       entryr,
       tp,
