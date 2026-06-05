@@ -1,0 +1,19 @@
+{
+  "name": "fiat-bot",
+  "version": "3.0.0",
+  "description": "FIAT‑PRO Bot 1H + 4H",
+  "type": "module",
+  "scripts": {
+    "micro": "node bot_microimpulsos.js",
+    "micro4h": "node bot_microimpulsos_4h.js"
+  },
+  "dependencies": {
+    "axios": "^1.6.0",
+    "pg": "^8.11.0",
+    "node-cron": "^3.0.2",
+    "express": "^4.18.2"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
