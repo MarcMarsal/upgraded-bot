@@ -7,6 +7,8 @@ import { saveSignal2 } from "./db/saveSignal2.js";
 import { detectMSES } from "./core/patterns.js";
 import { fetchAndStoreCandles } from "./core/fetchcandles.js";
 import { splitSpainDate } from "./core/utils.js";
+import { evaluateWithPine } from "./core/evaluatePine.js";
+
 
 // -------------------------------------------------------------
 // CONFIG
@@ -118,6 +120,14 @@ export async function processSymbol(symbol, timeframe) {
       atr
     );
 
+    // 🔥 AVALUACIÓ FIAT 2.0 (mini‑Pine)
+    const pineOK = evaluateWithPine(candles, sig);
+
+    if (!pineOK) {
+      console.log("[FIAT‑PRO] Rebutjat per Pine:", symbol, timeframe, sig.type, sig.timestamp);
+      continue;
+    }
+    
     await saveSignal2({
       symbol,
       timeframe,
