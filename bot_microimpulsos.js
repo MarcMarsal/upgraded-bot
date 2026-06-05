@@ -120,7 +120,6 @@ export async function processSymbol(symbol, timeframe) {
       atr
     );
 
-    // 🔥 AVALUACIÓ FIAT 2.0 (mini‑Pine)
     // 🔥 AVALUACIÓ FIAT‑UPGRADED (pinets)
     const pineOK = await evaluateWithPine(candles, sig);
 
