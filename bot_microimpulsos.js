@@ -123,8 +123,8 @@ export async function processSymbol(symbol, timeframe) {
     // 🔥 AVALUACIÓ FIAT‑UPGRADED (pinets)
     const pineOK = await evaluateWithPine(candles, sig);
 
-    if (!pineOK) {
-      console.log("[FIAT‑UPGRADED] Error a evaluateWithPine:", symbol, timeframe, sig.type, sig.timestamp);
+    if (pineOK.discard) {
+      console.log("[FIAT‑UPGRADED] Rebutjat per Pine:", symbol, timeframe, sig.type, sig.timestamp);
       continue;
     }
 
