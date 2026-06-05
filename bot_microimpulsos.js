@@ -158,7 +158,7 @@ export async function processSymbol(symbol, timeframe) {
 async function checkOpenSignals() {
   const res = await client.query(`
     SELECT *
-    FROM signals2
+    FROM signals_upgraded
     WHERE closed = false
   `);
 
@@ -194,7 +194,7 @@ async function checkOpenSignals() {
 
       await client.query(
         `
-        UPDATE signals2
+        UPDATE signals_upgraded
         SET closed = true,
             result = $1,
             timestamp_closed = $2,
