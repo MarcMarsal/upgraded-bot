@@ -5,7 +5,7 @@ export async function alreadySent2(symbol, timeframe, timestampMs) {
   const tsMs = Number(timestampMs);
 
   const query = `
-    SELECT 1 FROM signals2
+    SELECT 1 FROM signals_upgraded
     WHERE symbol = $1
       AND timeframe = $2
       AND timestamp_ms = $3
