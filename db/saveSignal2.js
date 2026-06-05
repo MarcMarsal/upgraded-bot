@@ -1,11 +1,11 @@
-// db/saveSignal2.js — FIAT‑PRO (patrons + ATR + tracking)
+// db/saveSignal2.js — FIAT‑UPGRADED (patrons + ATR + tracking)
 
 import { client } from "./client.js";
 import { splitSpainDate } from "../core/utils.js";
 import { sendTelegram } from "../telegram/send.js";
 
 /**
- * Guarda una senyal FIAT‑PRO a la taula signals2
+ * Guarda una senyal FIAT‑UPGRADED a la taula signals_upgraded
  *
  * - timestamp = moment de la vela (ms)
  * - created_at = moment real en què el bot crea la senyal (ms)
@@ -24,7 +24,7 @@ export async function saveSignal2({
   const tsMs = Number(timestamp);
   const createdAt = Date.now();
 
-  // 🔥 Criptos ACTIVADES dilluns matí 00:00-14:00
+  // 🔥 Criptos ACTIVADES 4H
   const ACTIVE_CRYPTOS_4H = [
     "APT-USDT",
     "BNB-USDT",
@@ -35,8 +35,8 @@ export async function saveSignal2({
     "SOL-USDT",
     "XRP-USDT"
   ];
- 
-  // 🔥 Criptos ACTIVADES 
+
+  // 🔥 Criptos ACTIVADES 1H
   const ACTIVE_CRYPTOS_1H = [
     "APT-USDT",
     "ATOM-USDT",
@@ -47,7 +47,7 @@ export async function saveSignal2({
 
   // Seleccionar llista segons timeframe
   const activeList = timeframe === "1H" ? ACTIVE_CRYPTOS_1H : ACTIVE_CRYPTOS_4H;
-    
+
   // Data ES basada en la vela
   const { date_es, hora_es, timestamp_es } = splitSpainDate(tsMs);
 
@@ -74,7 +74,7 @@ export async function saveSignal2({
       $1,$2,$3,
       $4,$5,$6,$7,
       $8,$9,$10,$11,$12,
-      $13,$14
+      $13,$14,
       false
     )
     ON CONFLICT DO NOTHING
@@ -98,9 +98,7 @@ export async function saveSignal2({
   );
 
   // 🔔 Enviar alerta NOMÉS si la cripto està activada
-  //if (ACTIVE_CRYPTOS.includes(symbol)) {
   if (activeList.includes(symbol)) {
-  
     await sendTelegram({
       symbol,
       timeframe,
@@ -111,4 +109,3 @@ export async function saveSignal2({
     });
   }
 }
-  
