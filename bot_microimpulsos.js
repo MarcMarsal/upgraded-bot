@@ -202,7 +202,7 @@ export async function processSymbol(symbol, timeframe) {
   // -------------------------------------------------------------
   // 4) COLOR FIAT‑UPGRADED
   // -------------------------------------------------------------
-  let color;
+  let color="";
   if (result.isGood) {
     color = sig.type === "M" ? "green" : "red";
   } else {
