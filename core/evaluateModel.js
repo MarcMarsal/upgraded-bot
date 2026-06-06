@@ -1,42 +1,13 @@
-// -------------------------------------------------------------
-// FIAT 2.x — Avaluació MS/ES en JS pur (substitueix evaluateWithPine)
-// -------------------------------------------------------------
-
 import { computeMacdStuff, computeMicroTrend } from "./indicators.js";
 import { applyFiat2Score } from "./fiatScore.js";
 
-// Funció principal: avaluar senyal
+// FIAT 2.0 — avaluació MS/ES 1:1 amb Pine (sempre a vela tancada)
 export function evaluateWithModel(candles, sig) {
-  const closes = candles.map(c => c.close);
-
-  // -------------------------------------------------------------
-  // 1) MS/ES segons el BOT (NO RAW)
-  // -------------------------------------------------------------
-  const isMs = sig.type === "M";
-  const isEs = sig.type === "E";
-
-  // -------------------------------------------------------------
-  // 2) MAGNITUD
-  // -------------------------------------------------------------
+  // 🟩 0) Vela de senyal = última vela TANCADA
+  // candles[n-1] = vela actual (oberta)
+  // candles[n-2] = última vela tancada = close[1] a Pine
   const n = candles.length;
-  const o1 = candles[n - 4].open;
-  const c1 = candles[n - 4].close;
-  const o3 = candles[n - 2].open;
-  const c3 = candles[n - 2].close;
-
-  const bodyFirst = Math.abs(c1 - o1);
-  const bodyThird = Math.abs(c3 - o3);
-  const magOK = bodyThird > bodyFirst * 0.6;
-  const magPts = magOK ? 1 : 0;
-
-  // -------------------------------------------------------------
-  // 3) MACD + SATURACIÓ
-  // -------------------------------------------------------------
-  const { histSmooth, histStdev } = computeMacdStuff(closes);
-  const len = histSmooth.length;
-  const lenSt = histStdev.length;
-
-  if (len === 0 || lenSt === 0) {
+  if (n < 4) {
     return {
       isGood: false,
       discard: true,
@@ -49,19 +20,66 @@ export function evaluateWithModel(candles, sig) {
     };
   }
 
-  const hs = histSmooth[len - 1];
+  const lastClosedIdx = n - 2;      // bar de la senyal (third candle)
+  const closesAll = candles.map(c => c.close);
+  const closesClosed = closesAll.slice(0, -1); // excloem la vela actual
+
+  // -------------------------------------------------------------
+  // 1) Tipus de senyal (MS / ES)
+  // -------------------------------------------------------------
+  const isMs = sig.type === "M";
+  const isEs = sig.type === "E";
+
+  // -------------------------------------------------------------
+  // 2) MAGNITUD (o1 = open[3], o3 = open[1] a Pine)
+  //    first candle = n-4, third candle = n-2
+  // -------------------------------------------------------------
+  const o1 = candles[lastClosedIdx - 2].open;
+  const c1 = candles[lastClosedIdx - 2].close;
+  const o3 = candles[lastClosedIdx].open;
+  const c3 = candles[lastClosedIdx].close;
+
+  const bodyFirst = Math.abs(c1 - o1);
+  const bodyThird = Math.abs(c3 - o3);
+  const magOK = bodyThird > bodyFirst * 0.6;
+  const magPts = magOK ? 1 : 0;
+
+  // -------------------------------------------------------------
+  // 3) MACD + SATURACIÓ (sempre sobre veles tancades)
+  //    Pine: macdLine, signalLine, hist, histSmooth, histStdev
+  // -------------------------------------------------------------
+  const { histSmooth, histStdev } = computeMacdStuff(closesClosed);
+  const lenHs = histSmooth.length;
+  const lenSt = histStdev.length;
+
+  if (lenHs === 0 || lenSt === 0) {
+    return {
+      isGood: false,
+      discard: true,
+      score: 0,
+      magPts,
+      macdPts: 0,
+      trendPts: 0,
+      satPts: 0,
+      modeEff: 0
+    };
+  }
+
+  // Última vela tancada = últim element de histSmooth/histStdev
+  const hs = histSmooth[lenHs - 1];
   const st = histStdev[lenSt - 1];
 
   const bullishSaturation = hs > st * 2.5;
   const bearishSaturation = hs < -st * 2.5;
 
   // -------------------------------------------------------------
-  // 4) MicroTrend
+  // 4) microTrend FIAT (EMA curt + slope) sobre veles tancades
+  //    Pine: microTrend basat en emaS i emaS[microLookback]
   // -------------------------------------------------------------
-  const { microTrend } = computeMicroTrend(closes);
+  const { microTrend } = computeMicroTrend(closesClosed);
 
   // -------------------------------------------------------------
-  // 5) MACD punts direccional
+  // 5) MACD punts direccional (FIAT 2.3)
   // -------------------------------------------------------------
   const macdPts =
     (isMs && microTrend === 1 && hs > 0) ? 1 :
@@ -69,7 +87,7 @@ export function evaluateWithModel(candles, sig) {
     0;
 
   // -------------------------------------------------------------
-  // 6) TREND punts
+  // 6) TREND punts (FIAT 2.3 — penalització contratrendència)
   // -------------------------------------------------------------
   let trendPts = 0;
   if (isMs && microTrend === 1) trendPts = 1;
@@ -86,12 +104,13 @@ export function evaluateWithModel(candles, sig) {
     0;
 
   // -------------------------------------------------------------
-  // 8) Mode efectiu
+  // 8) Mode efectiu (TREND / RANGE) basat en microTrend
+  //    Pine: modeEff = 1 si microTrend != 0, 0 si RANGE
   // -------------------------------------------------------------
   const modeEff = microTrend !== 0 ? 1 : 0;
 
   // -------------------------------------------------------------
-  // 9) Score FIAT
+  // 9) Score FIAT 2.0 (ponderacions per sym + mode)
   // -------------------------------------------------------------
   let { fiatScore, fiatIsGood } = applyFiat2Score(
     sig.symbol,
@@ -102,31 +121,26 @@ export function evaluateWithModel(candles, sig) {
     modeEff
   );
 
-  // Ajustos RANGE
+  // RANGE: ignorar tendència + bloquejar impulsos (mag+macd)
   if (modeEff === 0) {
     const { fiatScore: scoreNoTrend, fiatIsGood: isGoodNoTrend } =
       applyFiat2Score(sig.symbol, magPts, macdPts, 0, satPts, modeEff);
 
     fiatScore = scoreNoTrend;
-    fiatIsGood = (magPts === 1 && macdPts === 1) ? false : isGoodNoTrend;
+    // impuls pur en RANGE → DISCARD
+    const isImpulse = magPts === 1 && macdPts === 1;
+    fiatIsGood = isImpulse ? false : isGoodNoTrend;
   }
 
   // -------------------------------------------------------------
-  // 10) Validació final segons tipus
+  // 10) Validació final
   // -------------------------------------------------------------
-  const isGood =
-    (isMs && fiatIsGood) ||
-    (isEs && fiatIsGood);
+  const isGood = fiatIsGood && (isMs || isEs);
 
-  // -------------------------------------------------------------
-  // 11) RETURN FI COMPLET
-  // -------------------------------------------------------------
   return {
     isGood,
     discard: !isGood,
     score: fiatScore,
-
-    // 🔥 FIAT‑JS complet
     magPts,
     macdPts,
     trendPts,
