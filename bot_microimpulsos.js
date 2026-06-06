@@ -123,6 +123,14 @@ export async function processSymbol(symbol, timeframe) {
 
     const result = evaluateWithModel(candles, sig);
 
+    sig.mag_pts_js   = result.magPts;
+    sig.macd_pts_js  = result.macdPts;
+    sig.trend_pts_js = result.trendPts;
+    sig.sat_pts_js   = result.satPts;
+    sig.mode_js      = result.modeEff;
+    sig.score_js     = result.score;
+    sig.is_good_js   = result.isGood;
+
     // 🔥 COLOR EXACTE segons FIAT‑UPGRADED
     let color;
     if (result.isGood) {
@@ -130,18 +138,27 @@ export async function processSymbol(symbol, timeframe) {
     } else {
       color = "blue";                               // discard = blau
     }
-    
     await saveSignal2({
-      symbol,
-      timeframe,
-      type: sig.type,     // només M o E
+      symbol: sig.symbol,
+      timeframe: sig.timeframe,
+      type: sig.type,
       color,
-      entry,
-      entryr,
-      tp,
-      sl,
-      timestamp: sig.timestamp
+      entry: sig.entry,
+      entryr: sig.entryr,
+      tp: sig.tp,
+      sl: sig.sl,
+      timestamp: sig.timestamp,
+
+      mag_pts_js: sig.mag_pts_js,
+      macd_pts_js: sig.macd_pts_js,
+      trend_pts_js: sig.trend_pts_js,
+      sat_pts_js: sig.sat_pts_js,
+      mode_js: sig.mode_js,
+      score_js: sig.score_js,
+      is_good_js: sig.is_good_js
     });
+
+    
   }
 }
 
