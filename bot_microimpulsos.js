@@ -120,6 +120,10 @@ export async function processSymbol(symbol, timeframe) {
       sig.thirdCandle,
       atr
     );
+    sig.entry = entry;
+    sig.entryr = entryr;
+    sig.tp = tp;
+    sig.sl = sl;
 
     const result = evaluateWithModel(candles, sig);
 
