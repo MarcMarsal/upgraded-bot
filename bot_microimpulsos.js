@@ -126,18 +126,7 @@ export async function processSymbol(symbol, timeframe) {
     sig.sl = sl;
 
     const result = evaluateWithModel(candles, sig);
-    console.log("RESULT FIAT JS", {
-  symbol: sig.symbol,
-  timeframe: sig.timeframe,
-  type: sig.type,
-  magPts: result.magPts,
-  macdPts: result.macdPts,
-  trendPts: result.trendPts,
-  satPts: result.satPts,
-  modeEff: result.modeEff,
-  score: result.score,
-  isGood: result.isGood
-});
+   
 
     sig.mag_pts_js   = result.magPts;
     sig.macd_pts_js  = result.macdPts;
