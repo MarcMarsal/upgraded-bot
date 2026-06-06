@@ -1,7 +1,8 @@
 // -------------------------------------------------------------
-// fiatScore.js — FIAT 2.0 exacte
+// fiatScore.js — FIAT 2.0 exacte i sense errors de sintaxi
 // -------------------------------------------------------------
 
+// Config FIAT 2.0 per mode TREND / RANGE / TRANS
 const fiatConfig = {
   TREND: {
     wMag: 3,
@@ -26,12 +27,16 @@ const fiatConfig = {
   }
 };
 
+// Retorna la config segons el mode efectiu
 function getFiatConfigFor(symbol, modeEff) {
   if (modeEff === 1) return fiatConfig.TREND;
   if (modeEff === 0) return fiatConfig.RANGE;
   return fiatConfig.TRANS;
 }
 
+// -------------------------------------------------------------
+// applyFiat2Score — FIAT 2.0 exacte
+// -------------------------------------------------------------
 export function applyFiat2Score(
   symbol,
   magPts,
@@ -53,5 +58,3 @@ export function applyFiat2Score(
   return { fiatScore, fiatIsGood };
 }
 
-  return { fiatScore, fiatIsGood };
-}
