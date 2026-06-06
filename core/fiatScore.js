@@ -1,65 +1,64 @@
 // -------------------------------------------------------------
-// FIAT 2.x — Punts, pesos i score final en JS pur
+// fiatScore.js — FIAT 2.0 exacte (pesos + score)
 // -------------------------------------------------------------
 
-// Config FIAT per símbols (copiat del Pine)
-const fiatSymbols = [
-  "ADAUSDT", "APTUSDT", "ARBUSDT", "ASTERUSDT", "ATOMUSDT",
-  "AVAXUSDT", "BCHUSDT", "BNBUSDT", "BTCUSDT", "DOTUSDT",
-  "ETHUSDT", "FETUSDT", "HBARUSDT", "INJUSDT", "NEARUSDT",
-  "OPUSDT", "RENDERUSDT", "SEIUSDT", "SUIUSDT", "VIRTUALUSDT",
-  "XRPUSDT", "LINKUSDT", "SOLUSDT"
-];
-
-const fiat_wMag       = Array(fiatSymbols.length).fill(3.0);
-const fiat_wMacd      = Array(fiatSymbols.length).fill(1.0);
-const fiat_wTrend     = Array(fiatSymbols.length).fill(7.0);
-const fiat_wSat       = Array(fiatSymbols.length).fill(2.0);
-const fiat_thr        = Array(fiatSymbols.length).fill(0.75);
-
-const fiat_wMag_range   = Array(fiatSymbols.length).fill(1.0);
-const fiat_wMacd_range  = Array(fiatSymbols.length).fill(1.5);
-const fiat_wSat_range   = Array(fiatSymbols.length).fill(1.5);
-const fiat_thr_range    = Array(fiatSymbols.length).fill(1.0);
-const fiat_wTrend_range = Array(fiatSymbols.length).fill(0.0);
-
-// Recuperar config FIAT segons mode (TREND/RANGE/TRANS) i símbol
-export function getFiat2Config(symbol, modeEff) {
-  let idx = fiatSymbols.indexOf(symbol);
-  if (idx === -1) idx = 0;
-
-  if (modeEff === 1) {
-    return {
-      wMag:   fiat_wMag[idx],
-      wMacd:  fiat_wMacd[idx],
-      wTrend: fiat_wTrend[idx],
-      wSat:   fiat_wSat[idx],
-      thr:    fiat_thr[idx]
-    };
-  } else if (modeEff === 0) {
-    return {
-      wMag:   fiat_wMag_range[idx],
-      wMacd:  fiat_wMacd_range[idx],
-      wTrend: 0.0,
-      wSat:   fiat_wSat_range[idx],
-      thr:    fiat_thr_range[idx]
-    };
-  } else {
-    return {
-      wMag: 0.0, wMacd: 0.0, wTrend: 0.0, wSat: 0.0, thr: 999.0
-    };
+// Config FIAT 2.0 per sym i mode (TREND / RANGE / TRANS)
+const fiatConfig = {
+  // Exemple genèric; adapta si tens taules específiques per sym
+  // Aquí assumim mateixos pesos que al Pine que m’has passat:
+  // wMag = 3, wMacd = 1, wTrend = 7, wSat = 2, thr = 0.75 (TREND)
+  // RANGE: wTrend = 0, thr_range = 1.0, etc.
+  TREND: {
+    wMag: 3.0,
+    wMacd: 1.0,
+    wTrend: 7.0,
+    wSat: 2.0,
+    thr: 0.75
+  },
+  RANGE: {
+    wMag: 1.0,
+    wMacd: 1.5,
+    wTrend: 0.0,
+    wSat: 1.5,
+    thr: 1.0
+  },
+  TRANS: {
+    wMag: 0.0,
+    wMacd: 0.0,
+    wTrend: 0.0,
+    wSat: 0.0,
+    thr: 999.0
   }
+};
+
+// Si tens per-symbol, aquí podries mapejar per sym, però la lògica FIAT 2.0
+// és la mateixa: segons modeEff, agafes TREND/RANGE/TRANS.
+function getFiatConfigFor(symbol, modeEff) {
+  if (modeEff === 1) return fiatConfig.TREND;
+  if (modeEff === 0) return fiatConfig.RANGE;
+  return fiatConfig.TRANS;
 }
 
-// Aplicar score FIAT 2.x
-export function applyFiat2Score(symbol, magPts, macdPts, trendPts, satPts, modeEff) {
-  const cfg = getFiat2Config(symbol, modeEff);
+// -------------------------------------------------------------
+// applyFiat2Score — FIAT 2.0 exacte
+// -------------------------------------------------------------
+export function applyFiat2Score(
+  symbol,
+  magPts,
+  macdPts,
+  trendPts,
+  satPts,
+  modeEff
+) {
+  const cfg = getFiatConfigFor(symbol, modeEff);
+
   const fiatScore =
-    cfg.wMag   * magPts +
-    cfg.wMacd  * macdPts +
+    cfg.wMag * magPts +
+    cfg.wMacd * macdPts +
     cfg.wTrend * trendPts +
-    cfg.wSat   * satPts;
+    cfg.wSat * satPts;
 
   const fiatIsGood = fiatScore >= cfg.thr;
+
   return { fiatScore, fiatIsGood };
 }
