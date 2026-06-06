@@ -1,9 +1,8 @@
 // -------------------------------------------------------------
-// FIAT 2.1 — Mini Eval 1:1 executat amb pinets
+// FIAT 2.1 — Mini Eval 1:1 executat amb PineScript-JS
 // -------------------------------------------------------------
 
-// IMPORT CORRECTE PER RAILWAY (GitHub source)
-import { PineJS } from "@backtest-kit/pinets/src/pinejs.js";
+import { PineJS } from "pinescript-js";
 import fs from "fs";
 
 // Carreguem el codi Pine FIAT 2.1 Mini Eval
@@ -29,10 +28,10 @@ export async function evaluateWithPine(candles, sig) {
   const isGoodMS = result.series["isGoodMS"];
   const isGoodES = result.series["isGoodES"];
 
-  let isGood = false;
-
-  if (sig.type === "M") isGood = isGoodMS === 1;
-  if (sig.type === "E") isGood = isGoodES === 1;
+  const isGood =
+    sig.type === "M" ? isGoodMS === 1 :
+    sig.type === "E" ? isGoodES === 1 :
+    false;
 
   return {
     isGood,
