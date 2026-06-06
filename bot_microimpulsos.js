@@ -125,7 +125,7 @@ export async function processSymbol(symbol, timeframe) {
 
     // 🔥 COLOR EXACTE segons FIAT‑UPGRADED
     let color;
-    if (pineOK.isGood) {
+    if (result.isGood) {
       color = sig.type === "M" ? "green" : "red";   // M good = verd, E good = vermell
     } else {
       color = "blue";                               // discard = blau
