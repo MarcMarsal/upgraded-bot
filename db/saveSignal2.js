@@ -1,4 +1,4 @@
-// db/saveSignal2.js — FIAT‑UPGRADED (patrons + ATR + tracking)
+// db/saveSignal2.js — FIAT‑UPGRADED (patrons + ATR + tracking + JS eval)
 
 import { client } from "./client.js";
 import { splitSpainDate } from "../core/utils.js";
@@ -19,7 +19,16 @@ export async function saveSignal2({
   entryr,
   tp,
   sl,
-  timestamp    // ms (moment de la vela)
+  timestamp,   // ms (moment de la vela)
+
+  // 🔥 Camps JS nous (FIAT‑JS)
+  mag_pts_js = null,
+  macd_pts_js = null,
+  trend_pts_js = null,
+  sat_pts_js = null,
+  mode_js = null,
+  score_js = null,
+  is_good_js = null
 }) {
   const tsMs = Number(timestamp);
   const createdAt = Date.now();
@@ -68,14 +77,25 @@ export async function saveSignal2({
       date_es,
       hora_es,
       created_at,
-      closed
+      closed,
+
+      -- 🔥 Camps JS nous
+      mag_pts_js,
+      macd_pts_js,
+      trend_pts_js,
+      sat_pts_js,
+      mode_js,
+      score_js,
+      is_good_js
     )
     VALUES (
       $1,$2,$3,
       $4,$5,$6,$7,
       $8,$9,$10,$11,$12,
       $13,$14,
-      false
+      false,
+
+      $15,$16,$17,$18,$19,$20,$21
     )
     ON CONFLICT DO NOTHING
     `,
@@ -93,7 +113,16 @@ export async function saveSignal2({
       timestamp_es,
       date_es,
       hora_es,
-      createdAt
+      createdAt,
+
+      // 🔥 FIAT‑JS
+      mag_pts_js,
+      macd_pts_js,
+      trend_pts_js,
+      sat_pts_js,
+      mode_js,
+      score_js,
+      is_good_js
     ]
   );
 
