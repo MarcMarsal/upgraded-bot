@@ -9,6 +9,11 @@ import { fetchAndStoreCandles } from "./core/fetchcandles.js";
 import { splitSpainDate } from "./core/utils.js";
 import { evaluateWithModel } from "./core/evaluateModel.js";
 
+function timeframeToMs(tf) {
+  if (tf === "1H") return 60 * 60 * 1000;
+  if (tf === "4H") return 4 * 60 * 60 * 1000;
+  throw new Error("Timeframe no suportat: " + tf);
+}
 
 
 // -------------------------------------------------------------
