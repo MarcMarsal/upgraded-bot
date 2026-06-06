@@ -176,6 +176,10 @@ export async function saveSignal2({
   );
 
   const bot = "UPGRADED";
+  const entryStr = Number(entry).toFixed(4);
+  const tpStr    = Number(tp).toFixed(4);
+  const slStr    = Number(sl).toFixed(4);
+
   // 🔔 Enviar alerta NOMÉS si la cripto està activada
   if (activeList.includes(symbol)) {
     await sendTelegram({
@@ -183,10 +187,10 @@ export async function saveSignal2({
       symbol,
       timeframe,
       signalType: type,
-      color,
-      entry,
-      tp,
-      sl
+      color: color,
+      entry: entryStr,
+      tp: tpStr,
+      sl: slStr
     });
   }
 }
