@@ -175,10 +175,11 @@ export async function saveSignal2({
     ]
   );
 
+  const bot = "UPGRADED";
   // 🔔 Enviar alerta NOMÉS si la cripto està activada
   if (activeList.includes(symbol)) {
     await sendTelegram({
-      "UPGRADED",
+      bot,
       symbol,
       timeframe,
       signalType: type,
