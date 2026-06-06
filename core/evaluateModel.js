@@ -1,11 +1,12 @@
+// -------------------------------------------------------------
+// evaluateWithModel.js — FIAT 2.0 exacte (Node.js = Pine)
+// -------------------------------------------------------------
+
 import { computeMacdStuff, computeMicroTrend } from "./indicators.js";
 import { applyFiat2Score } from "./fiatScore.js";
 
-// FIAT 2.0 — avaluació MS/ES 1:1 amb Pine (sempre a vela tancada)
+// Funció principal: avaluar senyal MS/ES a vela TANCADA
 export function evaluateWithModel(candles, sig) {
-  // 🟩 0) Vela de senyal = última vela TANCADA
-  // candles[n-1] = vela actual (oberta)
-  // candles[n-2] = última vela tancada = close[1] a Pine
   const n = candles.length;
   if (n < 4) {
     return {
@@ -20,9 +21,13 @@ export function evaluateWithModel(candles, sig) {
     };
   }
 
-  const lastClosedIdx = n - 2;      // bar de la senyal (third candle)
+  // 🟩 Vela actual = candles[n-1] (oberta)
+  // 🟩 Última vela tancada = candles[n-2] → equival a close[1] a Pine
+  const lastClosedIdx = n - 2;
+
+  // Totes les veles tancades (sense la actual)
   const closesAll = candles.map(c => c.close);
-  const closesClosed = closesAll.slice(0, -1); // excloem la vela actual
+  const closesClosed = closesAll.slice(0, -1);
 
   // -------------------------------------------------------------
   // 1) Tipus de senyal (MS / ES)
@@ -31,8 +36,13 @@ export function evaluateWithModel(candles, sig) {
   const isEs = sig.type === "E";
 
   // -------------------------------------------------------------
-  // 2) MAGNITUD (o1 = open[3], o3 = open[1] a Pine)
-  //    first candle = n-4, third candle = n-2
+  // 2) MAGNITUD (FIAT 2.0)
+  // Pine:
+  //   o1 = open[3], c1 = close[3]
+  //   o3 = open[1], c3 = close[1]
+  // Aquí:
+  //   1a vela del patró = candles[lastClosedIdx - 2]
+  //   3a vela del patró = candles[lastClosedIdx]
   // -------------------------------------------------------------
   const o1 = candles[lastClosedIdx - 2].open;
   const c1 = candles[lastClosedIdx - 2].close;
@@ -45,8 +55,8 @@ export function evaluateWithModel(candles, sig) {
   const magPts = magOK ? 1 : 0;
 
   // -------------------------------------------------------------
-  // 3) MACD + SATURACIÓ (sempre sobre veles tancades)
-  //    Pine: macdLine, signalLine, hist, histSmooth, histStdev
+  // 3) MACD + SATURACIÓ (FIAT 2.0)
+  // IMPORTANT: només veles tancades (closesClosed)
   // -------------------------------------------------------------
   const { histSmooth, histStdev } = computeMacdStuff(closesClosed);
   const lenHs = histSmooth.length;
@@ -65,7 +75,7 @@ export function evaluateWithModel(candles, sig) {
     };
   }
 
-  // Última vela tancada = últim element de histSmooth/histStdev
+  // Última vela tancada
   const hs = histSmooth[lenHs - 1];
   const st = histStdev[lenSt - 1];
 
@@ -74,7 +84,6 @@ export function evaluateWithModel(candles, sig) {
 
   // -------------------------------------------------------------
   // 4) microTrend FIAT (EMA curt + slope) sobre veles tancades
-  //    Pine: microTrend basat en emaS i emaS[microLookback]
   // -------------------------------------------------------------
   const { microTrend } = computeMicroTrend(closesClosed);
 
@@ -105,7 +114,6 @@ export function evaluateWithModel(candles, sig) {
 
   // -------------------------------------------------------------
   // 8) Mode efectiu (TREND / RANGE) basat en microTrend
-  //    Pine: modeEff = 1 si microTrend != 0, 0 si RANGE
   // -------------------------------------------------------------
   const modeEff = microTrend !== 0 ? 1 : 0;
 
@@ -127,7 +135,7 @@ export function evaluateWithModel(candles, sig) {
       applyFiat2Score(sig.symbol, magPts, macdPts, 0, satPts, modeEff);
 
     fiatScore = scoreNoTrend;
-    // impuls pur en RANGE → DISCARD
+
     const isImpulse = magPts === 1 && macdPts === 1;
     fiatIsGood = isImpulse ? false : isGoodNoTrend;
   }
