@@ -138,87 +138,106 @@ export async function processSymbol(symbol, timeframe) {
   if (!signals || signals.length === 0) return;
 
   for (const sig of signals) {
-    if (sig.type !== "M" && sig.type !== "E") continue;
+  if (sig.type !== "M" && sig.type !== "E") continue;
 
-    const exists = await alreadySent2(symbol, timeframe, sig.timestamp);
-    if (exists) continue;
+  const exists = await alreadySent2(symbol, timeframe, sig.timestamp);
+  if (exists) continue;
 
-    console.log("[FIAT‑PRO]", symbol, timeframe, sig.type, sig.timestamp);
+  console.log("[FIAT‑PRO]", symbol, timeframe, sig.type, sig.timestamp);
 
-    const { entry, entryr, tp, sl } = calcTargets(
-      sig.type,
-      sig.thirdCandle,
-      atr
-    );
-    sig.entry = entry;
-    sig.entryr = entryr;
-    sig.tp = tp;
-    sig.sl = sl;
+  // -------------------------------------------------------------
+  // 1) CALCULAR ATR I TARGETS (igual que abans)
+  // -------------------------------------------------------------
+  const { entry, entryr, tp, sl } = calcTargets(
+    sig.type,
+    sig.thirdCandle,
+    atr
+  );
+  sig.entry = entry;
+  sig.entryr = entryr;
+  sig.tp = tp;
+  sig.sl = sl;
 
-    const result = evaluateWithModel(candles, sig);
-   
+  // -------------------------------------------------------------
+  // 2) 🔥 FIAT 2.0 — CARREGAR LES VELES CORRECTES DEL MOMENT DE LA SENYAL
+  // -------------------------------------------------------------
+  const candlesForEval = await getCandlesFromDB(
+    symbol,
+    timeframe,
+    80,
+    sig.timestamp   // 🟩 AIXÒ ÉS LA CLAU
+  );
 
-    sig.mag_pts_js   = result.magPts;
-    sig.macd_pts_js  = result.macdPts;
-    sig.trend_pts_js = result.trendPts;
-    sig.sat_pts_js   = result.satPts;
-    sig.mode_js      = result.modeEff;
-    sig.score_js     = result.score;
-    sig.is_good_js   = result.isGood;
-    // 🔥 NOUS CAMPS FIAT 2.0
-    sig.microtrend_js = result.microTrend;
-    sig.ema4_now_js = result.emaNow;
-    sig.ema4_past_js = result.emaPast;
-    sig.slope_js = result.slope;
+  // -------------------------------------------------------------
+  // 3) AVALUAR AMB FIAT 2.0 (ara sí, amb les veles correctes)
+  // -------------------------------------------------------------
+  const result = evaluateWithModel(candlesForEval, sig);
 
-    sig.vela_actual_timestamp_js = result.velaActualTs;
-    sig.vela_validada_timestamp_js = result.velaValidadaTs;
-    sig.vela_past_timestamp_js = result.velaPastTs;
-    sig.vela_first_pattern_timestamp_js = result.velaFirstPatternTs;
-    sig.vela_third_pattern_timestamp_js = result.velaThirdPatternTs;
+  sig.mag_pts_js   = result.magPts;
+  sig.macd_pts_js  = result.macdPts;
+  sig.trend_pts_js = result.trendPts;
+  sig.sat_pts_js   = result.satPts;
+  sig.mode_js      = result.modeEff;
+  sig.score_js     = result.score;
+  sig.is_good_js   = result.isGood;
 
-    // 🔥 COLOR EXACTE segons FIAT‑UPGRADED
-    let color;
-    if (result.isGood) {
-      color = sig.type === "M" ? "green" : "red";   // M good = verd, E good = vermell
-    } else {
-      color = "blue";                               // discard = blau
-    }
-   
+  // 🔥 FIAT 2.0 — NOUS CAMPS
+  sig.microtrend_js = result.microTrend;
+  sig.ema4_now_js = result.emaNow;
+  sig.ema4_past_js = result.emaPast;
+  sig.slope_js = result.slope;
 
-    await saveSignal2({
-      symbol: sig.symbol,
-      timeframe: sig.timeframe,
-      type: sig.type,
-      color,
-      entry: sig.entry,
-      entryr: sig.entryr,
-      tp: sig.tp,
-      sl: sig.sl,
-      timestamp: sig.timestamp,
+  sig.vela_actual_timestamp_js = result.velaActualTs;
+  sig.vela_validada_timestamp_js = result.velaValidadaTs;
+  sig.vela_past_timestamp_js = result.velaPastTs;
+  sig.vela_first_pattern_timestamp_js = result.velaFirstPatternTs;
+  sig.vela_third_pattern_timestamp_js = result.velaThirdPatternTs;
 
-      mag_pts_js: sig.mag_pts_js,
-      macd_pts_js: sig.macd_pts_js,
-      trend_pts_js: sig.trend_pts_js,
-      sat_pts_js: sig.sat_pts_js,
-      mode_js: sig.mode_js,
-      score_js: sig.score_js,
-      is_good_js: sig.is_good_js,
-      // 🔥 NOUS CAMPS FIAT 2.0
-      microtrend_js: sig.microtrend_js,
-      ema4_now_js: sig.ema4_now_js,
-      ema4_past_js: sig.ema4_past_js,
-      slope_js: sig.slope_js,
-
-      vela_actual_timestamp_js: sig.vela_actual_timestamp_js,
-      vela_validada_timestamp_js: sig.vela_validada_timestamp_js,
-      vela_past_timestamp_js: sig.vela_past_timestamp_js,
-      vela_first_pattern_timestamp_js: sig.vela_first_pattern_timestamp_js,
-      vela_third_pattern_timestamp_js: sig.vela_third_pattern_timestamp_js
-    });
-
-    
+  // -------------------------------------------------------------
+  // 4) COLOR FIAT‑UPGRADED
+  // -------------------------------------------------------------
+  let color;
+  if (result.isGood) {
+    color = sig.type === "M" ? "green" : "red";
+  } else {
+    color = "blue";
   }
+
+  // -------------------------------------------------------------
+  // 5) GUARDAR SENYAL
+  // -------------------------------------------------------------
+  await saveSignal2({
+    symbol: sig.symbol,
+    timeframe: sig.timeframe,
+    type: sig.type,
+    color,
+    entry: sig.entry,
+    entryr: sig.entryr,
+    tp: sig.tp,
+    sl: sig.sl,
+    timestamp: sig.timestamp,
+
+    mag_pts_js: sig.mag_pts_js,
+    macd_pts_js: sig.macd_pts_js,
+    trend_pts_js: sig.trend_pts_js,
+    sat_pts_js: sig.sat_pts_js,
+    mode_js: sig.mode_js,
+    score_js: sig.score_js,
+    is_good_js: sig.is_good_js,
+
+    microtrend_js: sig.microtrend_js,
+    ema4_now_js: sig.ema4_now_js,
+    ema4_past_js: sig.ema4_past_js,
+    slope_js: sig.slope_js,
+
+    vela_actual_timestamp_js: sig.vela_actual_timestamp_js,
+    vela_validada_timestamp_js: sig.vela_validada_timestamp_js,
+    vela_past_timestamp_js: sig.vela_past_timestamp_js,
+    vela_first_pattern_timestamp_js: sig.vela_first_pattern_timestamp_js,
+    vela_third_pattern_timestamp_js: sig.vela_third_pattern_timestamp_js
+  });
+}
+
 }
 
 // -------------------------------------------------------------
