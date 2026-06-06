@@ -1,7 +1,7 @@
 {
   "name": "fiat-bot",
   "version": "3.1.0",
-  "description": "FIAT‑PRO Bot 1H + FIAT‑UPGRADED (pinets)",
+  "description": "FIAT‑PRO Bot 1H + FIAT‑UPGRADED (pinescript-js)",
   "type": "module",
   "scripts": {
     "micro": "node bot_microimpulsos.js"
@@ -11,7 +11,7 @@
     "pg": "^8.11.0",
     "node-cron": "^3.0.2",
     "express": "^4.18.2",
-    "@backtest-kit/pinets": "github:backtest-kit/pinets"
+    "pinescript-js": "^1.4.0"
   },
   "engines": {
     "node": ">=18"
