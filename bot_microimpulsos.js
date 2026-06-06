@@ -28,17 +28,47 @@ const TIMEFRAMES = ["1H", "4H"];
 // -------------------------------------------------------------
 // LLEGIR VELAS DE LA DB
 // -------------------------------------------------------------
-async function getCandlesFromDB(symbol, timeframe, limit) {
-  const query = `
-    SELECT symbol, timeframe, open, high, low, close, volume, timestamp
+//async function getCandlesFromDB(symbol, timeframe, limit) {
+//  const query = `
+//    SELECT symbol, timeframe, open, high, low, close, volume, timestamp
+//    FROM candles
+//    WHERE symbol = $1 AND timeframe = $2
+//    ORDER BY timestamp DESC
+//    LIMIT $3
+//  `;
+//  const res = await client.query(query, [symbol, timeframe, limit]);
+//  return res.rows.reverse();
+//}
+async function getCandlesFromDB(symbol, timeframe, limit, untilTimestamp = null) {
+
+  if (untilTimestamp === null) {
+    // MODE REAL
+    const res = await client.query(`
+      SELECT *
+      FROM candles
+      WHERE symbol = $1 AND timeframe = $2
+      ORDER BY timestamp DESC
+      LIMIT $3
+    `, [symbol, timeframe, limit]);
+
+    return res.rows.reverse();
+  }
+
+  // MODE HISTÒRIC — demanar veles fins a la següent vela
+  const nextTs = untilTimestamp + timeframeToMs(timeframe);
+
+  const res = await client.query(`
+    SELECT *
     FROM candles
     WHERE symbol = $1 AND timeframe = $2
+    AND timestamp <= $3
     ORDER BY timestamp DESC
-    LIMIT $3
-  `;
-  const res = await client.query(query, [symbol, timeframe, limit]);
+    LIMIT $4
+  `, [symbol, timeframe, nextTs, limit]);
+
   return res.rows.reverse();
 }
+
 
 // -------------------------------------------------------------
 // ATR14 SIMPLE (FIAT‑PRO: ATR * 1 per TP i SL)
