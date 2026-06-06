@@ -21,14 +21,26 @@ export async function saveSignal2({
   sl,
   timestamp,   // ms (moment de la vela)
 
-  // 🔥 Camps JS nous (FIAT‑JS)
+  // 🔥 Camps JS FIAT 2.0
   mag_pts_js = null,
   macd_pts_js = null,
   trend_pts_js = null,
   sat_pts_js = null,
   mode_js = null,
   score_js = null,
-  is_good_js = null
+  is_good_js = null,
+
+  // 🔥 Camps NOUS FIAT 2.0 (diagnòstic complet)
+  microtrend_js = null,
+  ema4_now_js = null,
+  ema4_past_js = null,
+  slope_js = null,
+
+  vela_actual_timestamp_js = null,
+  vela_validada_timestamp_js = null,
+  vela_past_timestamp_js = null,
+  vela_first_pattern_timestamp_js = null,
+  vela_third_pattern_timestamp_js = null
 }) {
   const tsMs = Number(timestamp);
   const createdAt = Date.now();
@@ -79,14 +91,26 @@ export async function saveSignal2({
       created_at,
       closed,
 
-      -- 🔥 Camps JS nous
+      -- 🔥 FIAT 2.0 punts
       mag_pts_js,
       macd_pts_js,
       trend_pts_js,
       sat_pts_js,
       mode_js,
       score_js,
-      is_good_js
+      is_good_js,
+
+      -- 🔥 FIAT 2.0 diagnòstic
+      microtrend_js,
+      ema4_now_js,
+      ema4_past_js,
+      slope_js,
+
+      vela_actual_timestamp_js,
+      vela_validada_timestamp_js,
+      vela_past_timestamp_js,
+      vela_first_pattern_timestamp_js,
+      vela_third_pattern_timestamp_js
     )
     VALUES (
       $1,$2,$3,
@@ -95,7 +119,11 @@ export async function saveSignal2({
       $13,$14,
       false,
 
-      $15,$16,$17,$18,$19,$20,$21
+      $15,$16,$17,$18,$19,$20,$21,
+
+      $22,$23,$24,$25,
+
+      $26,$27,$28,$29,$30
     )
     ON CONFLICT DO NOTHING
     `,
@@ -115,14 +143,26 @@ export async function saveSignal2({
       hora_es,
       createdAt,
 
-      // 🔥 FIAT‑JS
+      // 🔥 FIAT 2.0 punts
       mag_pts_js,
       macd_pts_js,
       trend_pts_js,
       sat_pts_js,
       mode_js,
       score_js,
-      is_good_js
+      is_good_js,
+
+      // 🔥 FIAT 2.0 diagnòstic
+      microtrend_js,
+      ema4_now_js,
+      ema4_past_js,
+      slope_js,
+
+      vela_actual_timestamp_js,
+      vela_validada_timestamp_js,
+      vela_past_timestamp_js,
+      vela_first_pattern_timestamp_js,
+      vela_third_pattern_timestamp_js
     ]
   );
 
