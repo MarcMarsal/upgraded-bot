@@ -154,15 +154,7 @@ export async function processSymbol(symbol, timeframe) {
     } else {
       color = "blue";                               // discard = blau
     }
-    console.log("SAVE SIGNAL2 PARAMS", {
-  mag_pts_js: sig.mag_pts_js,
-  macd_pts_js: sig.macd_pts_js,
-  trend_pts_js: sig.trend_pts_js,
-  sat_pts_js: sig.sat_pts_js,
-  mode_js: sig.mode_js,
-  score_js: sig.score_js,
-  is_good_js: sig.is_good_js
-});
+   
 
     await saveSignal2({
       symbol: sig.symbol,
