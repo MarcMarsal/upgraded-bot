@@ -60,7 +60,8 @@ async function getCandlesFromDB(symbol, timeframe, limit, untilTimestamp = null)
   }
 
   // MODE HISTÒRIC — demanar veles fins a la següent vela
-  const nextTs = untilTimestamp + timeframeToMs(timeframe);
+  //const nextTs = untilTimestamp + timeframeToMs(timeframe);
+  const nextTs = Number(untilTimestamp) + Number(timeframeToMs(timeframe));
 
   const res = await client.query(`
     SELECT *
