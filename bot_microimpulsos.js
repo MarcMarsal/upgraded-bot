@@ -121,13 +121,7 @@ export async function processSymbol(symbol, timeframe) {
       atr
     );
 
-    // 🔥 AVALUACIÓ FIAT‑UPGRADED (pinets)
-    const pineOK = await evaluateWithPine(candles, sig);
-
-    if (pineOK.discard) {
-      console.log("[FIAT‑UPGRADED] Rebutjat per Pine:", symbol, timeframe, sig.type, sig.timestamp);
-      continue;
-    }
+    const result = evaluateWithModel(candles, sig);
 
     // 🔥 COLOR EXACTE segons FIAT‑UPGRADED
     let color;
@@ -136,8 +130,6 @@ export async function processSymbol(symbol, timeframe) {
     } else {
       color = "blue";                               // discard = blau
     }
-
-
     
     await saveSignal2({
       symbol,
