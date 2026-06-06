@@ -75,23 +75,21 @@ export function computeMacdStuff(closes) {
   return { macdLine, signalLine, hist, histSmooth, histStdev };
 }
 
-// MicroTrend (EMA curt + slope)
 export function computeMicroTrend(closes, microLen = 4, microLookback = 4, microSlopeThr = 0.0008) {
   const emaS = ema(closes, microLen);
   const n = emaS.length;
   if (n <= microLookback) return { microTrend: 0, microTrendDur: 1 };
 
-  const slopeS = (emaS[n - 1] - emaS[n - 1 - microLookback]) / emaS[n - 1 - microLookback];
+  // 🔥 CORRECCIÓ FIAT 2.0 — usar la vela ACTUAL
+  const slopeS = (emaS[n - 1] - emaS[n - microLookback]) / emaS[n - microLookback];
 
   let microTrend = 0;
   if (slopeS > microSlopeThr) microTrend = 1;
   else if (slopeS < -microSlopeThr) microTrend = -1;
 
-  // Durada aproximada (no tenim sèries històriques completes aquí)
-  const microTrendDur = 1;
-
-  return { microTrend, microTrendDur };
+  return { microTrend, microTrendDur: 1 };
 }
+
 
 // Tendència 12h aproximada (transportable)
 export function computeTrend12h(candles) {
