@@ -21,7 +21,7 @@ export async function sendTelegram({
   if (entry) message += `Entrada: <b>${entry}</b>\n`;
   if (tp) message += `TP: <b>${tp}</b>\n`;
   if (sl) message += `SL: <b>${sl}</b>\n`;
-
+  console.log(message);
   const payload = {
     chat_id: process.env.TELEGRAM_CHAT_ID,
     text: message,
