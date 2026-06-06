@@ -178,9 +178,11 @@ export async function saveSignal2({
   // 🔔 Enviar alerta NOMÉS si la cripto està activada
   if (activeList.includes(symbol)) {
     await sendTelegram({
+      "RAW",
       symbol,
       timeframe,
       signalType: type,
+      color,
       entry,
       tp,
       sl
