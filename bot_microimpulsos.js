@@ -135,6 +135,17 @@ export async function processSymbol(symbol, timeframe) {
     sig.mode_js      = result.modeEff;
     sig.score_js     = result.score;
     sig.is_good_js   = result.isGood;
+    // 🔥 NOUS CAMPS FIAT 2.0
+    sig.microtrend_js = result.microTrend;
+    sig.ema4_now_js = result.emaNow;
+    sig.ema4_past_js = result.emaPast;
+    sig.slope_js = result.slope;
+
+    sig.vela_actual_timestamp_js = result.velaActualTs;
+    sig.vela_validada_timestamp_js = result.velaValidadaTs;
+    sig.vela_past_timestamp_js = result.velaPastTs;
+    sig.vela_first_pattern_timestamp_js = result.velaFirstPatternTs;
+    sig.vela_third_pattern_timestamp_js = result.velaThirdPatternTs;
 
     // 🔥 COLOR EXACTE segons FIAT‑UPGRADED
     let color;
@@ -162,7 +173,18 @@ export async function processSymbol(symbol, timeframe) {
       sat_pts_js: sig.sat_pts_js,
       mode_js: sig.mode_js,
       score_js: sig.score_js,
-      is_good_js: sig.is_good_js
+      is_good_js: sig.is_good_js,
+      // 🔥 NOUS CAMPS FIAT 2.0
+      microtrend_js: sig.microtrend_js,
+      ema4_now_js: sig.ema4_now_js,
+      ema4_past_js: sig.ema4_past_js,
+      slope_js: sig.slope_js,
+
+      vela_actual_timestamp_js: sig.vela_actual_timestamp_js,
+      vela_validada_timestamp_js: sig.vela_validada_timestamp_js,
+      vela_past_timestamp_js: sig.vela_past_timestamp_js,
+      vela_first_pattern_timestamp_js: sig.vela_first_pattern_timestamp_js,
+      vela_third_pattern_timestamp_js: sig.vela_third_pattern_timestamp_js
     });
 
     
