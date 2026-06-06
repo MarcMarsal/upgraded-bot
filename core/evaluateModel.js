@@ -139,9 +139,17 @@ export function evaluateWithModel(candles, sig) {
     (sig.type === "M" && isMs && fiatIsGood) ||
     (sig.type === "E" && isEs && fiatIsGood);
 
-  return {
-    isGood,
-    discard: !isGood,
-    score: fiatScore
-  };
+ return {
+  isGood,
+  discard: !isGood,
+  score: fiatScore,
+
+  // 🔥 FIAT‑JS (això és el que faltava)
+  magPts,
+  macdPts,
+  trendPts,
+  satPts,
+  modeEff
+};
+
 }
