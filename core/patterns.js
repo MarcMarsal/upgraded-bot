@@ -205,7 +205,7 @@ export async function detectMSES(candlesRaw, symbol, timeframe) {
     }
     // inici
     // 🟩 FIAT — BLOQUEIG DE REGENERACIÓ DE SENYALS
-    const tfMinutes = timeframe === "1H" ? 60 : 240;
+    //const tfMinutes = timeframe === "1H" ? 60 : 240;
     const nowCandle = Math.floor(Date.now() / (tfMinutes * 60 * 1000));
     const signalCandle = Math.floor(c1.timestamp / (tfMinutes * 60 * 1000));
 
@@ -250,7 +250,7 @@ export async function detectMSES(candlesRaw, symbol, timeframe) {
     }
     // inici
     // 🟩 FIAT — BLOQUEIG DE REGENERACIÓ DE SENYALS
-    const tfMinutes = timeframe === "1H" ? 60 : 240;
+    //const tfMinutes = timeframe === "1H" ? 60 : 240;
     const nowCandle = Math.floor(Date.now() / (tfMinutes * 60 * 1000));
     const signalCandle = Math.floor(c1.timestamp / (tfMinutes * 60 * 1000));
 
