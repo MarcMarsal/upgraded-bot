@@ -1,4 +1,4 @@
-// panell_microimpulsos.js — FIAT‑PRO (net, institucional)
+// panell_microimpulsos.js — FIAT‑PRO (upgraded)
 
 import http from "http";
 import { initDB, client } from "./db/client.js";
@@ -9,7 +9,7 @@ function fmt(n) {
   return n !== null && n !== undefined ? Number(n).toFixed(4) : "-";
 }
 
-// Llegir últimes 20 alertes FIAT‑PRO
+// Llegir últimes 20 alertes FIAT‑PRO (ara de signals_upgraded)
 async function getActiveSignals() {
   const q = await client.query(
     `
@@ -26,7 +26,7 @@ async function getActiveSignals() {
       date_es,
       hora_es,
       created_at
-    FROM signals2
+    FROM signals_upgraded
     ORDER BY created_at DESC
     LIMIT 20
     `
@@ -39,11 +39,13 @@ function renderActiveSignalsTable(signals) {
   let rows = "";
 
   for (const s of signals) {
-    const symbolNoDash = s.symbol.replace("-", "");
-    const bitunixUrl = `https://www.bitunix.com/es-es/contract-trade/${symbolNoDash}`;
+    // Color FIAT 2.0 segons tipus
+    let color = "#00ff00"; // M → verd
+    if (s.type === "E") color = "#ff4444"; // E → vermell
+    if (s.type === "C") color = "#3399ff"; // C → blau (si algun dia)
 
     rows += `
-      <tr>
+      <tr style="color: ${color}">
         <td>${s.id}</td>
         <td>${s.symbol}</td>
         <td>${s.timeframe}</td>
@@ -55,11 +57,6 @@ function renderActiveSignalsTable(signals) {
         <td>${s.date_es}</td>
         <td>${s.hora_es}</td>
         <td>${formatSpainTime(s.created_at)}</td>
-        <td>
-          <button onclick="openBitunix('${bitunixUrl}', '${fmt(s.entryr)}')">
-            Obrir Bitunix
-          </button>
-        </td>
       </tr>
     `;
   }
@@ -80,7 +77,6 @@ function renderActiveSignalsTable(signals) {
           <th>Data vela</th>
           <th>Hora vela</th>
           <th>Creat (ES)</th>
-          <th>Acció</th>
         </tr>
       </thead>
       <tbody>
@@ -125,38 +121,7 @@ async function startPanel() {
           th {
             background-color: #003300;
           }
-          button {
-            background-color: #004400;
-            color: #00ff00;
-            border: 1px solid #00ff00;
-            padding: 4px 8px;
-            cursor: pointer;
-          }
-          button:hover {
-            background-color: #006600;
-          }
         </style>
-
-        <script>
-          function openBitunix(url, entryr) {
-            navigator.clipboard.writeText(entryr);
-
-            const screenWidth = window.screen.width;
-            const screenHeight = window.screen.height;
-
-            const width = Math.floor(screenWidth / 2);
-            const height = screenHeight;
-            const left = screenWidth - width;
-            const top = 0;
-
-            window.open(
-              url,
-              "_blank",
-              "width=" + width + ",height=" + height + ",left=" + left + ",top=" + top
-            );
-          }
-        </script>
-
       </head>
       <body>
         <h1>Panell Microimpulsos FIAT‑PRO</h1>
