@@ -40,8 +40,13 @@ function renderActiveSignalsTable(signals) {
   let rows = "";
 
   for (const s of signals) {
+
     // 🟩 Color FIAT 2.0 directament del camp color
-    const color = s.color || "#00ff00";
+    // Si el color és "blue", el convertim a "cyan"
+    let color = s.color || "#00ff00";
+    if (color.toLowerCase() === "blue") {
+      color = "cyan";
+    }
 
     rows += `
       <tr style="color: ${color}">
@@ -84,6 +89,7 @@ function renderActiveSignalsTable(signals) {
     </table>
   `;
 }
+
 
 // Servidor HTTP
 async function startPanel() {
