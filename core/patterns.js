@@ -206,16 +206,11 @@ export async function detectMSES(candlesRaw, symbol, timeframe) {
     
     
     if (msNew) {
-      // inici
-      // 🟩 FIAT — BLOQUEIG DE REGENERACIÓ DE SENYALS
-      const lastCandleTs = candles[n - 1].timestamp;
-      const signalTs = c1.timestamp;
-
-      if (signalTs !== lastCandleTs) {
+      // 🟩 BLOQUEJADOR FI
+      if (i !== n - 1) {
         continue;
       }
-
-      // fi
+      
       signals.push({
         symbol,
         timeframe,
@@ -251,15 +246,11 @@ export async function detectMSES(candlesRaw, symbol, timeframe) {
     
     
     if (esNew) {
-      // inici
-      // 🟩 FIAT — BLOQUEIG DE REGENERACIÓ DE SENYALS
-      const lastCandleTs = candles[n - 1].timestamp;
-      const signalTs = c1.timestamp;
-
-      if (signalTs !== lastCandleTs) {
+      // 🟩 BLOQUEJADOR FI
+      if (i !== n - 1) {
         continue;
       }
-      // fi
+      
       signals.push({
         symbol,
         timeframe,
