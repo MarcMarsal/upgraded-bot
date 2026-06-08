@@ -56,9 +56,37 @@ export async function saveSignal2({
     "SOL-USDT",
     "XRP-USDT"
   ];
+  
+  // 🔥 Criptos ACTIVADES
+  
+  //dilluns matí
+  //const ACTIVE_CRYPTOS_1H = [
+  //  "APT-USDT",
+  //  "BNB-USDT",
+  //  "DOT-USDT",
+  //  "ETH-USDT",
+  //  "RENDER-USDT",
+  //  "XRP-USDT"
+  //];
 
+  //dilluns tarda
+  //const ACTIVE_CRYPTOS_1H = [
+  //  "ARB-USDT",
+  //  "BNB-USDT",
+  //  "LINK-USDT",
+  //  "OP-USDT"
+  //];
 
-  // 🔥 Criptos ACTIVADES 
+  // dimarts-dijous
+  const ACTIVE_CRYPTOS_1H = [
+    "APT-USDT",
+    "ARB-USDT",
+    "DOT-USDT",
+    "LINK-USDT",
+    "OP-USDT",
+    "SOL-USDT"
+  ];
+   
   // dissabte
   //const ACTIVE_CRYPTOS_1H = [
   //  "ARB-USDT",
@@ -79,24 +107,7 @@ export async function saveSignal2({
   //  "XRP-USDT"
   //];
 
-  //dilluns matí
-  //const ACTIVE_CRYPTOS_1H = [
-  //  "APT-USDT",
-  //  "BNB-USDT",
-  //  "DOT-USDT",
-  //  "ETH-USDT",
-  //  "RENDER-USDT",
-  //  "XRP-USDT"
-  //];
-
-  //dilluns tarda
-  const ACTIVE_CRYPTOS_1H = [
-    "ARB-USDT",
-    "BNB-USDT",
-    "LINK-USDT",
-    "OP-USDT"
-  ];
-
+  
   
   // Seleccionar llista segons timeframe
   const activeList = timeframe === "1H" ? ACTIVE_CRYPTOS_1H : ACTIVE_CRYPTOS_4H;
