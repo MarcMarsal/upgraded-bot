@@ -22,6 +22,7 @@ async function getActiveSignals() {
       entryr,
       tp,
       sl,
+      color,          -- 🟩 IMPORTANT: llegim el color
       timestamp_ms,
       date_es,
       hora_es,
@@ -39,10 +40,8 @@ function renderActiveSignalsTable(signals) {
   let rows = "";
 
   for (const s of signals) {
-    // Color FIAT 2.0 segons tipus
-    let color = "#00ff00"; // M → verd
-    if (s.type === "E") color = "#ff4444"; // E → vermell
-    if (s.type === "C") color = "#3399ff"; // C → blau (si algun dia)
+    // 🟩 Color FIAT 2.0 directament del camp color
+    const color = s.color || "#00ff00";
 
     rows += `
       <tr style="color: ${color}">
