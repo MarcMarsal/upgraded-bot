@@ -30,44 +30,36 @@ function ema_TV(values, length) {
 
 
 // -------------------------------------------------------------
-// DETECT MSES FIAT 2.0 (1:1 TradingView)
+// detectMSES — només detecció de patrons MS / ES
 // -------------------------------------------------------------
-export async function detectMSES(candlesRaw, symbol, timeframe) {
-  if (!candlesRaw || candlesRaw.length < 40)
-    return { signals: [] };
 
+function isBull(o, c) {
+  return c > o;
+}
+
+function isBear(o, c) {
+  return c < o;
+}
+
+export async function detectMSES(candlesRaw, symbol, timeframe) {
+  if (!candlesRaw || candlesRaw.length < 5) {
+    return { signals: [] };
+  }
+
+  // assegurem ordre cronològic
   const candles = [...candlesRaw].sort((a, b) => a.timestamp - b.timestamp);
   const n = candles.length;
 
-  const closes = candles.map(c => c.close);
-
-  //const ema12 = ema(closes, 12);
-  //const ema26 = ema(closes, 26);
-  //const macdLine = ema12.map((v, i) => v - ema26[i]);
-  //const signalLine = ema(macdLine, 9);
-  //const hist = macdLine.map((v, i) => v - signalLine[i]);
-  //const histth = ema(hist, 5);
-
-  const ema12 = ema_TV(closes, 12);
-  const ema26 = ema_TV(closes, 26);
-  const macdLine = ema12.map((v, i) => v - ema26[i]);
-  const signalLine = ema_TV(macdLine, 9);
-  const hist = macdLine.map((v, i) => v - signalLine[i]);
-  const histSmooth = ema_TV(hist, 5);
-  // MICROTREND FIAT 2.3 — EMA curta (equivalent a ta.ema(close, 4))
-  const ema4 = ema_TV(closes, 4);
-
-  
   const signals = [];
 
-  let prevMsRaw = false;
-  let prevEsRaw = false;
-
-  for (let i = 4; i < n; i++) {
-    const c0 = candles[i];
-    const c1 = candles[i - 1];
-    const c2 = candles[i - 2];
+  for (let i = 3; i < n; i++) {
+    // patró de 3 veles:
+    // c3 = primera (forta)
+    // c2 = indecisió
+    // c1 = tercera (impuls contrari)
     const c3 = candles[i - 3];
+    const c2 = candles[i - 2];
+    const c1 = candles[i - 1]; // tercera vela del patró
 
     const rangeFirst = c3.high - c3.low;
     const indecisionOK =
@@ -85,255 +77,24 @@ export async function detectMSES(candlesRaw, symbol, timeframe) {
       indecisionOK &&
       isBear(c1.open, c1.close);
 
-    const bodyFirst = Math.abs(c3.close - c3.open);
-    const bodyThird = Math.abs(c1.close - c1.open);
-    const magOK = bodyThird > bodyFirst * 0.6;
-    const magSignal = magOK ? 1 : -1;
+    if (!msRaw && !esRaw) continue;
 
-    const hSmooth = histSmooth[i];
-    const hStdev = stdev(histSmooth.slice(0, i + 1), 20);
+    const type = msRaw ? "M" : "E";
+    const thirdCandle = c1;
+    const timestamp = thirdCandle.timestamp;
 
-    const macdSignal =
-      hSmooth > 0 ? 1 :
-      hSmooth < 0 ? -1 : 0;
-
-    const satSignal =
-      hSmooth >  hStdev * 2.5 ?  1 :
-      hSmooth < -hStdev * 2.5 ? -1 : 0;
-
-    // -----------------------------------------------------------
-    // TENDÈNCIA 12H FIAT — 1:1 TradingView
-    // -----------------------------------------------------------
-    //const tfMinutes = timeframe === "1H" ? 60 : 1440;
-    const tfMinutes = timeframe === "1H" ? 60 : timeframe === "4H" ? 240 : 1440;
-
-    const bars12h = Math.floor((12 * 60) / tfMinutes);
-
-    //const realIndex = i;
-    //const realIndex = i - 1;
-    // -----------------------------------------------------------
-    // INDICADORS FIAT — microtrend, macd, sat, trend_pts
-    // -----------------------------------------------------------
-
-    // INDEX CORRECTE PER ALS INDICADORS
-    const realIndex = i;   // <-- AQUEST ÉS EL CANVI IMPORTANT
-
-    // MICRO TREND
-    const ema4_now = ema4[realIndex];
-    //const ema4_past = ema4[realIndex - 1];
-    const ema4_past = ema4[realIndex - 4];
-
-    const slope = ema4_now - ema4_past;
-    const microtrend = slope > 0 ? 1 : 0;
-
-    // MACD
-    const macd_now = macd[realIndex];
-    const macd_signal_now = macdSignal[realIndex];
-    const macd_pts = macd_now > macd_signal_now ? 1 : 0;
-
-    // TREND 12H (ja calculat abans)
-    const trend_pts = trend12h[realIndex];
-
-    // SAT
-    const sat_pts = sat[realIndex];
-
-
-    const nowTs = candles[realIndex].timestamp;
-    const targetTs = nowTs - 12 * 60 * 60 * 1000;
-
-    let bestDiff = Number.MAX_SAFE_INTEGER;
-    let pastIndexBarsAgo = null;
-
-    const maxLookback = Math.min(realIndex, bars12h * 2);
-
-    for (let k = 0; k <= maxLookback; k++) {
-      const idx = realIndex - k;
-      if (idx < 0) break;
-
-      const ts = candles[idx].timestamp;
-      const diff = Math.abs(ts - targetTs);
-
-      if (diff < bestDiff) {
-        bestDiff = diff;
-        pastIndexBarsAgo = k;
-      }
-    }
-
-    let closeNow = candles[realIndex].close;
-    let closePast = closeNow;
-    let avgNow = null;
-    let avgPast = null;
-
-    if (pastIndexBarsAgo === null || realIndex < bars12h) {
-      avgNow = sma(closes.slice(realIndex - bars12h + 1, realIndex + 1), bars12h);
-      avgPast = avgNow;
-    } else {
-      const idxPast = realIndex - pastIndexBarsAgo;
-
-      closePast = candles[idxPast].close;
-
-      const closesNowWin = closes.slice(realIndex - bars12h + 1, realIndex + 1);
-      avgNow = sma(closesNowWin, bars12h);
-
-      const startPast = idxPast - bars12h + 1;
-
-      if (startPast >= 0) {
-        const closesPastWin = closes.slice(startPast, idxPast + 1);
-        avgPast = sma(closesPastWin, bars12h);
-      } else {
-        avgPast = avgNow;
-      }
-    }
-
-    const trendUp12h = closeNow > closePast && avgNow > avgPast;
-    const trendDown12h = closeNow < closePast && avgNow < avgPast;
-
-    let trendSignal = 0;
-    trendSignal = trendUp12h ? 1 : trendDown12h ? -1 : 0;
-
-    // -----------------------------------------------------------
-    // FIAT 2.0 — puntuació MS / ES
-    // -----------------------------------------------------------
-    const scoreMs = applyFiat2Score(
-      magSignal === 1 ? 1 : 0,
-      macdSignal === 1 ? 1 : 0,   // MACD alcista per MS
-      trendSignal === 1 ? 1 : 0,
-      satSignal === 1 ? 1 : 0,
-      symbol
-    );
-
-    const scoreEs = applyFiat2Score(
-      magSignal === 1 ? 1 : 0,
-      macdSignal === -1 ? 1 : 0,  // MACD baixista per ES
-      trendSignal === -1 ? 1 : 0,
-      satSignal === -1 ? 1 : 0,
-      symbol
-    );
-
-    const msNew = msRaw && !prevMsRaw;
-    const esNew = esRaw && !prevEsRaw;
-
-    // -----------------------------------------------------------
-    // FIAT — DADES CONGELADES (1:1 TradingView)
-    // -----------------------------------------------------------
-    let pastIndex = null;
-
-    let closeNowFreeze = closeNow;
-    let closePastFreeze = closePast;
-    let avgNowFreeze = avgNow;
-    let avgPastFreeze = avgPast;
-    let targetTsFreeze = targetTs;
-
-    if (pastIndexBarsAgo != null) {
-      pastIndex = realIndex - pastIndexBarsAgo;
-
-      if (pastIndex >= 0 && pastIndex - bars12h + 1 >= 0) {
-        const closesPastWin = closes.slice(pastIndex - bars12h + 1, pastIndex + 1);
-        avgPastFreeze = sma(closesPastWin, bars12h);
-      }
-    }
-    
-    
-    if (msNew) {
-      // 🟩 BLOQUEJADOR FI
-      if (i !== n - 1) {
-        continue;
-      }
-      
-      signals.push({
-        symbol,
-        timeframe,
-        type: "M",
-        timestamp: c1.timestamp,
-        entry: c1.close,
-        thirdCandle: c1,
-        score: scoreMs.score,
-        isGood: scoreMs.isGood,
-
-        magPts: scoreMs.magPts,
-        macdPts: scoreMs.macdPts,
-        trendPts: scoreMs.trendPts,
-        satPts: scoreMs.satPts,
-
-        closeNow: closeNowFreeze,
-        closePast: closePastFreeze,
-        avgNow: avgNowFreeze,
-        avgPast: avgPastFreeze,
-        pastIndex,
-        pastTs: pastIndex != null ? candles[pastIndex].timestamp : null,
-        targetTs: targetTsFreeze,
-        trendSignal,
-        // 🟩 AFEGIT FIAT‑NET
-        c1_open: c1.open,
-        c1_close: c1.close,
-        c2_open: c2.open,
-        c2_close: c2.close,
-        c3_open: c3.open,
-        c3_close: c3.close
-      });
-    }
-    
-    
-    if (esNew) {
-      // 🟩 BLOQUEJADOR FI
-      if (i !== n - 1) {
-        continue;
-      }
-      
-      signals.push({
-        symbol,
-        timeframe,
-        type: "E",
-        timestamp: c1.timestamp,
-        entry: c1.close,
-        thirdCandle: c1,
-        score: scoreEs.score,
-        isGood: scoreEs.isGood,
-
-        magPts: scoreEs.magPts,
-        macdPts: scoreEs.macdPts,
-        trendPts: scoreEs.trendPts,
-        satPts: scoreEs.satPts,
-
-        closeNow: closeNowFreeze,
-        closePast: closePastFreeze,
-        avgNow: avgNowFreeze,
-        avgPast: avgPastFreeze,
-        pastIndex,
-        pastTs: pastIndex != null ? candles[pastIndex].timestamp : null,
-        targetTs: targetTsFreeze,
-        trendSignal,
-        // 🟩 AFEGIT FIAT‑NET
-        c1_open: c1.open,
-        c1_close: c1.close,
-        c2_open: c2.open,
-        c2_close: c2.close,
-        c3_open: c3.open,
-        c3_close: c3.close
-      });
-    }
-
-    if ((msNew || esNew) && i >= bars12h + 1) {
-      const nowTs2 = candles[i - 1].timestamp;
-
-      let bullish = 0;
-      let bearish = 0;
-
-      if (closeNow > closePast) bullish++; else bearish++;
-      if (avgNow > avgPast) bullish++; else bearish++;
-
-      // aquí no fem res extra: només mantenim la mateixa estructura
-      void nowTs2;
-      void bullish;
-      void bearish;
-    }
-
-    prevMsRaw = msRaw;
-    prevEsRaw = esRaw;
+    signals.push({
+      symbol,
+      timeframe,
+      type,
+      timestamp,
+      thirdCandle
+    });
   }
 
   return { signals };
 }
+
 
 // -------------------------------------------------------------
 // FIAT 2.0 — Pesos per cripto (1:1 TradingView)
