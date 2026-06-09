@@ -107,7 +107,8 @@ export async function detectMSES(candlesRaw, symbol, timeframe) {
 
     const bars12h = Math.floor((12 * 60) / tfMinutes);
 
-    const realIndex = i;
+    //const realIndex = i;
+    const realIndex = i - 1;
 
     const nowTs = candles[realIndex].timestamp;
     const targetTs = nowTs - 12 * 60 * 60 * 1000;
