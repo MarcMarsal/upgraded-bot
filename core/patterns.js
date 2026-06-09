@@ -108,7 +108,31 @@ export async function detectMSES(candlesRaw, symbol, timeframe) {
     const bars12h = Math.floor((12 * 60) / tfMinutes);
 
     //const realIndex = i;
-    const realIndex = i - 1;
+    //const realIndex = i - 1;
+    // -----------------------------------------------------------
+    // INDICADORS FIAT — microtrend, macd, sat, trend_pts
+    // -----------------------------------------------------------
+
+    // INDEX CORRECTE PER ALS INDICADORS
+    const realIndex = i;   // <-- AQUEST ÉS EL CANVI IMPORTANT
+
+    // MICRO TREND
+    const ema4_now = ema4[realIndex];
+    const ema4_past = ema4[realIndex - 1];
+    const slope = ema4_now - ema4_past;
+    const microtrend = slope > 0 ? 1 : 0;
+
+    // MACD
+    const macd_now = macd[realIndex];
+    const macd_signal_now = macdSignal[realIndex];
+    const macd_pts = macd_now > macd_signal_now ? 1 : 0;
+
+    // TREND 12H (ja calculat abans)
+    const trend_pts = trend12h[realIndex];
+
+    // SAT
+    const sat_pts = sat[realIndex];
+
 
     const nowTs = candles[realIndex].timestamp;
     const targetTs = nowTs - 12 * 60 * 60 * 1000;
