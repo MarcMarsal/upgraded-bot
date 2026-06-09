@@ -41,22 +41,21 @@ function isBear(o, c) {
   return c < o;
 }
 
+// -------------------------------------------------------------
+// detectMSES — només detecció de patrons MS / ES
+// -------------------------------------------------------------
 export async function detectMSES(candlesRaw, symbol, timeframe) {
   if (!candlesRaw || candlesRaw.length < 5) {
     return { signals: [] };
   }
 
-  // assegurem ordre cronològic
+  // ordre cronològic
   const candles = [...candlesRaw].sort((a, b) => a.timestamp - b.timestamp);
   const n = candles.length;
 
   const signals = [];
 
   for (let i = 3; i < n; i++) {
-    // patró de 3 veles:
-    // c3 = primera (forta)
-    // c2 = indecisió
-    // c1 = tercera (impuls contrari)
     const c3 = candles[i - 3];
     const c2 = candles[i - 2];
     const c1 = candles[i - 1]; // tercera vela del patró
