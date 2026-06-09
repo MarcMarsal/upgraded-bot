@@ -54,6 +54,8 @@ export async function detectMSES(candlesRaw, symbol, timeframe) {
   const signalLine = ema_TV(macdLine, 9);
   const hist = macdLine.map((v, i) => v - signalLine[i]);
   const histSmooth = ema_TV(hist, 5);
+  // MICROTREND FIAT 2.3 — EMA curta (equivalent a ta.ema(close, 4))
+  const ema4 = ema_TV(closes, 4);
 
   
   const signals = [];
@@ -118,7 +120,9 @@ export async function detectMSES(candlesRaw, symbol, timeframe) {
 
     // MICRO TREND
     const ema4_now = ema4[realIndex];
-    const ema4_past = ema4[realIndex - 1];
+    //const ema4_past = ema4[realIndex - 1];
+    const ema4_past = ema4[realIndex - 4];
+
     const slope = ema4_now - ema4_past;
     const microtrend = slope > 0 ? 1 : 0;
 
