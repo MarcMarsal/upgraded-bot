@@ -32,18 +32,6 @@ function ema_TV(values, length) {
 // -------------------------------------------------------------
 // detectMSES — només detecció de patrons MS / ES
 // -------------------------------------------------------------
-
-function isBull(o, c) {
-  return c > o;
-}
-
-function isBear(o, c) {
-  return c < o;
-}
-
-// -------------------------------------------------------------
-// detectMSES — només detecció de patrons MS / ES
-// -------------------------------------------------------------
 export async function detectMSES(candlesRaw, symbol, timeframe) {
   if (!candlesRaw || candlesRaw.length < 5) {
     return { signals: [] };
