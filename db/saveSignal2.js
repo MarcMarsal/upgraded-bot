@@ -76,7 +76,8 @@ export async function saveSignal2({
   //  "ARB-USDT",
   //  "BNB-USDT",
   //  "LINK-USDT",
-  //  "OP-USDT"
+  //  "OP-USDT",
+  //  "TRUMP-USDT"
   //];
 
   // dimarts-dijous
