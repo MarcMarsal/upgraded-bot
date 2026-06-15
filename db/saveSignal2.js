@@ -60,14 +60,16 @@ export async function saveSignal2({
   // 🔥 Criptos ACTIVADES
   
   //dilluns matí
-  //const ACTIVE_CRYPTOS_1H = [
-  //  "APT-USDT",
-  //  "BNB-USDT",
-  //  "DOT-USDT",
-  //  "ETH-USDT",
-  //  "RENDER-USDT",
-  //  "XRP-USDT"
-  //];
+  const ACTIVE_CRYPTOS_1H = [
+    "APT-USDT",
+    "DOT-USDT",
+    "ETH-USDT",
+    "LINK-USDT",
+    "PEPE-USDT",
+    "RENDER-USDT",
+    "TRUMP-USDT",
+    "XRP-USDT"
+  ];
 
   //dilluns tarda
   //const ACTIVE_CRYPTOS_1H = [
@@ -78,14 +80,14 @@ export async function saveSignal2({
   //];
 
   // dimarts-dijous
-  const ACTIVE_CRYPTOS_1H = [
-    "APT-USDT",
-    "ARB-USDT",
-    "DOT-USDT",
-    "LINK-USDT",
-    "OP-USDT",
-    "SOL-USDT"
-  ];
+  //const ACTIVE_CRYPTOS_1H = [
+  //  "APT-USDT",
+  //  "ARB-USDT",
+  //  "DOT-USDT",
+  //  "LINK-USDT",
+  //  "OP-USDT",
+  //  "SOL-USDT"
+  //];
    
   // dissabte
   //const ACTIVE_CRYPTOS_1H = [
