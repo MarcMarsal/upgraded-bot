@@ -72,23 +72,21 @@ export async function saveSignal2({
   //];
 
   //dilluns tarda
-  const ACTIVE_CRYPTOS_1H = [
-    "ARB-USDT",
-    "BNB-USDT",
-    "LINK-USDT",
-    "OP-USDT",
-    "TRUMP-USDT"
-  ];
-
-  // dimarts-dijous
   //const ACTIVE_CRYPTOS_1H = [
-  //  "APT-USDT",
   //  "ARB-USDT",
-  //  "DOT-USDT",
+  //  "BNB-USDT",
   //  "LINK-USDT",
   //  "OP-USDT",
-  //  "SOL-USDT"
+  //  "TRUMP-USDT"
   //];
+
+  // dimarts-dijous
+  const ACTIVE_CRYPTOS_1H = [
+    "APT-USDT",
+    "LINK-USDT",
+    "OP-USDT",
+    "SOL-USDT"
+  ];
    
   // dissabte
   //const ACTIVE_CRYPTOS_1H = [
