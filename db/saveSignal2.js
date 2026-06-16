@@ -47,11 +47,9 @@ export async function saveSignal2({
 
   // 🔥 Criptos ACTIVADES 4H
   const ACTIVE_CRYPTOS_4H = [
-    "APT-USDT",
-    "BNB-USDT",
     "BTC-USDT",
-    "ETH-USDT",
     "FET-USDT",
+    "LINK-USDT",
     "RENDER-USDT",
     "SOL-USDT",
     "XRP-USDT"
