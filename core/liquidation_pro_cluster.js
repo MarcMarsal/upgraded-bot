@@ -13,22 +13,32 @@ export async function buildClustersForSymbol(symbol) {
 
   if (!rows.length) return;
 
-  // Paràmetre de proximitat (0.5% del preu)
   const CLUSTER_THRESHOLD = 0.005;
 
   let clusters = [];
   let current = null;
 
   for (const t of rows) {
-    const priceMin = t.min_notional / t.min_sz;
-    const priceMax = t.max_notional / t.max_sz;
+
+    // 🔥 FIX 1: evitar divisió per zero
+    const priceMin = t.min_sz === 0
+      ? t.max_notional / t.max_sz
+      : t.min_notional / t.min_sz;
+
+    const priceMax = t.max_sz === 0
+      ? priceMin
+      : t.max_notional / t.max_sz;
+
     const priceMid = (priceMin + priceMax) / 2;
+
+    // 🔥 FIX 2: pes correcte
+    const weight = (t.max_notional + t.min_notional) / 2;
 
     if (!current) {
       current = {
         price_min: priceMin,
         price_max: priceMax,
-        weight: t.max_notional,
+        weight,
         tiers: 1,
         last_price: priceMid
       };
@@ -38,19 +48,17 @@ export async function buildClustersForSymbol(symbol) {
     const dist = Math.abs(priceMid - current.last_price) / current.last_price;
 
     if (dist < CLUSTER_THRESHOLD) {
-      // mateix cluster
       current.price_min = Math.min(current.price_min, priceMin);
       current.price_max = Math.max(current.price_max, priceMax);
-      current.weight += t.max_notional;
+      current.weight += weight;
       current.tiers += 1;
       current.last_price = priceMid;
     } else {
-      // tanquem cluster i n’obrim un altre
       clusters.push(current);
       current = {
         price_min: priceMin,
         price_max: priceMax,
-        weight: t.max_notional,
+        weight,
         tiers: 1,
         last_price: priceMid
       };
@@ -59,13 +67,11 @@ export async function buildClustersForSymbol(symbol) {
 
   clusters.push(current);
 
-  // Esborrem clusters antics
   await client.query(
     `DELETE FROM liquidation_pro_clusters WHERE symbol = $1`,
     [symbol]
   );
 
-  // Guardem clusters nous
   let id = 1;
   for (const c of clusters) {
     await client.query(
