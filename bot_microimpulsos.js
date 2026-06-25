@@ -9,6 +9,7 @@ import { fetchAndStoreCandles } from "./core/fetchcandles.js";
 import { splitSpainDate } from "./core/utils.js";
 //import { updateSimpleLiquidity } from "./core/liquidation_simple.js";
 import { updateProLiquidity } from "./core/liquidation_pro.js";
+import { testTiers } from "./core/test_okx.js";
 
 function timeframeToMs(tf) {
   if (tf === "1H") return 60 * 60 * 1000;
@@ -276,6 +277,7 @@ async function mainLoop() {
 async function startBot() {
   await initDB();
   console.log("Bot FIAT‑PRO en marxa (patrons + ATR + tracking)");
+  testTiers;
 
   cron.schedule("* * * * *", mainLoop);
 }
