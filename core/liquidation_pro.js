@@ -50,16 +50,6 @@ async function MarkPrice(instId) {
   };
 }
 
-// Position Tiers (risk limits / leverage trams)
-//async function fetchPositionTiers(instId) {
-//  const url = `https://www.okx.com/api/v5/public/position-tiers?instId=${instId}`;
-//  const data = await fetchJson(url);
-//  if (!data || data.length === 0) return null;
-
-  // Guardem tal qual en JSON per no inventar res
-//  return data;
-//}
-
 async function fetchPositionTiers(symbol) {
   const instFamily = symbol; // BTC-USDT, ETH-USDT, SOL-USDT
   const url = `https://www.okx.com/api/v5/public/position-tiers?instType=SWAP&tdMode=cross&instFamily=${instFamily}`;
