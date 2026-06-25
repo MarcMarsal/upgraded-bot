@@ -1,6 +1,6 @@
 // test_okx.js — Test d'un sol cop per veure la resposta REAL d'OKX
 
-async function testTiers() {
+export function testTiers() {
   const url = "https://www.okx.com/api/v5/public/position-tiers?instType=SWAP&tdMode=cross&instFamily=BTC-USDT";
 
   try {
