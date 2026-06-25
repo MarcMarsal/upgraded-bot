@@ -135,7 +135,7 @@ export async function updateProLiquidity(symbol) {
     );
     
     // 🔁 Pipeline PRO complet per aquest symbol
-    await rebuildProTiersForSymbol(symbol);
+    //await rebuildProTiersForSymbol(symbol);
     //await buildClustersForSymbol(symbol);
     //await buildLiquidationMapForSymbol(symbol);
     
