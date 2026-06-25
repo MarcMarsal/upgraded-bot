@@ -1,6 +1,9 @@
 // core/liquidation_pro.js — Liquidation Map PRO (Pas 1: dades crues OKX)
-
 import { client } from "../db/client.js";
+import { rebuildProTiersForSymbol } from "./liquidation_pro_tiers.js";
+import { buildClustersForSymbol } from "./liquidation_pro_cluster.js";
+import { buildLiquidationMapForSymbol } from "./liquidation_pro_map.js";
+
 
 // Map spot → swap instId OKX
 const SWAP_MAP = {
@@ -123,6 +126,12 @@ export async function updateProLiquidity(symbol) {
       `,
       [symbol, instId, oi.oi, oi.oiUsd, mark.markPx, JSON.stringify(tiers)]
     );
+    
+    // 🔁 Pipeline PRO complet per aquest symbol
+    await rebuildProTiersForSymbol(symbol);
+    await buildClustersForSymbol(symbol);
+    await buildLiquidationMapForSymbol(symbol);
+    
   } catch (err) {
     await client.query(
       `
