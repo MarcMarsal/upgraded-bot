@@ -1,51 +1,23 @@
-// db/saveSignal2.js — FIAT‑UPGRADED (patrons + ATR + tracking + JS eval)
+// db/saveSignal2.js — FIAT‑PRO SIMPLE (patrons + ATR + tracking)
 
 import { client } from "./client.js";
 import { splitSpainDate } from "../core/utils.js";
 import { sendTelegram } from "../telegram/send.js";
 
-/**
- * Guarda una senyal FIAT‑UPGRADED a la taula signals_upgraded
- *
- * - timestamp = moment de la vela (ms)
- * - created_at = moment real en què el bot crea la senyal (ms)
- */
 export async function saveSignal2({
   symbol,
   timeframe,
   type,        // "M" o "E"
-  color,
   entry,
   entryr,
   tp,
   sl,
-  timestamp,   // ms (moment de la vela)
-
-  // 🔥 Camps JS FIAT 2.0
-  mag_pts_js = null,
-  macd_pts_js = null,
-  trend_pts_js = null,
-  sat_pts_js = null,
-  mode_js = null,
-  score_js = null,
-  is_good_js = null,
-
-  // 🔥 Camps NOUS FIAT 2.0 (diagnòstic complet)
-  microtrend_js = null,
-  ema4_now_js = null,
-  ema4_past_js = null,
-  slope_js = null,
-
-  vela_actual_timestamp_js = null,
-  vela_validada_timestamp_js = null,
-  vela_past_timestamp_js = null,
-  vela_first_pattern_timestamp_js = null,
-  vela_third_pattern_timestamp_js = null
+  timestamp   // ms (moment de la vela)
 }) {
   const tsMs = Number(timestamp);
   const createdAt = Date.now();
 
-  // 🔥 Criptos ACTIVADES 4H
+  // Criptos activades per enviar alerta
   const ACTIVE_CRYPTOS_4H = [
     "BTC-USDT",
     "FET-USDT",
@@ -54,61 +26,14 @@ export async function saveSignal2({
     "SOL-USDT",
     "XRP-USDT"
   ];
-  
-  // 🔥 Criptos ACTIVADES
-  
-  //dilluns matí
-  //const ACTIVE_CRYPTOS_1H = [
-  //  "APT-USDT",
-  //  "DOT-USDT",
-  //  "ETH-USDT",
-  //  "LINK-USDT",
-  //  "PEPE-USDT",
-  //  "RENDER-USDT",
-  //  "TRUMP-USDT",
-  //  "XRP-USDT"
-  //];
 
-  //dilluns tarda
-  //const ACTIVE_CRYPTOS_1H = [
-  //  "ARB-USDT",
-  //  "BNB-USDT",
-  //  "LINK-USDT",
-  //  "OP-USDT",
-  //  "TRUMP-USDT"
-  //];
-
-  // dimarts-dijous
   const ACTIVE_CRYPTOS_1H = [
     "APT-USDT",
     "LINK-USDT",
     "OP-USDT",
     "SOL-USDT"
   ];
-   
-  // dissabte
-  //const ACTIVE_CRYPTOS_1H = [
-  //  "ARB-USDT",
-  //  "FET-USDT",
-  //  "INJ-USDT",
-  //  "OP-USDT",
-  //  "XRP-USDT"
-  //];
 
-  // diumenge
-  //const ACTIVE_CRYPTOS_1H = [
-  //  "APT-USDT",
-  //  "ATOM-USDT",
-  //  "BTC-USDT",
-  //  "ETH-USDT",
-  //  "RENDER-USDT",
-  //  "SOL-USDT",
-  //  "XRP-USDT"
-  //];
-
-  
-  
-  // Seleccionar llista segons timeframe
   const activeList = timeframe === "1H" ? ACTIVE_CRYPTOS_1H : ACTIVE_CRYPTOS_4H;
 
   // Data ES basada en la vela
@@ -120,7 +45,6 @@ export async function saveSignal2({
       symbol,
       timeframe,
       type,
-      color,
       entry,
       entryr,
       tp,
@@ -131,41 +55,14 @@ export async function saveSignal2({
       date_es,
       hora_es,
       created_at,
-      closed,
-
-      -- 🔥 FIAT 2.0 punts
-      mag_pts_js,
-      macd_pts_js,
-      trend_pts_js,
-      sat_pts_js,
-      mode_js,
-      score_js,
-      is_good_js,
-
-      -- 🔥 FIAT 2.0 diagnòstic
-      microtrend_js,
-      ema4_now_js,
-      ema4_past_js,
-      slope_js,
-
-      vela_actual_timestamp_js,
-      vela_validada_timestamp_js,
-      vela_past_timestamp_js,
-      vela_first_pattern_timestamp_js,
-      vela_third_pattern_timestamp_js
+      closed
     )
     VALUES (
       $1,$2,$3,
       $4,$5,$6,$7,
       $8,$9,$10,$11,$12,
-      $13,$14,
-      false,
-
-      $15,$16,$17,$18,$19,$20,$21,
-
-      $22,$23,$24,$25,
-
-      $26,$27,$28,$29,$30
+      $13,
+      false
     )
     ON CONFLICT DO NOTHING
     `,
@@ -173,7 +70,6 @@ export async function saveSignal2({
       symbol,
       timeframe,
       type,
-      color,
       entry,
       entryr,
       tp,
@@ -183,47 +79,20 @@ export async function saveSignal2({
       timestamp_es,
       date_es,
       hora_es,
-      createdAt,
-
-      // 🔥 FIAT 2.0 punts
-      mag_pts_js,
-      macd_pts_js,
-      trend_pts_js,
-      sat_pts_js,
-      mode_js,
-      score_js,
-      is_good_js,
-
-      // 🔥 FIAT 2.0 diagnòstic
-      microtrend_js,
-      ema4_now_js,
-      ema4_past_js,
-      slope_js,
-
-      vela_actual_timestamp_js,
-      vela_validada_timestamp_js,
-      vela_past_timestamp_js,
-      vela_first_pattern_timestamp_js,
-      vela_third_pattern_timestamp_js
+      createdAt
     ]
   );
 
-  const bot = "UPGRADED";
-  const entryStr = Number(entry).toFixed(4);
-  const tpStr    = Number(tp).toFixed(4);
-  const slStr    = Number(sl).toFixed(4);
-
-  // 🔔 Enviar alerta NOMÉS si la cripto està activada
+  // Enviar alerta si la cripto està activada
   if (activeList.includes(symbol)) {
     await sendTelegram({
-      bot,
+      bot: "FIAT-PRO",
       symbol,
       timeframe,
       signalType: type,
-      color: color,
-      entry: entryStr,
-      tp: tpStr,
-      sl: slStr
+      entry: Number(entry).toFixed(4),
+      tp: Number(tp).toFixed(4),
+      sl: Number(sl).toFixed(4)
     });
   }
 }
