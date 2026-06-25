@@ -38,9 +38,9 @@ async function fetchOpenInterest(instId) {
 }
 
 // Mark Price
-async function fetchMarkPrice(instId) {
+async function MarkPrice(instId) {
   const url = `https://www.okx.com/api/v5/public/mark-price?instId=${instId}`;
-  const data = await fetchJson(url);
+  const data = await Json(url);
   if (!data || data.length === 0) return null;
 
   const row = data[0];
@@ -51,14 +51,24 @@ async function fetchMarkPrice(instId) {
 }
 
 // Position Tiers (risk limits / leverage trams)
-async function fetchPositionTiers(instId) {
-  const url = `https://www.okx.com/api/v5/public/position-tiers?instId=${instId}`;
-  const data = await fetchJson(url);
-  if (!data || data.length === 0) return null;
+//async function fetchPositionTiers(instId) {
+//  const url = `https://www.okx.com/api/v5/public/position-tiers?instId=${instId}`;
+//  const data = await fetchJson(url);
+//  if (!data || data.length === 0) return null;
 
   // Guardem tal qual en JSON per no inventar res
-  return data;
+//  return data;
+//}
+
+async function fetchPositionTiers(symbol) {
+  const instFamily = symbol; // BTC-USDT, ETH-USDT, SOL-USDT
+  const url = `https://www.okx.com/api/v5/public/position-tiers?instType=SWAP&tdMode=cross&instFamily=${instFamily}`;
+  const res = await fetch(url);
+  const json = await res.json();
+  if (!json || json.code !== "0") return null;
+  return json.data;
 }
+
 
 /**
  * Actualitza la taula liquidation_pro_state amb:
@@ -89,7 +99,7 @@ export async function updateProLiquidity(symbol) {
     const [oi, mark, tiers] = await Promise.all([
       fetchOpenInterest(instId),
       fetchMarkPrice(instId),
-      fetchPositionTiers(instId)
+      fetchPositionTiers(symbol)
     ]);
 
     if (!oi || !mark || !tiers) {
