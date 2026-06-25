@@ -75,80 +75,78 @@ async function fetchPositionTiers(symbol) {
  * - state: 'ok' | 'error'
  */
 export async function updateProLiquidity(symbol) {
-  const instId = SWAP_MAP[symbol];
-  if (!instId) {
-    await client.query(
-      `
-      INSERT INTO liquidation_pro_state (symbol, state, updated_at)
-      VALUES ($1,'error',NOW())
-      ON CONFLICT (symbol)
-      DO UPDATE SET state='error', updated_at=NOW()
-      `,
-      [symbol]
-    );
-    return;
-  }
+  console.log(`\n[PRO] Actualitzant dades OKX per ${symbol}`);
 
   try {
+    // 1) Fetch dades OKX
     const [oi, mark, tiers] = await Promise.all([
-      fetchOpenInterest(instId),
-      fetchMarkPrice(instId),
+      fetchOpenInterest(symbol),
+      fetchMarkPrice(symbol),
       fetchPositionTiers(symbol)
     ]);
 
-    //console.log("OI:", oi);
-    //console.log("MARK:", mark);
-    //console.log("TIERS LENGTH:", tiers?.length);
+    console.log(`[PRO] ${symbol} OI:`, oi);
+    console.log(`[PRO] ${symbol} MARK:`, mark);
+    console.log(`[PRO] ${symbol} TIERS LENGTH:`, tiers?.length);
 
-
-    //if (!oi || !mark || !tiers) {
-    if (!oi || !mark || !Array.isArray(tiers) || tiers.length === 0) {
-
+    // Validació bàsica
+    if (!oi || !mark || !tiers || !Array.isArray(tiers) || tiers.length === 0) {
+      console.error(`❌ [PRO] ${symbol} dades incompletes`, { oi, mark, tiers });
       await client.query(
-        `
-        INSERT INTO liquidation_pro_state (symbol, instId, state, updated_at)
-        VALUES ($1,$2,'error',NOW())
-        ON CONFLICT (symbol)
-        DO UPDATE SET instId=$2, state='error1', updated_at=NOW()
-        `,
-        [symbol, instId]
+        `INSERT INTO liquidation_pro_state (symbol, state, updated_at)
+         VALUES ($1,'error',NOW())
+         ON CONFLICT (symbol)
+         DO UPDATE SET state='error', updated_at=NOW()`,
+        [symbol]
       );
       return;
     }
 
+    // 2) Guardar estat OK
     await client.query(
-      `
-      INSERT INTO liquidation_pro_state
-      (symbol, instId, oi, oi_usd, mark_price, tiers, state, updated_at)
-      VALUES ($1,$2,$3,$4,$5,$6,'ok',NOW())
-      ON CONFLICT (symbol)
-      DO UPDATE SET
-        instId=$2,
-        oi=$3,
-        oi_usd=$4,
-        mark_price=$5,
-        tiers=$6,
-        state='ok',
-        updated_at=NOW()
-      `,
-      [symbol, instId, oi.oi, oi.oiUsd, mark.markPx, JSON.stringify(tiers)]
+      `INSERT INTO liquidation_pro_state
+       (symbol, instId, oi, oi_usd, mark_price, tiers, state, updated_at)
+       VALUES ($1,$2,$3,$4,$5,$6,'ok',NOW())
+       ON CONFLICT (symbol)
+       DO UPDATE SET instId=$2, oi=$3, oi_usd=$4, mark_price=$5,
+                     tiers=$6, state='ok', updated_at=NOW()`,
+      [
+        symbol,
+        oi.instId || `${symbol}-SWAP`,
+        oi.oi,
+        oi.oiUsd,
+        mark.markPx,
+        JSON.stringify(tiers)
+      ]
     );
-    
-    // 🔁 Pipeline PRO complet per aquest symbol
+
+    console.log(`[PRO] ${symbol} estat OK → reconstruint tiers…`);
+
+    // 3) Reconstruir Tiers
     await rebuildProTiersForSymbol(symbol);
+    console.log(`[PRO] ${symbol} tiers OK`);
+
+    // 4) Clusters
     await buildClustersForSymbol(symbol);
+    console.log(`[PRO] ${symbol} clusters OK`);
+
+    // 5) Map
     await buildLiquidationMapForSymbol(symbol);
-    
+    console.log(`[PRO] ${symbol} map OK`);
+
   } catch (err) {
+    console.error(`🔥🔥🔥 ERROR updateProLiquidity(${symbol})`);
+    console.error("Nom:", err.name);
+    console.error("Missatge:", err.message);
+    console.error("Stack:", err.stack);
+    console.error("Objecte complet:", err);
+
     await client.query(
-      `
-      INSERT INTO liquidation_pro_state (symbol, instId, state, updated_at)
-      VALUES ($1,$2,'error',NOW())
-      ON CONFLICT (symbol)
-      DO UPDATE SET instId=$2, state='error2', updated_at=NOW()
-      `,
-      [symbol, instId]
+      `INSERT INTO liquidation_pro_state (symbol, state, updated_at)
+       VALUES ($1,'error',NOW())
+       ON CONFLICT (symbol)
+       DO UPDATE SET state='error', updated_at=NOW()`,
+      [symbol]
     );
   }
 }
-
