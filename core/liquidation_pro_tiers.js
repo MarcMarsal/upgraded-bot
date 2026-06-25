@@ -16,7 +16,7 @@ export async function rebuildProTiersForSymbol(symbol) {
   const { instId, mark_price, tiers } = rows[0];
   const markPx = Number(mark_price);
 
-  // 🔥 FIX CRÍTIC: normalitzar tiers
+  // 🔥 FIX CRÍTIC
   let parsed;
 
   if (Array.isArray(tiers)) {
@@ -33,7 +33,6 @@ export async function rebuildProTiersForSymbol(symbol) {
     return;
   }
 
-  // Esborrem trams antics
   await client.query(
     `DELETE FROM liquidation_pro_tiers WHERE symbol = $1`,
     [symbol]
