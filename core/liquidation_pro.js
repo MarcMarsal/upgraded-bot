@@ -4,7 +4,6 @@ import { rebuildProTiersForSymbol } from "./liquidation_pro_tiers.js";
 import { buildClustersForSymbol } from "./liquidation_pro_cluster.js";
 import { buildLiquidationMapForSymbol } from "./liquidation_pro_map.js";
 
-
 // Map spot → swap instId OKX
 const SWAP_MAP = {
   "BTC-USDT": "BTC-USDT-SWAP",
@@ -53,9 +52,9 @@ async function fetchMarkPrice(instId) {
   };
 }
 
-
+// Position Tiers
 async function fetchPositionTiers(symbol) {
-  const instFamily = symbol; // BTC-USDT, ETH-USDT, SOL-USDT
+  const instFamily = symbol;
   const url = `https://www.okx.com/api/v5/public/position-tiers?instType=SWAP&tdMode=cross&instFamily=${instFamily}`;
   const res = await fetch(url);
   const json = await res.json();
@@ -63,16 +62,8 @@ async function fetchPositionTiers(symbol) {
   return json.data;
 }
 
-
 /**
- * Actualitza la taula liquidation_pro_state amb:
- * - symbol
- * - instId
- * - oi, oiUsd
- * - mark_price
- * - tiers (JSON brut d’OKX)
- * - updated_at
- * - state: 'ok' | 'error'
+ * Actualitza la taula liquidation_pro_state
  */
 export async function updateProLiquidity(symbol) {
   console.log(`\n[PRO] Actualitzant dades OKX per ${symbol}`);
@@ -83,7 +74,7 @@ export async function updateProLiquidity(symbol) {
     const [oi, mark, tiers] = await Promise.all([
       fetchOpenInterest(instId),
       fetchMarkPrice(instId),
-      fetchPositionTiers(symbol) // instFamily = symbol ja és correcte
+      fetchPositionTiers(symbol)
     ]);
 
     console.log(`[PRO] ${symbol} OI:`, oi);
@@ -110,14 +101,14 @@ export async function updateProLiquidity(symbol) {
 
     await client.query(
       `INSERT INTO liquidation_pro_state
-       (symbol, instId, oi, oi_usd, mark_price, tiers, state, updated_at)
+       (symbol, instid, oi, oi_usd, mark_price, tiers, state, updated_at)
        VALUES ($1,$2,$3,$4,$5,$6,'ok',NOW())
        ON CONFLICT (symbol)
-       DO UPDATE SET instId=$2, oi=$3, oi_usd=$4, mark_price=$5,
+       DO UPDATE SET instid=$2, oi=$3, oi_usd=$4, mark_price=$5,
                      tiers=$6, state='ok', updated_at=NOW()`,
       [
         symbol,
-        instId,
+        instId,               // OKX → instId, DB → instid
         oi?.oi ?? null,
         oi?.oiUsd ?? null,
         mark.markPx,
