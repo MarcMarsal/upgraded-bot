@@ -15,12 +15,25 @@ export async function rebuildProTiersForSymbol(symbol) {
 
   const { instId, mark_price, tiers } = rows[0];
   const markPx = Number(mark_price);
-  
- 
-  const parsed = tiers;
 
+  // 🔥 FIX CRÍTIC: normalitzar tiers
+  let parsed;
 
-  // Esborrem trams antics per aquest symbol
+  if (Array.isArray(tiers)) {
+    parsed = tiers;
+  } else if (typeof tiers === "string") {
+    try {
+      parsed = JSON.parse(tiers);
+    } catch (err) {
+      console.error("tiers no parsejable per", symbol, err);
+      return;
+    }
+  } else {
+    console.error("tiers en format inesperat per", symbol, typeof tiers, tiers);
+    return;
+  }
+
+  // Esborrem trams antics
   await client.query(
     `DELETE FROM liquidation_pro_tiers WHERE symbol = $1`,
     [symbol]
@@ -57,4 +70,3 @@ export async function rebuildProTiersForSymbol(symbol) {
     );
   }
 }
-
