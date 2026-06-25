@@ -96,9 +96,9 @@ export async function updateProLiquidity(symbol) {
       fetchPositionTiers(symbol)
     ]);
 
-    console.log("OI:", oi);
-    console.log("MARK:", mark);
-    console.log("TIERS LENGTH:", tiers?.length);
+    //console.log("OI:", oi);
+    //console.log("MARK:", mark);
+    //console.log("TIERS LENGTH:", tiers?.length);
 
 
     //if (!oi || !mark || !tiers) {
@@ -135,7 +135,7 @@ export async function updateProLiquidity(symbol) {
     );
     
     // 🔁 Pipeline PRO complet per aquest symbol
-    //await rebuildProTiersForSymbol(symbol);
+    await rebuildProTiersForSymbol(symbol);
     await buildClustersForSymbol(symbol);
     await buildLiquidationMapForSymbol(symbol);
     
