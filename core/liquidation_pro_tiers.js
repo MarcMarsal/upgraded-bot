@@ -1,3 +1,4 @@
+// liquidation_pro_tiers.js
 // Suposem que ja tens a liquidation_pro_state:
 // symbol, instId, oi, oi_usd, mark_price, tiers (JSON)
 
