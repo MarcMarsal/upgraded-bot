@@ -7,6 +7,8 @@ import { saveSignal2 } from "./db/saveSignal2.js";
 import { detectMSES } from "./core/patterns.js";
 import { fetchAndStoreCandles } from "./core/fetchcandles.js";
 import { splitSpainDate } from "./core/utils.js";
+import { updateSimpleLiquidity } from "./core/liquidation_simple.js";
+
 
 function timeframeToMs(tf) {
   if (tf === "1H") return 60 * 60 * 1000;
@@ -218,6 +220,25 @@ async function checkOpenSignals() {
 // -------------------------------------------------------------
 // LOOP PRINCIPAL
 // -------------------------------------------------------------
+//async function mainLoop() {
+//  for (const symbol of ACTIVE_CRYPTOS) {
+//    for (const timeframe of TIMEFRAMES) {
+//      await fetchAndStoreCandles(symbol, timeframe);
+//    }
+//  }
+
+//  for (const symbol of ACTIVE_CRYPTOS) {
+//    for (const timeframe of TIMEFRAMES) {
+//      try {
+//        await processSymbol(symbol, timeframe);
+//      } catch (err) {
+//        console.log("Error processant", symbol, timeframe, err.message);
+//      }
+//    }
+//  }
+
+//  await checkOpenSignals();
+//}
 async function mainLoop() {
   for (const symbol of ACTIVE_CRYPTOS) {
     for (const timeframe of TIMEFRAMES) {
@@ -236,7 +257,23 @@ async function mainLoop() {
   }
 
   await checkOpenSignals();
+
+  // 🔥 Actualitzar Liquidation Map SIMPLE per a BTC/ETH/SOL
+  for (const symbol of ["BTC-USDT", "ETH-USDT", "SOL-USDT"]) {
+    try {
+      const candles = await getCandlesFromDB(symbol, "1H", 1);
+      if (!candles || candles.length === 0) continue;
+
+      const curr = candles[candles.length - 1];
+      const currentPrice = curr.close;
+
+      await updateSimpleLiquidity(symbol, currentPrice);
+    } catch (err) {
+      console.log("Error updateSimpleLiquidity", symbol, err.message);
+    }
+  }
 }
+
 
 // -------------------------------------------------------------
 // START BOT
