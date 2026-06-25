@@ -38,9 +38,9 @@ async function fetchOpenInterest(instId) {
 }
 
 // Mark Price
-async function MarkPrice(instId) {
+async function fetchMarkPrice(instId) {
   const url = `https://www.okx.com/api/v5/public/mark-price?instId=${instId}`;
-  const data = await Json(url);
+  const data = await fetchJson(url);
   if (!data || data.length === 0) return null;
 
   const row = data[0];
@@ -49,6 +49,7 @@ async function MarkPrice(instId) {
     ts: Number(row.ts)
   };
 }
+
 
 async function fetchPositionTiers(symbol) {
   const instFamily = symbol; // BTC-USDT, ETH-USDT, SOL-USDT
