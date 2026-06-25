@@ -7,9 +7,6 @@ import { saveSignal2 } from "./db/saveSignal2.js";
 import { detectMSES } from "./core/patterns.js";
 import { fetchAndStoreCandles } from "./core/fetchcandles.js";
 import { splitSpainDate } from "./core/utils.js";
-import { evaluateWithModel } from "./core/evaluateModel.js";
-//import { startLiquidityFeed, updateLiquidity } from "./core/liquidity.js";
-
 
 function timeframeToMs(tf) {
   if (tf === "1H") return 60 * 60 * 1000;
@@ -165,86 +162,20 @@ export async function processSymbol(symbol, timeframe) {
   sig.entryr = entryr;
   sig.tp = tp;
   sig.sl = sl;
-
-  // -------------------------------------------------------------
-  // 2) 🔥 FIAT 2.0 — CARREGAR LES VELES CORRECTES DEL MOMENT DE LA SENYAL
-  // -------------------------------------------------------------
-  const candlesForEval = await getCandlesFromDB(
-    symbol,
-    timeframe,
-    80,
-    sig.timestamp   // 🟩 AIXÒ ÉS LA CLAU
-  );
-
-  // -------------------------------------------------------------
-  // 3) AVALUAR AMB FIAT 2.0 (ara sí, amb les veles correctes)
-  // -------------------------------------------------------------
-  const result = evaluateWithModel(candlesForEval, sig);
-
-  sig.mag_pts_js   = result.magPts;
-  sig.macd_pts_js  = result.macdPts;
-  sig.trend_pts_js = result.trendPts;
-  sig.sat_pts_js   = result.satPts;
-  sig.mode_js      = result.modeEff;
-  sig.score_js     = result.score;
-  sig.is_good_js   = result.isGood;
-
-  // 🔥 FIAT 2.0 — NOUS CAMPS
-  sig.microtrend_js = result.microTrend;
-  sig.ema4_now_js = result.emaNow;
-  sig.ema4_past_js = result.emaPast;
-  sig.slope_js = result.slope;
-
-  sig.vela_actual_timestamp_js = result.velaActualTs;
-  sig.vela_validada_timestamp_js = result.velaValidadaTs;
-  sig.vela_past_timestamp_js = result.velaPastTs;
-  sig.vela_first_pattern_timestamp_js = result.velaFirstPatternTs;
-  sig.vela_third_pattern_timestamp_js = result.velaThirdPatternTs;
-
-  // -------------------------------------------------------------
-  // 4) COLOR FIAT‑UPGRADED
-  // -------------------------------------------------------------
-  let color="";
-  if (result.isGood) {
-    color = sig.type === "M" ? "green" : "red";
-  } else {
-    color = "blue";
-  }
-
+  
   // -------------------------------------------------------------
   // 5) GUARDAR SENYAL
   // -------------------------------------------------------------
   await saveSignal2({
-    symbol: sig.symbol,
-    timeframe: sig.timeframe,
-    type: sig.type,
-    color,
-    entry: sig.entry,
-    entryr: sig.entryr,
-    tp: sig.tp,
-    sl: sig.sl,
-    timestamp: sig.timestamp,
-
-    mag_pts_js: sig.mag_pts_js,
-    macd_pts_js: sig.macd_pts_js,
-    trend_pts_js: sig.trend_pts_js,
-    sat_pts_js: sig.sat_pts_js,
-    mode_js: sig.mode_js,
-    score_js: sig.score_js,
-    is_good_js: sig.is_good_js,
-
-    microtrend_js: sig.microtrend_js,
-    ema4_now_js: sig.ema4_now_js,
-    ema4_past_js: sig.ema4_past_js,
-    slope_js: sig.slope_js,
-
-    vela_actual_timestamp_js: sig.vela_actual_timestamp_js,
-    vela_validada_timestamp_js: sig.vela_validada_timestamp_js,
-    vela_past_timestamp_js: sig.vela_past_timestamp_js,
-    vela_first_pattern_timestamp_js: sig.vela_first_pattern_timestamp_js,
-    vela_third_pattern_timestamp_js: sig.vela_third_pattern_timestamp_js
-  });
-}
+  symbol: sig.symbol,
+  timeframe: sig.timeframe,
+  type: sig.type,
+  entry: sig.entry,
+  entryr: sig.entryr,
+  tp: sig.tp,
+  sl: sig.sl,
+  timestamp: sig.timestamp
+});
 
 }
 
