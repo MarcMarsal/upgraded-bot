@@ -89,9 +89,10 @@ export async function updateProLiquidity(symbol) {
     console.log(`[PRO] ${symbol} MARK:`, mark);
     console.log(`[PRO] ${symbol} TIERS LENGTH:`, tiers?.length);
 
-    // Validació bàsica
-    if (!oi || !mark || !tiers || !Array.isArray(tiers) || tiers.length === 0) {
+    // 2) Validació bàsica (OI pot ser null)
+    if (!mark || !tiers || !Array.isArray(tiers) || tiers.length === 0) {
       console.error(`❌ [PRO] ${symbol} dades incompletes`, { oi, mark, tiers });
+
       await client.query(
         `INSERT INTO liquidation_pro_state (symbol, state, updated_at)
          VALUES ($1,'error',NOW())
@@ -99,10 +100,15 @@ export async function updateProLiquidity(symbol) {
          DO UPDATE SET state='error', updated_at=NOW()`,
         [symbol]
       );
+
       return;
     }
 
-    // 2) Guardar estat OK
+    if (!oi) {
+      console.warn(`⚠️ [PRO] ${symbol} OI null — continuem igualment`);
+    }
+
+    // 3) Guardar estat OK
     await client.query(
       `INSERT INTO liquidation_pro_state
        (symbol, instId, oi, oi_usd, mark_price, tiers, state, updated_at)
@@ -112,9 +118,9 @@ export async function updateProLiquidity(symbol) {
                      tiers=$6, state='ok', updated_at=NOW()`,
       [
         symbol,
-        oi.instId || `${symbol}-SWAP`,
-        oi.oi,
-        oi.oiUsd,
+        oi?.instId || `${symbol}-SWAP`,
+        oi?.oi ?? null,
+        oi?.oiUsd ?? null,
         mark.markPx,
         JSON.stringify(tiers)
       ]
@@ -122,15 +128,15 @@ export async function updateProLiquidity(symbol) {
 
     console.log(`[PRO] ${symbol} estat OK → reconstruint tiers…`);
 
-    // 3) Reconstruir Tiers
+    // 4) Reconstruir Tiers
     await rebuildProTiersForSymbol(symbol);
     console.log(`[PRO] ${symbol} tiers OK`);
 
-    // 4) Clusters
+    // 5) Clusters
     await buildClustersForSymbol(symbol);
     console.log(`[PRO] ${symbol} clusters OK`);
 
-    // 5) Map
+    // 6) Map
     await buildLiquidationMapForSymbol(symbol);
     console.log(`[PRO] ${symbol} map OK`);
 
