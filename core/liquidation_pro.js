@@ -96,7 +96,14 @@ export async function updateProLiquidity(symbol) {
       fetchPositionTiers(symbol)
     ]);
 
-    if (!oi || !mark || !tiers) {
+    console.log("OI:", oi);
+    console.log("MARK:", mark);
+    console.log("TIERS LENGTH:", tiers?.length);
+
+
+    //if (!oi || !mark || !tiers) {
+    if (!oi || !mark || !Array.isArray(tiers) || tiers.length === 0) {
+
       await client.query(
         `
         INSERT INTO liquidation_pro_state (symbol, instId, state, updated_at)
