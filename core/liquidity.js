@@ -11,12 +11,19 @@ import { client } from "../db/client.js";
 // -------------------------------------------------------------
 const BUCKET_SIZE = 0.003;   // 0.3% per bucket (ajustable)
 const MIN_MAGNITUDE = 50000; // magnitud mínima per considerar zona
+//const ACTIVE_CRYPTOS = [
+//  "BTC-USDT","ETH-USDT","SOL-USDT","ADA-USDT","ARB-USDT","APT-USDT",
+//  "LINK-USDT","AVAX-USDT","BNB-USDT","XRP-USDT","DOT-USDT","ATOM-USDT",
+//  "INJ-USDT","NEAR-USDT","OP-USDT","SUI-USDT","SEI-USDT","RENDER-USDT",
+//  "FET-USDT","HBAR-USDT","BCH-USDT","LTC-USDT","PEPE-USDT","TRUMP-USDT"
+//];
+
 const ACTIVE_CRYPTOS = [
-  "BTC-USDT","ETH-USDT","SOL-USDT","ADA-USDT","ARB-USDT","APT-USDT",
-  "LINK-USDT","AVAX-USDT","BNB-USDT","XRP-USDT","DOT-USDT","ATOM-USDT",
-  "INJ-USDT","NEAR-USDT","OP-USDT","SUI-USDT","SEI-USDT","RENDER-USDT",
-  "FET-USDT","HBAR-USDT","BCH-USDT","LTC-USDT","PEPE-USDT","TRUMP-USDT"
+  "BTC-USDT",
+  "ETH-USDT",
+  "SOL-USDT"
 ];
+
 
 // -------------------------------------------------------------
 // BUFFER DE LIQUIDACIONS (per cada cripto)
