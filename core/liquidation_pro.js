@@ -77,20 +77,20 @@ async function fetchPositionTiers(symbol) {
 export async function updateProLiquidity(symbol) {
   console.log(`\n[PRO] Actualitzant dades OKX per ${symbol}`);
 
+  const instId = SWAP_MAP[symbol] ?? symbol;
+
   try {
-    // 1) Fetch dades OKX
     const [oi, mark, tiers] = await Promise.all([
-      fetchOpenInterest(symbol),
-      fetchMarkPrice(symbol),
-      fetchPositionTiers(symbol)
+      fetchOpenInterest(instId),
+      fetchMarkPrice(instId),
+      fetchPositionTiers(symbol) // instFamily = symbol ja és correcte
     ]);
 
     console.log(`[PRO] ${symbol} OI:`, oi);
     console.log(`[PRO] ${symbol} MARK:`, mark);
     console.log(`[PRO] ${symbol} TIERS LENGTH:`, tiers?.length);
 
-    // 2) Validació bàsica (OI pot ser null)
-    if (!mark || !tiers || !Array.isArray(tiers) || tiers.length === 0) {
+    if (!mark || !tiers) {
       console.error(`❌ [PRO] ${symbol} dades incompletes`, { oi, mark, tiers });
 
       await client.query(
@@ -108,7 +108,6 @@ export async function updateProLiquidity(symbol) {
       console.warn(`⚠️ [PRO] ${symbol} OI null — continuem igualment`);
     }
 
-    // 3) Guardar estat OK
     await client.query(
       `INSERT INTO liquidation_pro_state
        (symbol, instId, oi, oi_usd, mark_price, tiers, state, updated_at)
@@ -118,7 +117,7 @@ export async function updateProLiquidity(symbol) {
                      tiers=$6, state='ok', updated_at=NOW()`,
       [
         symbol,
-        oi?.instId || `${symbol}-SWAP`,
+        instId,
         oi?.oi ?? null,
         oi?.oiUsd ?? null,
         mark.markPx,
@@ -128,15 +127,12 @@ export async function updateProLiquidity(symbol) {
 
     console.log(`[PRO] ${symbol} estat OK → reconstruint tiers…`);
 
-    // 4) Reconstruir Tiers
     await rebuildProTiersForSymbol(symbol);
     console.log(`[PRO] ${symbol} tiers OK`);
 
-    // 5) Clusters
     await buildClustersForSymbol(symbol);
     console.log(`[PRO] ${symbol} clusters OK`);
 
-    // 6) Map
     await buildLiquidationMapForSymbol(symbol);
     console.log(`[PRO] ${symbol} map OK`);
 
@@ -145,7 +141,6 @@ export async function updateProLiquidity(symbol) {
     console.error("Nom:", err.name);
     console.error("Missatge:", err.message);
     console.error("Stack:", err.stack);
-    console.error("Objecte complet:", err);
 
     await client.query(
       `INSERT INTO liquidation_pro_state (symbol, state, updated_at)
