@@ -277,7 +277,7 @@ async function mainLoop() {
 async function startBot() {
   await initDB();
   console.log("Bot FIAT‑PRO en marxa (patrons + ATR + tracking)");
-  testTiers;
+  //testTiers;
 
   cron.schedule("* * * * *", mainLoop);
 }
