@@ -13,14 +13,17 @@ export async function buildLiquidationMapForSymbol(symbol) {
 
   if (!rows.length) return;
 
-  // Calculem el pes màxim per normalitzar
-  const maxWeight = Math.max(...rows.map(r => Number(r.weight)));
+  // 🔥 FIX 1: evitar maxWeight = 0
+  const maxWeight = Math.max(...rows.map(r => Number(r.weight))) || 1;
 
   let zones = [];
 
   for (const r of rows) {
-    const weight = Number(r.weight);
-    const score = weight / maxWeight; // 0..1
+
+    // 🔥 FIX 2: assegurar que weight és numèric
+    const weight = Number(r.weight) || 0;
+
+    const score = weight / maxWeight;
 
     let type = "low_risk";
     if (score > 0.66) type = "high_risk";
@@ -35,13 +38,11 @@ export async function buildLiquidationMapForSymbol(symbol) {
     });
   }
 
-  // Esborrem mapa antic
   await client.query(
     `DELETE FROM liquidation_pro_map WHERE symbol = $1`,
     [symbol]
   );
 
-  // Guardem mapa nou
   let id = 1;
   for (const z of zones) {
     await client.query(
