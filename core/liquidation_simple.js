@@ -1,6 +1,6 @@
 // core/liquidation_simple.js — Liquidation Map SIMPLE (OKX estimated-price)
 
-import fetch from "node-fetch";
+//import fetch from "node-fetch";
 import { client } from "../db/client.js";
 
 // Map spot → swap
