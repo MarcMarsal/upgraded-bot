@@ -109,7 +109,7 @@ export async function updateProLiquidity(symbol) {
         INSERT INTO liquidation_pro_state (symbol, instId, state, updated_at)
         VALUES ($1,$2,'error',NOW())
         ON CONFLICT (symbol)
-        DO UPDATE SET instId=$2, state='error', updated_at=NOW()
+        DO UPDATE SET instId=$2, state='error1', updated_at=NOW()
         `,
         [symbol, instId]
       );
@@ -145,7 +145,7 @@ export async function updateProLiquidity(symbol) {
       INSERT INTO liquidation_pro_state (symbol, instId, state, updated_at)
       VALUES ($1,$2,'error',NOW())
       ON CONFLICT (symbol)
-      DO UPDATE SET instId=$2, state='error', updated_at=NOW()
+      DO UPDATE SET instId=$2, state='error2', updated_at=NOW()
       `,
       [symbol, instId]
     );
