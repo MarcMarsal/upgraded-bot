@@ -5,7 +5,7 @@ import { buildClustersForSymbol } from "./liquidation_pro_cluster.js";
 import { buildLiquidationMapForSymbol } from "./liquidation_pro_map.js";
 
 
-// Map spot → swap instid OKX
+// Map spot → swap instId OKX
 const SWAP_MAP = {
   "BTC-USDT": "BTC-USDT-SWAP",
   "ETH-USDT": "ETH-USDT-SWAP",
@@ -26,8 +26,8 @@ async function fetchJson(url) {
 }
 
 // Open Interest
-async function fetchOpenInterest(instid) {
-  const url = `https://www.okx.com/api/v5/public/open-interest?instid=${instid}`;
+async function fetchOpenInterest(instId) {
+  const url = `https://www.okx.com/api/v5/public/open-interest?instId=${instId}`;
   const data = await fetchJson(url);
   if (!data || data.length === 0) return null;
 
@@ -41,8 +41,8 @@ async function fetchOpenInterest(instid) {
 }
 
 // Mark Price
-async function fetchMarkPrice(instid) {
-  const url = `https://www.okx.com/api/v5/public/mark-price?instid=${instid}`;
+async function fetchMarkPrice(instId) {
+  const url = `https://www.okx.com/api/v5/public/mark-price?instId=${instId}`;
   const data = await fetchJson(url);
   if (!data || data.length === 0) return null;
 
@@ -67,7 +67,7 @@ async function fetchPositionTiers(symbol) {
 /**
  * Actualitza la taula liquidation_pro_state amb:
  * - symbol
- * - instid
+ * - instId
  * - oi, oiUsd
  * - mark_price
  * - tiers (JSON brut d’OKX)
@@ -77,12 +77,12 @@ async function fetchPositionTiers(symbol) {
 export async function updateProLiquidity(symbol) {
   console.log(`\n[PRO] Actualitzant dades OKX per ${symbol}`);
 
-  const instid = SWAP_MAP[symbol] ?? symbol;
+  const instId = SWAP_MAP[symbol] ?? symbol;
 
   try {
     const [oi, mark, tiers] = await Promise.all([
-      fetchOpenInterest(instid),
-      fetchMarkPrice(instid),
+      fetchOpenInterest(instId),
+      fetchMarkPrice(instId),
       fetchPositionTiers(symbol) // instFamily = symbol ja és correcte
     ]);
 
@@ -110,14 +110,14 @@ export async function updateProLiquidity(symbol) {
 
     await client.query(
       `INSERT INTO liquidation_pro_state
-       (symbol, instid, oi, oi_usd, mark_price, tiers, state, updated_at)
+       (symbol, instId, oi, oi_usd, mark_price, tiers, state, updated_at)
        VALUES ($1,$2,$3,$4,$5,$6,'ok',NOW())
        ON CONFLICT (symbol)
-       DO UPDATE SET instid=$2, oi=$3, oi_usd=$4, mark_price=$5,
+       DO UPDATE SET instId=$2, oi=$3, oi_usd=$4, mark_price=$5,
                      tiers=$6, state='ok', updated_at=NOW()`,
       [
         symbol,
-        instid,
+        instId,
         oi?.oi ?? null,
         oi?.oiUsd ?? null,
         mark.markPx,
