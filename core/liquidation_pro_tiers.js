@@ -16,7 +16,8 @@ export async function rebuildProTiersForSymbol(symbol) {
   const { instId, mark_price, tiers } = rows[0];
   const markPx = Number(mark_price);
   
-  const parsed = Array.isArray(tiers) ? tiers : JSON.parse(tiers);
+ 
+  const parsed = tiers;
 
 
   // Esborrem trams antics per aquest symbol
