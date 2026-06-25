@@ -1,4 +1,4 @@
-// bot_microimpulsos.js — FIAT‑PRO (patrons + ATR + tracking)
+// bot_microimpulsos.js — FIAT‑PRO (patrons + ATR + tracking + liquidity)
 
 import cron from "node-cron";
 import { client, initDB } from "./db/client.js";
@@ -8,13 +8,13 @@ import { detectMSES } from "./core/patterns.js";
 import { fetchAndStoreCandles } from "./core/fetchcandles.js";
 import { splitSpainDate } from "./core/utils.js";
 import { evaluateWithModel } from "./core/evaluateModel.js";
+import { startLiquidityFeed, updateLiquidity } from "./core/liquidity.js";
 
 function timeframeToMs(tf) {
   if (tf === "1H") return 60 * 60 * 1000;
   if (tf === "4H") return 4 * 60 * 60 * 1000;
   throw new Error("Timeframe no suportat: " + tf);
 }
-
 
 // -------------------------------------------------------------
 // CONFIG
@@ -27,23 +27,11 @@ const ACTIVE_CRYPTOS = [
   "SUI-USDT","VIRTUAL-USDT","XRP-USDT", "PEPE-USDT", "TRUMP-USDT","LTC-USDT"
 ];
 
-//const TIMEFRAMES = ["1H"];
 const TIMEFRAMES = ["1H", "4H"];
 
 // -------------------------------------------------------------
 // LLEGIR VELAS DE LA DB
 // -------------------------------------------------------------
-//async function getCandlesFromDB(symbol, timeframe, limit) {
-//  const query = `
-//    SELECT symbol, timeframe, open, high, low, close, volume, timestamp
-//    FROM candles
-//    WHERE symbol = $1 AND timeframe = $2
-//    ORDER BY timestamp DESC
-//    LIMIT $3
-//  `;
-//  const res = await client.query(query, [symbol, timeframe, limit]);
-//  return res.rows.reverse();
-//}
 async function getCandlesFromDB(symbol, timeframe, limit, untilTimestamp = null) {
 
   if (untilTimestamp === null) {
@@ -60,7 +48,6 @@ async function getCandlesFromDB(symbol, timeframe, limit, untilTimestamp = null)
   }
 
   // MODE HISTÒRIC — demanar veles fins a la següent vela
-  //const nextTs = untilTimestamp + timeframeToMs(timeframe);
   const nextTs = Number(untilTimestamp) + Number(timeframeToMs(timeframe));
 
   const res = await client.query(`
@@ -74,7 +61,6 @@ async function getCandlesFromDB(symbol, timeframe, limit, untilTimestamp = null)
 
   return res.rows.reverse();
 }
-
 
 // -------------------------------------------------------------
 // ATR14 SIMPLE (FIAT‑PRO: ATR * 1 per TP i SL)
@@ -144,106 +130,104 @@ export async function processSymbol(symbol, timeframe) {
   if (!signals || signals.length === 0) return;
 
   for (const sig of signals) {
-  if (sig.type !== "M" && sig.type !== "E") continue;
+    if (sig.type !== "M" && sig.type !== "E") continue;
 
-  const exists = await alreadySent2(symbol, timeframe, sig.timestamp);
-  if (exists) continue;
+    const exists = await alreadySent2(symbol, timeframe, sig.timestamp);
+    if (exists) continue;
 
-  console.log("[FIAT‑PRO]", symbol, timeframe, sig.type, sig.timestamp);
+    console.log("[FIAT‑PRO]", symbol, timeframe, sig.type, sig.timestamp);
 
-  // -------------------------------------------------------------
-  // 1) CALCULAR ATR I TARGETS (igual que abans)
-  // -------------------------------------------------------------
-  const { entry, entryr, tp, sl } = calcTargets(
-    sig.type,
-    sig.thirdCandle,
-    atr
-  );
-  sig.entry = entry;
-  sig.entryr = entryr;
-  sig.tp = tp;
-  sig.sl = sl;
+    // -------------------------------------------------------------
+    // 1) CALCULAR ATR I TARGETS (igual que abans)
+    // -------------------------------------------------------------
+    const { entry, entryr, tp, sl } = calcTargets(
+      sig.type,
+      sig.thirdCandle,
+      atr
+    );
+    sig.entry = entry;
+    sig.entryr = entryr;
+    sig.tp = tp;
+    sig.sl = sl;
 
-  // -------------------------------------------------------------
-  // 2) 🔥 FIAT 2.0 — CARREGAR LES VELES CORRECTES DEL MOMENT DE LA SENYAL
-  // -------------------------------------------------------------
-  const candlesForEval = await getCandlesFromDB(
-    symbol,
-    timeframe,
-    80,
-    sig.timestamp   // 🟩 AIXÒ ÉS LA CLAU
-  );
+    // -------------------------------------------------------------
+    // 2) FIAT 2.0 — CARREGAR LES VELES CORRECTES DEL MOMENT DE LA SENYAL
+    // -------------------------------------------------------------
+    const candlesForEval = await getCandlesFromDB(
+      symbol,
+      timeframe,
+      80,
+      sig.timestamp
+    );
 
-  // -------------------------------------------------------------
-  // 3) AVALUAR AMB FIAT 2.0 (ara sí, amb les veles correctes)
-  // -------------------------------------------------------------
-  const result = evaluateWithModel(candlesForEval, sig);
+    // -------------------------------------------------------------
+    // 3) AVALUAR AMB FIAT 2.0 (ara sí, amb les veles correctes)
+    // -------------------------------------------------------------
+    const result = evaluateWithModel(candlesForEval, sig);
 
-  sig.mag_pts_js   = result.magPts;
-  sig.macd_pts_js  = result.macdPts;
-  sig.trend_pts_js = result.trendPts;
-  sig.sat_pts_js   = result.satPts;
-  sig.mode_js      = result.modeEff;
-  sig.score_js     = result.score;
-  sig.is_good_js   = result.isGood;
+    sig.mag_pts_js   = result.magPts;
+    sig.macd_pts_js  = result.macdPts;
+    sig.trend_pts_js = result.trendPts;
+    sig.sat_pts_js   = result.satPts;
+    sig.mode_js      = result.modeEff;
+    sig.score_js     = result.score;
+    sig.is_good_js   = result.isGood;
 
-  // 🔥 FIAT 2.0 — NOUS CAMPS
-  sig.microtrend_js = result.microTrend;
-  sig.ema4_now_js = result.emaNow;
-  sig.ema4_past_js = result.emaPast;
-  sig.slope_js = result.slope;
+    sig.microtrend_js = result.microTrend;
+    sig.ema4_now_js = result.emaNow;
+    sig.ema4_past_js = result.emaPast;
+    sig.slope_js = result.slope;
 
-  sig.vela_actual_timestamp_js = result.velaActualTs;
-  sig.vela_validada_timestamp_js = result.velaValidadaTs;
-  sig.vela_past_timestamp_js = result.velaPastTs;
-  sig.vela_first_pattern_timestamp_js = result.velaFirstPatternTs;
-  sig.vela_third_pattern_timestamp_js = result.velaThirdPatternTs;
+    sig.vela_actual_timestamp_js = result.velaActualTs;
+    sig.vela_validada_timestamp_js = result.velaValidadaTs;
+    sig.vela_past_timestamp_js = result.velaPastTs;
+    sig.vela_first_pattern_timestamp_js = result.velaFirstPatternTs;
+    sig.vela_third_pattern_timestamp_js = result.velaThirdPatternTs;
 
-  // -------------------------------------------------------------
-  // 4) COLOR FIAT‑UPGRADED
-  // -------------------------------------------------------------
-  let color="";
-  if (result.isGood) {
-    color = sig.type === "M" ? "green" : "red";
-  } else {
-    color = "blue";
+    // -------------------------------------------------------------
+    // 4) COLOR FIAT‑UPGRADED
+    // -------------------------------------------------------------
+    let color = "";
+    if (result.isGood) {
+      color = sig.type === "M" ? "green" : "red";
+    } else {
+      color = "blue";
+    }
+
+    // -------------------------------------------------------------
+    // 5) GUARDAR SENYAL
+    // -------------------------------------------------------------
+    await saveSignal2({
+      symbol: sig.symbol,
+      timeframe: sig.timeframe,
+      type: sig.type,
+      color,
+      entry: sig.entry,
+      entryr: sig.entryr,
+      tp: sig.tp,
+      sl: sig.sl,
+      timestamp: sig.timestamp,
+
+      mag_pts_js: sig.mag_pts_js,
+      macd_pts_js: sig.macd_pts_js,
+      trend_pts_js: sig.trend_pts_js,
+      sat_pts_js: sig.sat_pts_js,
+      mode_js: sig.mode_js,
+      score_js: sig.score_js,
+      is_good_js: sig.is_good_js,
+
+      microtrend_js: sig.microtrend_js,
+      ema4_now_js: sig.ema4_now_js,
+      ema4_past_js: sig.ema4_past_js,
+      slope_js: sig.slope_js,
+
+      vela_actual_timestamp_js: sig.vela_actual_timestamp_js,
+      vela_validada_timestamp_js: sig.vela_validada_timestamp_js,
+      vela_past_timestamp_js: sig.vela_past_timestamp_js,
+      vela_first_pattern_timestamp_js: sig.vela_first_pattern_timestamp_js,
+      vela_third_pattern_timestamp_js: sig.vela_third_pattern_timestamp_js
+    });
   }
-
-  // -------------------------------------------------------------
-  // 5) GUARDAR SENYAL
-  // -------------------------------------------------------------
-  await saveSignal2({
-    symbol: sig.symbol,
-    timeframe: sig.timeframe,
-    type: sig.type,
-    color,
-    entry: sig.entry,
-    entryr: sig.entryr,
-    tp: sig.tp,
-    sl: sig.sl,
-    timestamp: sig.timestamp,
-
-    mag_pts_js: sig.mag_pts_js,
-    macd_pts_js: sig.macd_pts_js,
-    trend_pts_js: sig.trend_pts_js,
-    sat_pts_js: sig.sat_pts_js,
-    mode_js: sig.mode_js,
-    score_js: sig.score_js,
-    is_good_js: sig.is_good_js,
-
-    microtrend_js: sig.microtrend_js,
-    ema4_now_js: sig.ema4_now_js,
-    ema4_past_js: sig.ema4_past_js,
-    slope_js: sig.slope_js,
-
-    vela_actual_timestamp_js: sig.vela_actual_timestamp_js,
-    vela_validada_timestamp_js: sig.vela_validada_timestamp_js,
-    vela_past_timestamp_js: sig.vela_past_timestamp_js,
-    vela_first_pattern_timestamp_js: sig.vela_first_pattern_timestamp_js,
-    vela_third_pattern_timestamp_js: sig.vela_third_pattern_timestamp_js
-  });
-}
-
 }
 
 // -------------------------------------------------------------
@@ -308,12 +292,27 @@ async function checkOpenSignals() {
 // LOOP PRINCIPAL
 // -------------------------------------------------------------
 async function mainLoop() {
+  // 1) Descarregar veles
   for (const symbol of ACTIVE_CRYPTOS) {
     for (const timeframe of TIMEFRAMES) {
       await fetchAndStoreCandles(symbol, timeframe);
     }
   }
 
+  // 2) Actualitzar liquiditat (preu 1H com a referència)
+  for (const symbol of ACTIVE_CRYPTOS) {
+    try {
+      const lastCandle = await getCandlesFromDB(symbol, "1H", 1);
+      if (!lastCandle || lastCandle.length === 0) continue;
+
+      const price = lastCandle[0].close;
+      await updateLiquidity(symbol, price);
+    } catch (err) {
+      console.log("[LIQ] Error updateLiquidity", symbol, err.message);
+    }
+  }
+
+  // 3) Processar patrons
   for (const symbol of ACTIVE_CRYPTOS) {
     for (const timeframe of TIMEFRAMES) {
       try {
@@ -324,6 +323,7 @@ async function mainLoop() {
     }
   }
 
+  // 4) Tracking TP/SL
   await checkOpenSignals();
 }
 
@@ -332,10 +332,12 @@ async function mainLoop() {
 // -------------------------------------------------------------
 async function startBot() {
   await initDB();
-  console.log("Bot FIAT‑PRO en marxa (patrons + ATR + tracking)");
+  console.log("Bot FIAT‑PRO en marxa (patrons + ATR + tracking + liquidity)");
+
+  console.log("[LIQ] Iniciant feed de liquiditat OKX...");
+  startLiquidityFeed();
 
   cron.schedule("* * * * *", mainLoop);
 }
 
 startBot();
-
