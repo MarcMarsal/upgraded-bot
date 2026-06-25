@@ -14,7 +14,6 @@ function timeframeToMs(tf) {
   throw new Error("Timeframe no suportat: " + tf);
 }
 
-
 // -------------------------------------------------------------
 // CONFIG
 // -------------------------------------------------------------
@@ -23,30 +22,16 @@ const ACTIVE_CRYPTOS = [
   "AVAX-USDT","BCH-USDT","BNB-USDT","BTC-USDT","DOT-USDT",
   "ETH-USDT","FET-USDT","HBAR-USDT","INJ-USDT","LINK-USDT",
   "NEAR-USDT","OP-USDT","RENDER-USDT","SEI-USDT","SOL-USDT",
-  "SUI-USDT","VIRTUAL-USDT","XRP-USDT", "PEPE-USDT", "TRUMP-USDT","LTC-USDT"
+  "SUI-USDT","VIRTUAL-USDT","XRP-USDT","PEPE-USDT","TRUMP-USDT","LTC-USDT"
 ];
 
-//const TIMEFRAMES = ["1H"];
 const TIMEFRAMES = ["1H", "4H"];
 
 // -------------------------------------------------------------
 // LLEGIR VELAS DE LA DB
 // -------------------------------------------------------------
-//async function getCandlesFromDB(symbol, timeframe, limit) {
-//  const query = `
-//    SELECT symbol, timeframe, open, high, low, close, volume, timestamp
-//    FROM candles
-//    WHERE symbol = $1 AND timeframe = $2
-//    ORDER BY timestamp DESC
-//    LIMIT $3
-//  `;
-//  const res = await client.query(query, [symbol, timeframe, limit]);
-//  return res.rows.reverse();
-//}
 async function getCandlesFromDB(symbol, timeframe, limit, untilTimestamp = null) {
-
   if (untilTimestamp === null) {
-    // MODE REAL
     const res = await client.query(`
       SELECT *
       FROM candles
@@ -58,8 +43,6 @@ async function getCandlesFromDB(symbol, timeframe, limit, untilTimestamp = null)
     return res.rows.reverse();
   }
 
-  // MODE HISTÒRIC — demanar veles fins a la següent vela
-  //const nextTs = untilTimestamp + timeframeToMs(timeframe);
   const nextTs = Number(untilTimestamp) + Number(timeframeToMs(timeframe));
 
   const res = await client.query(`
@@ -74,9 +57,8 @@ async function getCandlesFromDB(symbol, timeframe, limit, untilTimestamp = null)
   return res.rows.reverse();
 }
 
-
 // -------------------------------------------------------------
-// ATR14 SIMPLE (FIAT‑PRO: ATR * 1 per TP i SL)
+// ATR14 SIMPLE
 // -------------------------------------------------------------
 function calcATR(candles, period = 14) {
   if (!candles || candles.length <= period) return null;
@@ -143,44 +125,40 @@ export async function processSymbol(symbol, timeframe) {
   if (!signals || signals.length === 0) return;
 
   for (const sig of signals) {
-  if (sig.type !== "M" && sig.type !== "E") continue;
+    if (sig.type !== "M" && sig.type !== "E") continue;
 
-  const exists = await alreadySent2(symbol, timeframe, sig.timestamp);
-  if (exists) continue;
+    const exists = await alreadySent2(symbol, timeframe, sig.timestamp);
+    if (exists) continue;
 
-  console.log("[FIAT‑PRO]", symbol, timeframe, sig.type, sig.timestamp);
+    console.log("[FIAT‑PRO]", symbol, timeframe, sig.type, sig.timestamp);
 
-  // -------------------------------------------------------------
-  // 1) CALCULAR ATR I TARGETS (igual que abans)
-  // -------------------------------------------------------------
-  const { entry, entryr, tp, sl } = calcTargets(
-    sig.type,
-    sig.thirdCandle,
-    atr
-  );
-  sig.entry = entry;
-  sig.entryr = entryr;
-  sig.tp = tp;
-  sig.sl = sl;
-  
-  // -------------------------------------------------------------
-  // 5) GUARDAR SENYAL
-  // -------------------------------------------------------------
-  await saveSignal2({
-  symbol: sig.symbol,
-  timeframe: sig.timeframe,
-  type: sig.type,
-  entry: sig.entry,
-  entryr: sig.entryr,
-  tp: sig.tp,
-  sl: sig.sl,
-  timestamp: sig.timestamp
-});
+    // 1) CALCULAR ATR I TARGETS
+    const { entry, entryr, tp, sl } = calcTargets(
+      sig.type,
+      sig.thirdCandle,
+      atr
+    );
+    sig.entry = entry;
+    sig.entryr = entryr;
+    sig.tp = tp;
+    sig.sl = sl;
 
+    // 2) GUARDAR SENYAL (simple)
+    await saveSignal2({
+      symbol: sig.symbol,
+      timeframe: sig.timeframe,
+      type: sig.type,
+      entry: sig.entry,
+      entryr: sig.entryr,
+      tp: sig.tp,
+      sl: sig.sl,
+      timestamp: sig.timestamp
+    });
+  }
 }
 
 // -------------------------------------------------------------
-// TRACKING TP/SL (FIAT‑PRO)
+// TRACKING TP/SL
 // -------------------------------------------------------------
 async function checkOpenSignals() {
   const res = await client.query(`
@@ -271,4 +249,3 @@ async function startBot() {
 }
 
 startBot();
-
