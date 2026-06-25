@@ -1,6 +1,6 @@
 // core/liquidity.js
 // -------------------------------------------------------------
-// MÒDUL FI DE LIQUIDITAT OKX — (WebSocket + Zones + Estat)
+// MÒDUL FI DE LIQUIDITAT OKX — (WebSocket + Zones + Estat + Heartbeat)
 // -------------------------------------------------------------
 
 import WebSocket from "ws";
@@ -11,19 +11,13 @@ import { client } from "../db/client.js";
 // -------------------------------------------------------------
 const BUCKET_SIZE = 0.003;   // 0.3% per bucket (ajustable)
 const MIN_MAGNITUDE = 50000; // magnitud mínima per considerar zona
-//const ACTIVE_CRYPTOS = [
-//  "BTC-USDT","ETH-USDT","SOL-USDT","ADA-USDT","ARB-USDT","APT-USDT",
-//  "LINK-USDT","AVAX-USDT","BNB-USDT","XRP-USDT","DOT-USDT","ATOM-USDT",
-//  "INJ-USDT","NEAR-USDT","OP-USDT","SUI-USDT","SEI-USDT","RENDER-USDT",
-//  "FET-USDT","HBAR-USDT","BCH-USDT","LTC-USDT","PEPE-USDT","TRUMP-USDT"
-//];
 
+// Només criptos principals (FI i estable)
 const ACTIVE_CRYPTOS = [
   "BTC-USDT",
   "ETH-USDT",
   "SOL-USDT"
 ];
-
 
 // -------------------------------------------------------------
 // BUFFER DE LIQUIDACIONS (per cada cripto)
@@ -35,6 +29,7 @@ for (const s of ACTIVE_CRYPTOS) buffers[s] = [];
 // CONNEXIÓ WEBSOCKET OKX
 // -------------------------------------------------------------
 let ws = null;
+let heartbeatInterval = null;
 
 export function startLiquidityFeed() {
   ws = new WebSocket("wss://ws.okx.com:8443/ws/v5/public");
@@ -42,24 +37,47 @@ export function startLiquidityFeed() {
   ws.on("open", () => {
     console.log("[LIQ] WebSocket OKX connectat");
 
+    // SUBSCRIPCIÓ FI (només 3 símbols → no cal escalonat)
     for (const symbol of ACTIVE_CRYPTOS) {
       ws.send(JSON.stringify({
         op: "subscribe",
         args: [{ channel: "liquidation-orders", instId: symbol }]
       }));
+      console.log("[LIQ] Subscrita", symbol);
     }
+
+    // HEARTBEAT ACTIU (ping cada 20s)
+    if (heartbeatInterval) clearInterval(heartbeatInterval);
+
+    heartbeatInterval = setInterval(() => {
+      try {
+        ws.send(JSON.stringify({ event: "ping" }));
+        // console.log("[LIQ] Ping enviat");
+      } catch (err) {
+        console.log("[LIQ] Error enviant ping:", err.message);
+      }
+    }, 20000);
   });
 
   ws.on("message", async (msg) => {
     try {
       const data = JSON.parse(msg);
+
+      // 🔥 OKX envia ping → respondre pong
+      if (data.event === "ping") {
+        ws.send(JSON.stringify({ event: "pong" }));
+        // console.log("[LIQ] Pong enviat");
+        return;
+      }
+
       if (!data.data) return;
 
+      // 🔥 Liquidacions reals
       for (const liq of data.data) {
         const symbol = liq.instId;
         const price = Number(liq.bkPx);
         const size = Number(liq.sz);
-        const side = liq.side; // long/short
+        const side = liq.side;
         const ts = Number(liq.ts);
 
         // Guardar a DB
@@ -84,6 +102,9 @@ export function startLiquidityFeed() {
 
   ws.on("close", () => {
     console.log("[LIQ] WebSocket tancat — reconnectant en 3s");
+
+    if (heartbeatInterval) clearInterval(heartbeatInterval);
+
     setTimeout(startLiquidityFeed, 3000);
   });
 
