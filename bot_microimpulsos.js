@@ -264,7 +264,7 @@ async function mainLoop() {
   await checkOpenSignals();
 
   // 4) 🔥 FIAT‑PRO: reconstrucció SL dels trades oberts
-  for (const symbol of ACTIVE_CRYPTOS) {
+  for (const symbol of ["BTC-USDT"]) {
     try {
       const mark = await fetchMarkPrice(symbol);      // <-- NECESSARI
       const oi = await fetchOpenInterest(symbol);     // <-- NECESSARI
