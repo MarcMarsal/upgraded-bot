@@ -37,12 +37,45 @@ export async function updateSLReconstruction(symbol, price, oi, ts) {
     }
   }
 
+  // Leverage estimat (model simple)
+  let leverage = null;
+
+  if (oi_delta > 0 && side && entry_price) {
+    const vol = Math.abs(price_delta) / price;      // volatilitat relativa
+    const sizeFactor = Math.abs(oi_delta) / 1000;   // intensitat d’entrada
+
+    leverage = 1 + (vol * 100) + (sizeFactor * 0.1);
+
+    if (leverage < 1) leverage = 1;
+    if (leverage > 50) leverage = 50;
+  }
+
+  // Liquidation price estimada
+  let liq_price = null;
+
+  if (leverage && entry_price && side) {
+    const k = 0.9;
+
+    if (side === "long") {
+      liq_price = entry_price * (1 - (1 / leverage) * k);
+    } else if (side === "short") {
+      liq_price = entry_price * (1 + (1 / leverage) * k);
+    }
+  }
+
+  // Size estimat (nocional aproximat)
+  let size_estimated = null;
+
+  if (oi_delta > 0 && entry_price) {
+    size_estimated = Math.abs(oi_delta) * entry_price;
+  }
+
   // Només inserim si hi ha moviment d'OI
   if (Math.abs(oi_delta) > 0) {
     await client.query(
       `INSERT INTO sl_reconstructed
-       (symbol, ts, price, oi, oi_delta, price_delta, side, entry_price)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+       (symbol, ts, price, oi, oi_delta, price_delta, side, entry_price, leverage, liq_price, size_estimated)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
       [
         symbol,
         ts,
@@ -51,7 +84,10 @@ export async function updateSLReconstruction(symbol, price, oi, ts) {
         oi_delta,
         price_delta,
         side,
-        entry_price
+        entry_price,
+        leverage,
+        liq_price,
+        size_estimated
       ]
     );
   }
