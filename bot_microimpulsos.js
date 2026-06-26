@@ -220,25 +220,6 @@ async function checkOpenSignals() {
 // -------------------------------------------------------------
 // LOOP PRINCIPAL
 // -------------------------------------------------------------
-//async function mainLoop() {
-//  for (const symbol of ACTIVE_CRYPTOS) {
-//    for (const timeframe of TIMEFRAMES) {
-//      await fetchAndStoreCandles(symbol, timeframe);
-//    }
-//  }
-
-//  for (const symbol of ACTIVE_CRYPTOS) {
-//    for (const timeframe of TIMEFRAMES) {
-//      try {
-//        await processSymbol(symbol, timeframe);
-//      } catch (err) {
-//        console.log("Error processant", symbol, timeframe, err.message);
-//      }
-//    }
-//  }
-
-//  await checkOpenSignals();
-//}
 async function mainLoop() {
   for (const symbol of ACTIVE_CRYPTOS) {
     for (const timeframe of TIMEFRAMES) {
