@@ -7,6 +7,7 @@ import { saveSignal2 } from "./db/saveSignal2.js";
 import { detectMSES } from "./core/patterns.js";
 import { fetchAndStoreCandles } from "./core/fetchcandles.js";
 import { splitSpainDate } from "./core/utils.js";
+import { fetchMarkPrice, fetchOpenInterest } from "./core/fetchMarketData.js";
 import { updateSLReconstruction } from "./core/sl_reconstructor.js";
 
 
