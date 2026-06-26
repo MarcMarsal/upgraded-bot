@@ -90,42 +90,41 @@ export async function updateSLReconstruction(symbol, price, oi, ts) {
         size_estimated
       ]
     );
-
-    if (oi_delta > 0 && entry_price && leverage && liq_price) {
-  const bucket = Math.floor(entry_price / 50) * 50;
-
-  const existing = await client.query(
-    `SELECT * FROM sl_buckets
-     WHERE symbol = $1 AND bucket_price = $2 AND side = $3`,
-    [symbol, bucket, side]
-  );
-
-  if (existing.rows.length > 0) {
-    const row = existing.rows[0];
-
-    await client.query(
-      `UPDATE sl_buckets
-       SET total_size = total_size + $1,
-           avg_leverage = (avg_leverage * entries_count + $2) / (entries_count + 1),
-           liq_min = LEAST(liq_min, $3),
-           liq_max = GREATEST(liq_max, $3),
-           entries_count = entries_count + 1,
-           updated_at = NOW()
-       WHERE id = $4`,
-      [size_estimated, leverage, liq_price, row.id]
-    );
-
-  } else {
-    await client.query(
-      `INSERT INTO sl_buckets
-       (symbol, bucket_price, side, total_size, avg_leverage, liq_min, liq_max, entries_count)
-       VALUES ($1,$2,$3,$4,$5,$6,$6,1)`,
-      [symbol, bucket, side, size_estimated, leverage, liq_price]
-    );
   }
-}
 
-    
+  // BUCKETS FIAT‑PRO (fora del bloc de l'INSERT)
+  if (oi_delta > 0 && entry_price && leverage && liq_price) {
+    const bucket = Math.floor(entry_price / 50) * 50;
+
+    const existing = await client.query(
+      `SELECT * FROM sl_buckets
+       WHERE symbol = $1 AND bucket_price = $2 AND side = $3`,
+      [symbol, bucket, side]
+    );
+
+    if (existing.rows.length > 0) {
+      const row = existing.rows[0];
+
+      await client.query(
+        `UPDATE sl_buckets
+         SET total_size = total_size + $1,
+             avg_leverage = (avg_leverage * entries_count + $2) / (entries_count + 1),
+             liq_min = LEAST(liq_min, $3),
+             liq_max = GREATEST(liq_max, $3),
+             entries_count = entries_count + 1,
+             updated_at = NOW()
+         WHERE id = $4`,
+        [size_estimated, leverage, liq_price, row.id]
+      );
+
+    } else {
+      await client.query(
+        `INSERT INTO sl_buckets
+         (symbol, bucket_price, side, total_size, avg_leverage, liq_min, liq_max, entries_count)
+         VALUES ($1,$2,$3,$4,$5,$6,$6,1)`,
+        [symbol, bucket, side, size_estimated, leverage, liq_price]
+      );
+    }
   }
 
   // Actualitzem estat
