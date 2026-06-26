@@ -220,13 +220,35 @@ async function checkOpenSignals() {
 // -------------------------------------------------------------
 // LOOP PRINCIPAL
 // -------------------------------------------------------------
+//async function mainLoop() {
+//  for (const symbol of ACTIVE_CRYPTOS) {
+//    for (const timeframe of TIMEFRAMES) {
+//      await fetchAndStoreCandles(symbol, timeframe);
+//    }
+//  }
+
+//  for (const symbol of ACTIVE_CRYPTOS) {
+//    for (const timeframe of TIMEFRAMES) {
+//      try {
+//        await processSymbol(symbol, timeframe);
+//      } catch (err) {
+//        console.log("Error processant", symbol, timeframe, err.message);
+//      }
+//    }
+//  }
+
+//  await checkOpenSignals();
+//}
+
 async function mainLoop() {
+  // 1) Actualitzar veles
   for (const symbol of ACTIVE_CRYPTOS) {
     for (const timeframe of TIMEFRAMES) {
       await fetchAndStoreCandles(symbol, timeframe);
     }
   }
 
+  // 2) Processar patrons FIAT‑PRO
   for (const symbol of ACTIVE_CRYPTOS) {
     for (const timeframe of TIMEFRAMES) {
       try {
@@ -237,10 +259,33 @@ async function mainLoop() {
     }
   }
 
+  // 3) Tracking TP/SL
   await checkOpenSignals();
 
-  await updateSLReconstruction(symbol, markPrice, openInterest, Date.now());
+  // 4) 🔥 FIAT‑PRO: reconstrucció SL dels trades oberts
+  for (const symbol of ACTIVE_CRYPTOS) {
+    try {
+      const mark = await fetchMarkPrice(symbol);      // <-- NECESSARI
+      const oi = await fetchOpenInterest(symbol);     // <-- NECESSARI
 
+      if (!mark || !oi) {
+        console.log("NO DATA", symbol, mark, oi);
+        continue;
+      }
+
+      console.log("SL DEBUG", symbol, mark.markPx, oi.oi);
+
+      await updateSLReconstruction(
+        symbol,
+        mark.markPx,
+        oi.oi,
+        Date.now()
+      );
+
+    } catch (err) {
+      console.log("Error SL Reconstruction", symbol, err.message);
+    }
+  }
 }
 
 
