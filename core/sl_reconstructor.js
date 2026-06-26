@@ -20,7 +20,7 @@ export async function updateSLReconstruction(symbol, price, oi, ts) {
 
   // Detecció d'entrades FIAT‑PRO
   if (oi_delta > 0) {
-    if (price_delta > 0) side = "long";   // OI↑ + Price↑ → entren LONGS
+    if (price_delta > 0) side = "long";      // OI↑ + Price↑ → entren LONGS
     else if (price_delta < 0) side = "short"; // OI↑ + Price↓ → entren SHORTS
   }
 
