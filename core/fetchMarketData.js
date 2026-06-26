@@ -1,5 +1,4 @@
 // core/fetchMarketData.js
-import fetch from "node-fetch";
 
 export async function fetchMarkPrice(symbol) {
   try {
