@@ -90,7 +90,7 @@ export async function updateSLReconstruction(symbol, price, oi, ts) {
         size_estimated
       ]
     );
-//
+
     if (oi_delta > 0 && entry_price && leverage && liq_price) {
   const bucket = Math.floor(entry_price / 50) * 50;
 
@@ -125,7 +125,7 @@ export async function updateSLReconstruction(symbol, price, oi, ts) {
   }
 }
 
-//    
+    
   }
 
   // Actualitzem estat
