@@ -7,6 +7,8 @@ import { saveSignal2 } from "./db/saveSignal2.js";
 import { detectMSES } from "./core/patterns.js";
 import { fetchAndStoreCandles } from "./core/fetchcandles.js";
 import { splitSpainDate } from "./core/utils.js";
+import { updateSLReconstruction } from "./core/sl_reconstructor.js";
+
 
 function timeframeToMs(tf) {
   if (tf === "1H") return 60 * 60 * 1000;
@@ -255,7 +257,8 @@ async function mainLoop() {
   }
 
   await checkOpenSignals();
- 
+
+  await updateSLReconstruction(symbol, markPrice, openInterest, Date.now());
 
 }
 
