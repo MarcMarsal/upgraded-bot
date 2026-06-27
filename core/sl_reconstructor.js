@@ -47,7 +47,7 @@ export async function updateSLReconstruction(symbol, price, oi, ts) {
     leverage = 1 + (vol * 100) + (sizeFactor * 0.1);
 
     if (leverage < 1) leverage = 1;
-    if (leverage > 50) leverage = 50;
+    if (leverage > 200) leverage = 200; // permet detectar retail 50x+
   }
 
   // Liquidation price estimada
@@ -92,7 +92,21 @@ export async function updateSLReconstruction(symbol, price, oi, ts) {
     );
   }
 
-  // BUCKETS FIAT‑PRO (fora del bloc de l'INSERT)
+  // -------------------------------
+  // 🟥 CAPA RETAIL 50x+ (Coinglass)
+  // -------------------------------
+  if (oi_delta > 0 && leverage >= 50 && entry_price && liq_price) {
+    await client.query(
+      `INSERT INTO retail_liquidations
+       (symbol, entry_price, leverage, liq_price, side, size, ts)
+       VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+      [symbol, entry_price, leverage, liq_price, side, size_estimated, ts]
+    );
+  }
+
+  // -------------------------------
+  // 🟩 CAPA INSTITUCIONAL (FIAT‑PRO)
+  // -------------------------------
   if (oi_delta > 0 && entry_price && leverage && liq_price) {
     const bucket = Math.floor(entry_price / 50) * 50;
 
