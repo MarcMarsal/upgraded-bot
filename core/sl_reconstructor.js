@@ -135,10 +135,11 @@ export async function updateSLReconstruction(symbol, price, oi, ts, atr, timefra
     } else {
       await client.query(
         `INSERT INTO sl_buckets
-         (symbol, timeframe, bucket_price, side, total_size, avg_leverage, liq_min, liq_max, entries_count, atr, timestamp_created)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$7,1,$8,NOW())`,
-        [symbol, timeframe, bucket_price, side, size_estimated, leverage, liq_price, atr]
+         (symbol, timeframe, bucket_price, side, total_size, avg_leverage, liq_min, liq_max, entries_count, atr, timestamp_created, updated_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$7,1,$8,$9,NOW())`,
+         [symbol, timeframe, bucket_price, side, size_estimated, leverage, liq_price, atr, ts]
       );
+
     }
   }
 
