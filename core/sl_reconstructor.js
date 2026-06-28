@@ -4,7 +4,7 @@ import { client } from "../db/client.js";
 let last = {}; 
 // last[symbol] = { oi, price, ts }
 
-export async function updateSLReconstruction(symbol, price, oi, ts) {
+export async function updateSLReconstruction(symbol, price, oi, ts, atr, timeframe = "1H") {
   // Primera lectura: només guardem referència, no inserim
   if (!last[symbol]) {
     last[symbol] = { oi, price, ts };
@@ -20,34 +20,33 @@ export async function updateSLReconstruction(symbol, price, oi, ts) {
 
   // Detecció d'entrades FIAT‑PRO
   if (oi_delta > 0) {
-    if (price_delta > 0) side = "long";      // OI↑ + Price↑ → entren LONGS
-    else if (price_delta < 0) side = "short"; // OI↑ + Price↓ → entren SHORTS
+    if (price_delta > 0) side = "long";
+    else if (price_delta < 0) side = "short";
   }
 
   // Reconstrucció d'entry_price estimat
   let entry_price = null;
 
   if (oi_delta > 0 && side) {
-    const factor = 0.5; // coeficient FIAT‑PRO per BTC
+    const factor = 0.5;
 
-    if (side === "long") {
-      entry_price = price - (price_delta * factor);
-    } else if (side === "short") {
-      entry_price = price + (price_delta * factor);
-    }
+    entry_price =
+      side === "long"
+        ? price - (price_delta * factor)
+        : price + (price_delta * factor);
   }
 
-  // Leverage estimat (model simple)
+  // Leverage estimat
   let leverage = null;
 
   if (oi_delta > 0 && side && entry_price) {
-    const vol = Math.abs(price_delta) / price;      // volatilitat relativa
-    const sizeFactor = Math.abs(oi_delta) / 1000;   // intensitat d’entrada
+    const vol = Math.abs(price_delta) / price;
+    const sizeFactor = Math.abs(oi_delta) / 1000;
 
     leverage = 1 + (vol * 100) + (sizeFactor * 0.1);
 
     if (leverage < 1) leverage = 1;
-    if (leverage > 200) leverage = 200; // permet detectar retail 50x+
+    if (leverage > 200) leverage = 200;
   }
 
   // Liquidation price estimada
@@ -56,14 +55,13 @@ export async function updateSLReconstruction(symbol, price, oi, ts) {
   if (leverage && entry_price && side) {
     const k = 0.9;
 
-    if (side === "long") {
-      liq_price = entry_price * (1 - (1 / leverage) * k);
-    } else if (side === "short") {
-      liq_price = entry_price * (1 + (1 / leverage) * k);
-    }
+    liq_price =
+      side === "long"
+        ? entry_price * (1 - (1 / leverage) * k)
+        : entry_price * (1 + (1 / leverage) * k);
   }
 
-  // Size estimat (nocional aproximat)
+  // Size estimat
   let size_estimated = null;
 
   if (oi_delta > 0 && entry_price) {
@@ -93,7 +91,7 @@ export async function updateSLReconstruction(symbol, price, oi, ts) {
   }
 
   // -------------------------------
-  // 🟥 CAPA RETAIL 50x+ (Coinglass)
+  // 🟥 CAPA RETAIL 50x+
   // -------------------------------
   if (oi_delta > 0 && leverage >= 50 && entry_price && liq_price) {
     await client.query(
@@ -105,15 +103,18 @@ export async function updateSLReconstruction(symbol, price, oi, ts) {
   }
 
   // -------------------------------
-  // 🟩 CAPA INSTITUCIONAL (FIAT‑PRO)
+  // 🟩 CAPA INSTITUCIONAL FIAT‑PRO (ATR BUCKETS)
   // -------------------------------
   if (oi_delta > 0 && entry_price && leverage && liq_price) {
-    const bucket = Math.floor(entry_price / 50) * 50;
+
+    // Bucket basat en ATR
+    const bucket_step = atr;
+    const bucket_price = Math.round(entry_price / bucket_step) * bucket_step;
 
     const existing = await client.query(
       `SELECT * FROM sl_buckets
-       WHERE symbol = $1 AND bucket_price = $2 AND side = $3`,
-      [symbol, bucket, side]
+       WHERE symbol = $1 AND bucket_price = $2 AND side = $3 AND timeframe = $4`,
+      [symbol, bucket_price, side, timeframe]
     );
 
     if (existing.rows.length > 0) {
@@ -134,9 +135,9 @@ export async function updateSLReconstruction(symbol, price, oi, ts) {
     } else {
       await client.query(
         `INSERT INTO sl_buckets
-         (symbol, bucket_price, side, total_size, avg_leverage, liq_min, liq_max, entries_count)
-         VALUES ($1,$2,$3,$4,$5,$6,$6,1)`,
-        [symbol, bucket, side, size_estimated, leverage, liq_price]
+         (symbol, timeframe, bucket_price, side, total_size, avg_leverage, liq_min, liq_max, entries_count, atr, timestamp_created)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$7,1,$8,NOW())`,
+        [symbol, timeframe, bucket_price, side, size_estimated, leverage, liq_price, atr]
       );
     }
   }
