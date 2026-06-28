@@ -7,13 +7,6 @@ import { activateOrder } from "./activateOrder.js";
 import { cancelOrder } from "./cancelOrder.js";
 import { trackOrderTP_SL } from "./trackOrderTP_SL.js";
 
-/**
- * Loop FIAT‑PRO de gestió d'ordres.
- * - Crea ordres quan el preu entra a ±1 ATR
- * - Activa ordres quan toca l'entry
- * - Cancel·la ordres si surt de ±1.5 ATR
- * - Tanca ordres per TP/SL
- */
 export async function orderManager({
   symbol,
   timeframe,
@@ -28,12 +21,19 @@ export async function orderManager({
   sl,
   zone_ts
 }) {
-  // ---------------------------------------------------------
-  // 1) CREAR ORDRE (si entra a ±1 ATR)
-  // ---------------------------------------------------------
-  const distance = Math.abs(price_now - bucket_price);
 
-  if (distance <= atr) {
+  // ---------------------------------------------------------
+  // 1) CREAR ORDRE LIMIT (només si NO existeix i el preu s'apropa)
+  // ---------------------------------------------------------
+  const pendingOrders = await getPendingEntryOrders(symbol);
+
+  const hasOrderForBucket = pendingOrders.some(
+    o => Number(o.bucket_price) === Number(bucket_price)
+  );
+
+  const isNear = Math.abs(price_now - bucket_price) <= atr;
+
+  if (!hasOrderForBucket && isNear) {
     await createOrder({
       symbol,
       timeframe,
@@ -49,23 +49,31 @@ export async function orderManager({
   }
 
   // ---------------------------------------------------------
-  // 2) CANCEL·LAR ORDRES PENDENTS
+  // 2) CANCEL·LAR ORDRE LIMIT (només si el preu se’n va)
   // ---------------------------------------------------------
-  const pendingOrders = await getPendingEntryOrders(symbol);
-
   for (const order of pendingOrders) {
-    await cancelOrder(order, price_now);
+    const isFar = Math.abs(price_now - order.bucket_price) > 2 * atr;
+
+    if (isFar) {
+      await cancelOrder(order, price_now);
+    }
   }
 
   // ---------------------------------------------------------
-  // 3) ACTIVAR ORDRES (si toca entry)
+  // 3) ACTIVAR ORDRE (només si toca l'entry)
   // ---------------------------------------------------------
   for (const order of pendingOrders) {
-    await activateOrder(order, price_now);
+    const touchesEntry =
+      (order.side === "long" && price_now <= order.entry_price) ||
+      (order.side === "short" && price_now >= order.entry_price);
+
+    if (touchesEntry) {
+      await activateOrder(order, price_now);
+    }
   }
 
   // ---------------------------------------------------------
-  // 4) TRACKING TP/SL PER ORDRES ACTIVES
+  // 4) TRACK TP/SL PER ORDRES ACTIVES
   // ---------------------------------------------------------
   const activeOrders = await getActiveOrders(symbol);
 
