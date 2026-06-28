@@ -9,7 +9,7 @@ export async function createOrder({
   symbol,
   timeframe,
   bucket_price,
-  side,            // "long" o "short"
+  side,
   entry_price,
   atr,
   tp,
@@ -19,7 +19,7 @@ export async function createOrder({
 }) {
   const now = Date.now();
 
-  // 1) Comprovar si ja existeix una ordre pendent per aquest bucket
+  // 1) Comprovar si ja existeix una ordre viva per aquest bucket
   const existing = await client.query(
     `
     SELECT *
@@ -27,13 +27,13 @@ export async function createOrder({
     WHERE symbol = $1
       AND timeframe = $2
       AND bucket_price = $3
-      AND status IN ('PENDING_ZONE','PENDING_ENTRY')
+      AND status IN ('PENDING_ZONE','PENDING_ENTRY','ACTIVE')
     `,
     [symbol, timeframe, bucket_price]
   );
 
   if (existing.rows.length > 0) {
-    console.log(`[ORDERS] Ja existeix una ordre pendent per ${symbol} bucket ${bucket_price}`);
+    console.log(`[ORDERS] Ja existeix una ordre viva per ${symbol} bucket ${bucket_price}`);
     return null;
   }
 
