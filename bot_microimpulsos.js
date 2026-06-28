@@ -247,82 +247,120 @@ async function mainLoop() {
   // 3) Tracking TP/SL antic
   await checkOpenSignals();
 
-  // 4) FIAT‑PRO INSTITUCIONAL: reconstructor + ordres
+  // -------------------------------------------------------------
+// 4) FIAT‑PRO INSTITUCIONAL: buckets + ordres LIMIT
+// -------------------------------------------------------------
 for (const symbol of ["BTC-USDT", "ETH-USDT", "BNB-USDT", "SOL-USDT"]) {
   try {
     const mark = await fetchMarkPrice(symbol);
     const oi = await fetchOpenInterest(symbol);
 
-    if (!mark || !oi) {
-      console.log("NO DATA", symbol, mark, oi);
-      continue;
-    }
+    if (!mark || !oi) continue;
 
     const price_now = mark.markPx;
     const ts = Date.now();
 
-    // 1) ATR actual (ABANS del reconstructor)
+    // ATR actual
     const atrCandles = await getCandlesFromDB(symbol, "1H", 80);
     const atrRaw = calcATR(atrCandles, 14);
     if (!atrRaw) continue;
 
     const atr = Number(atrRaw);
 
-    // 2) Reconstrucció institucional FIAT‑PRO (ARA SÍ amb ATR)
+    // Reconstrucció institucional (detecta buckets)
     await updateSLReconstruction(symbol, price_now, oi.oi, ts, atr, "1H");
 
-    const curr = await getOpenCandle(symbol, "1H");
-    if (!curr) continue;
-
-    const high = curr.high;
-    const low = curr.low;
-
-    // 3) Neteja institucional de buckets
+    // Neteja institucional de buckets
     await cleanBuckets(symbol, "1H", atr, price_now);
 
-    // 4) Bucket institucional actualitzat
-    const bucketRes = await client.query(
-      `
-      SELECT *
-      FROM sl_buckets
-      WHERE symbol = $1
-      ORDER BY updated_at DESC
-      LIMIT 1
-      `,
+    // Obtenir TOTS els buckets vius del símbol
+    const bucketsRes = await client.query(
+      `SELECT *
+       FROM sl_buckets
+       WHERE symbol = $1
+       ORDER BY bucket_price ASC`,
       [symbol]
     );
 
-    if (bucketRes.rows.length === 0) continue;
+    if (bucketsRes.rows.length === 0) continue;
 
-    const bucket = bucketRes.rows[0];
-    const bucket_price = Number(bucket.bucket_price);
-    const side = bucket.side;
-    const entry_price = bucket_price;
+    // Per cada bucket → 1 ordre com a màxim
+    for (const bucket of bucketsRes.rows) {
 
-    // 5) TP/SL institucional amb ATR actual
-    const tp = side === "long" ? entry_price + atr : entry_price - atr;
-    const sl = side === "long" ? entry_price - atr : entry_price + atr;
+      const bucket_price = Number(bucket.bucket_price);
+      const side = bucket.side;
 
-    // 6) Ordre institucional
-    await orderManager({
-      symbol,
-      timeframe: "1H",
-      price_now,
-      high,
-      low,
-      atr,
-      bucket_price,
-      side,
-      entry_price,
-      tp,
-      sl,
-      zone_ts: new Date(bucket.updated_at).getTime()
-    });
+      // Buscar si ja existeix una ordre viva per aquest bucket
+      const orderRes = await client.query(
+        `SELECT *
+         FROM orders
+         WHERE symbol = $1
+           AND timeframe = '1H'
+           AND bucket_price = $2
+           AND status IN ('PENDING_ENTRY','ACTIVE')
+         LIMIT 1`,
+        [symbol, bucket_price]
+      );
+
+      const existingOrder = orderRes.rows[0] || null;
+
+      // Condició institucional: preu s'apropa a la zona
+      const isNear = Math.abs(price_now - bucket_price) <= atr;
+
+      // ---------------------------------------------------------
+      // 1) CREAR ORDRE LIMIT (només si NO existeix i el preu s'apropa)
+      // ---------------------------------------------------------
+      if (!existingOrder && isNear) {
+
+        const entry_price = bucket_price;
+
+        const tp = side === "long"
+          ? entry_price + atr
+          : entry_price - atr;
+
+        const sl = side === "long"
+          ? entry_price - atr
+          : entry_price + atr;
+
+        await orderManager({
+          symbol,
+          timeframe: "1H",
+          price_now,
+          atr,
+          bucket_price,
+          side,
+          entry_price,
+          tp,
+          sl,
+          zone_ts: new Date(bucket.updated_at).getTime()
+        });
+
+        continue; // passem al següent bucket
+      }
+
+      // ---------------------------------------------------------
+      // 2) CANCEL·LAR ORDRE LIMIT si el preu se’n va
+      // ---------------------------------------------------------
+      if (existingOrder && existingOrder.status === "PENDING_ENTRY") {
+
+        const isFar = Math.abs(price_now - bucket_price) > 2 * atr;
+
+        if (isFar) {
+          await cancelOrder(existingOrder.id);
+        }
+      }
+
+      // ---------------------------------------------------------
+      // 3) Si l’ordre és ACTIVE → NO crear res més
+      // ---------------------------------------------------------
+      // TP/SL ja ho gestiona orderManager internament
+    }
 
   } catch (err) {
     console.log("Error FIAT‑PRO institucional", symbol, err.message);
   }
 }
+
 
 
 }
