@@ -7,7 +7,7 @@ export async function cleanBuckets(symbol, timeframe, atr, price_now) {
   const res = await client.query(
     `
     SELECT id, bucket_price, atr AS atr_at_creation, timestamp_created
-    FROM buckets
+    FROM sl_buckets
     WHERE symbol = $1 AND timeframe = $2
     ORDER BY timestamp_created DESC
     `,
@@ -22,23 +22,22 @@ export async function cleanBuckets(symbol, timeframe, atr, price_now) {
 
     // A) Neteja per ATR antic (>30% de diferència)
     if (Math.abs(b.atr_at_creation - atr) / b.atr_at_creation > 0.30) {
-      await client.query(`DELETE FROM buckets WHERE id = $1`, [b.id]);
+      await client.query(`DELETE FROM sl_buckets WHERE id = $1`, [b.id]);
       continue;
     }
 
     // B) Neteja per distància (>5 × ATR)
     if (distance > atr * 5) {
-      await client.query(`DELETE FROM buckets WHERE id = $1`, [b.id]);
+      await client.query(`DELETE FROM sl_buckets WHERE id = $1`, [b.id]);
       continue;
     }
   }
 
   // C) Neteja per solapament (buckets massa propers)
-  // Recarregar buckets després de la primera neteja
   const res2 = await client.query(
     `
     SELECT id, bucket_price
-    FROM buckets
+    FROM sl_buckets
     WHERE symbol = $1 AND timeframe = $2
     ORDER BY bucket_price ASC
     `,
@@ -53,7 +52,7 @@ export async function cleanBuckets(symbol, timeframe, atr, price_now) {
 
     if (Math.abs(b1.bucket_price - b2.bucket_price) < atr) {
       // Eliminar el més antic (b1)
-      await client.query(`DELETE FROM buckets WHERE id = $1`, [b1.id]);
+      await client.query(`DELETE FROM sl_buckets WHERE id = $1`, [b1.id]);
     }
   }
 }
