@@ -248,69 +248,98 @@ async function mainLoop() {
   await checkOpenSignals();
 
   // -------------------------------------------------------------
-// 4) FIAT‑PRO INSTITUCIONAL: buckets + ordres LIMIT
-// -------------------------------------------------------------
-for (const symbol of ["BTC-USDT", "ETH-USDT", "BNB-USDT", "SOL-USDT"]) {
-  try {
-    const mark = await fetchMarkPrice(symbol);
-    const oi = await fetchOpenInterest(symbol);
+  // 4) FIAT‑PRO INSTITUCIONAL: buckets + ordres LIMIT (DOMINANT)
+  // -------------------------------------------------------------
+  for (const symbol of ["BTC-USDT", "ETH-USDT", "BNB-USDT", "SOL-USDT"]) {
+    try {
+      const mark = await fetchMarkPrice(symbol);
+      const oi = await fetchOpenInterest(symbol);
 
-    if (!mark || !oi) continue;
+      if (!mark || !oi) continue;
 
-    const price_now = mark.markPx;
-    const ts = Date.now();
+      const price_now = mark.markPx;
+      const ts = Date.now();
 
-    // ATR actual
-    const atrCandles = await getCandlesFromDB(symbol, "1H", 80);
-    const atrRaw = calcATR(atrCandles, 14);
-    if (!atrRaw) continue;
+      // ATR actual
+      const atrCandles = await getCandlesFromDB(symbol, "1H", 80);
+      const atrRaw = calcATR(atrCandles, 14);
+      if (!atrRaw) continue;
 
-    const atr = Number(atrRaw);
+      const atr = Number(atrRaw);
 
-    // Reconstrucció institucional (detecta buckets)
-    await updateSLReconstruction(symbol, price_now, oi.oi, ts, atr, "1H");
+      // Reconstrucció institucional (detecta buckets)
+      await updateSLReconstruction(symbol, price_now, oi.oi, ts, atr, "1H");
 
-    // Neteja institucional de buckets
-    await cleanBuckets(symbol, "1H", atr, price_now);
+      // Neteja institucional de buckets
+      await cleanBuckets(symbol, "1H", atr, price_now);
 
-    // Obtenir TOTS els buckets vius del símbol
-    const bucketsRes = await client.query(
-      `SELECT *
-       FROM sl_buckets
-       WHERE symbol = $1
-       ORDER BY bucket_price ASC`,
-      [symbol]
-    );
+      // Obtenir TOTS els buckets vius del símbol
+      const bucketsRes = await client.query(
+        `SELECT *
+         FROM sl_buckets
+         WHERE symbol = $1
+         ORDER BY bucket_price ASC`,
+        [symbol]
+      );
 
-    if (bucketsRes.rows.length === 0) continue;
+      if (bucketsRes.rows.length === 0) continue;
 
-    // Per cada bucket → 1 ordre com a màxim
-    for (const bucket of bucketsRes.rows) {
+      // -------------------------------------------------------------
+      // FIAT‑PRO DOMINANT: operar només el bucket dominant per SIZE
+      // -------------------------------------------------------------
 
-      const bucket_price = Number(bucket.bucket_price);
-      const side = bucket.side;
+      // 1) buckets del symbol
+      const bucketsSymbol = bucketsRes.rows;
 
-      // Buscar si ja existeix una ordre viva per aquest bucket
-      const orderRes = await client.query(
+      // 2) bucket dominant per SIZE
+      const dominantBucket = bucketsSymbol.reduce(
+        (best, b) =>
+          !best || Number(b.total_size) > Number(best.total_size) ? b : best,
+        null
+      );
+
+      if (!dominantBucket) continue;
+
+      const bucket_price = Number(dominantBucket.bucket_price);
+      const side = dominantBucket.side;
+
+      // 3) si hi ha un trade ACTIVE → NO obrir res
+      const activeRes = await client.query(
+        `SELECT *
+         FROM orders
+         WHERE symbol = $1
+           AND timeframe = '1H'
+           AND status = 'ACTIVE'
+         LIMIT 1`,
+        [symbol]
+      );
+
+      const hasActiveOrder = activeRes.rows.length > 0;
+
+      if (hasActiveOrder) {
+        // NO operem buckets nous fins que es tanqui l'ordre actual
+        continue;
+      }
+
+      // 4) si NO hi ha trade actiu → mirar si ja existeix ordre pendent per aquest bucket
+      const pendingRes = await client.query(
         `SELECT *
          FROM orders
          WHERE symbol = $1
            AND timeframe = '1H'
            AND bucket_price = $2
-           AND status IN ('PENDING_ENTRY','ACTIVE')
+           AND status = 'PENDING_ENTRY'
          LIMIT 1`,
         [symbol, bucket_price]
       );
 
-      const existingOrder = orderRes.rows[0] || null;
+      const existingPending = pendingRes.rows.length > 0;
 
-      // Condició institucional: preu s'apropa a la zona
+      // 5) Condició institucional: preu s'apropa a la zona
       const isNear = Math.abs(price_now - bucket_price) <= atr;
 
-      // ---------------------------------------------------------
-      // 1) CREAR ORDRE LIMIT (només si NO existeix i el preu s'apropa)
-      // ---------------------------------------------------------
-      if (!existingOrder && isNear) {
+      // 6) CREAR ORDRE LIMIT (només bucket dominant)
+      if (!existingPending && isNear) {
 
         const entry_price = bucket_price;
 
@@ -332,37 +361,22 @@ for (const symbol of ["BTC-USDT", "ETH-USDT", "BNB-USDT", "SOL-USDT"]) {
           entry_price,
           tp,
           sl,
-          zone_ts: new Date(bucket.updated_at).getTime()
+          zone_ts: new Date(dominantBucket.updated_at).getTime()
         });
-
-        continue; // passem al següent bucket
       }
 
-      // ---------------------------------------------------------
-      // 2) CANCEL·LAR ORDRE LIMIT si el preu se’n va
-      // ---------------------------------------------------------
-      if (existingOrder && existingOrder.status === "PENDING_ENTRY") {
-
+      // 7) CANCEL·LAR ORDRE LIMIT si el preu se’n va
+      if (existingPending) {
         const isFar = Math.abs(price_now - bucket_price) > 2 * atr;
-
         if (isFar) {
-          await cancelOrder(existingOrder.id);
+          await cancelOrder(existingPending.id);
         }
       }
 
-      // ---------------------------------------------------------
-      // 3) Si l’ordre és ACTIVE → NO crear res més
-      // ---------------------------------------------------------
-      // TP/SL ja ho gestiona orderManager internament
+    } catch (err) {
+      console.log("Error FIAT‑PRO institucional", symbol, err.message);
     }
-
-  } catch (err) {
-    console.log("Error FIAT‑PRO institucional", symbol, err.message);
   }
-}
-
-
-
 }
 
 // -------------------------------------------------------------
