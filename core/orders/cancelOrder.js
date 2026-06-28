@@ -5,12 +5,11 @@ import { client } from "../../db/client.js";
  * Cancel·la una ordre FIAT‑PRO quan el preu surt de ±1.5 ATR de la zona institucional.
  * Només aplica a ordres PENDING_ENTRY.
  */
-export async function cancelOrder(order, price_now) {
+export async function cancelOrder(order, price_now, atr) {
   const {
     id,
     symbol,
     bucket_price,
-    atr,
     status
   } = order;
 
