@@ -2,10 +2,13 @@
 
 import { getPendingEntryOrders } from "./getPendingEntryOrders.js";
 import { getActiveOrders } from "./getActiveOrders.js";
-import { createOrder } from "./createOrder.js";
 import { activateOrder } from "./activateOrder.js";
 import { cancelOrder } from "./cancelOrder.js";
 import { trackOrderTP_SL } from "./trackOrderTP_SL.js";
+
+// IMPORTANT:
+// FIAT‑PRO DOMINANT ja crea l’ordre LIMIT.
+// Aquí només gestionem activació, cancel·lació i TP/SL.
 
 export async function orderManager({
   symbol,
@@ -13,54 +16,23 @@ export async function orderManager({
   price_now,
   high,
   low,
-  atr,
-  bucket_price,
-  side,
-  entry_price,
-  tp,
-  sl,
-  zone_ts
+  atr
 }) {
 
   // ---------------------------------------------------------
-  // 1) CREAR ORDRE LIMIT (només si NO existeix i el preu s'apropa)
+  // 1) CANCEL·LAR ORDRES LIMIT si el preu se’n va
   // ---------------------------------------------------------
   const pendingOrders = await getPendingEntryOrders(symbol);
 
-  const hasOrderForBucket = pendingOrders.some(
-    o => Number(o.bucket_price) === Number(bucket_price)
-  );
-
-  const isNear = Math.abs(price_now - bucket_price) <= atr;
-
-  if (!hasOrderForBucket && isNear) {
-    await createOrder({
-      symbol,
-      timeframe,
-      bucket_price,
-      side,
-      entry_price,
-      atr,
-      tp,
-      sl,
-      zone_ts,
-      price_now
-    });
-  }
-
-  // ---------------------------------------------------------
-  // 2) CANCEL·LAR ORDRE LIMIT (només si el preu se’n va)
-  // ---------------------------------------------------------
   for (const order of pendingOrders) {
     const isFar = Math.abs(price_now - order.bucket_price) > 2 * atr;
-
     if (isFar) {
       await cancelOrder(order, price_now);
     }
   }
 
   // ---------------------------------------------------------
-  // 3) ACTIVAR ORDRE (només si toca l'entry)
+  // 2) ACTIVAR ORDRES LIMIT si toca l'entry
   // ---------------------------------------------------------
   for (const order of pendingOrders) {
     const touchesEntry =
@@ -73,7 +45,7 @@ export async function orderManager({
   }
 
   // ---------------------------------------------------------
-  // 4) TRACK TP/SL PER ORDRES ACTIVES
+  // 3) TRACK TP/SL PER ORDRES ACTIVES
   // ---------------------------------------------------------
   const activeOrders = await getActiveOrders(symbol);
 
