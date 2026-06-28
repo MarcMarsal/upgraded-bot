@@ -248,84 +248,88 @@ async function mainLoop() {
   await checkOpenSignals();
 
   // -------------------------------------------------------------
-  // 4) FIAT‑PRO INSTITUCIONAL: reconstructor + ordres
-  // -------------------------------------------------------------
-  for (const symbol of ["BTC-USDT", "ETH-USDT", "BNB-USDT", "SOL-USDT"]) {
-    try {
-      const mark = await fetchMarkPrice(symbol);
-      const oi = await fetchOpenInterest(symbol);
+// 4) FIAT‑PRO INSTITUCIONAL: reconstructor + ordres
+// -------------------------------------------------------------
+for (const symbol of ["BTC-USDT", "ETH-USDT", "BNB-USDT", "SOL-USDT"]) {
+  try {
+    const mark = await fetchMarkPrice(symbol);
+    const oi = await fetchOpenInterest(symbol);
 
-      if (!mark || !oi) {
-        console.log("NO DATA", symbol, mark, oi);
-        continue;
-      }
-
-      const price_now = mark.markPx;
-      const ts = Date.now();
-
-      await updateSLReconstruction(symbol, price_now, oi.oi, ts);
-
-      const curr = await getOpenCandle(symbol, "1H");
-      if (!curr) continue;
-
-      const high = curr.high;
-      const low = curr.low;
-
-      const bucketRes = await client.query(
-        `
-        SELECT *
-        FROM sl_buckets
-        WHERE symbol = $1
-        ORDER BY updated_at DESC
-        LIMIT 1
-        `,
-        [symbol]
-      );
-
-      if (bucketRes.rows.length === 0) continue;
-
-      const bucket = bucketRes.rows[0];
-
-      const bucket_price = Number(bucket.bucket_price);
-      const side = bucket.side;
-
-      const atrCandles = await getCandlesFromDB(symbol, "1H", 80);
-      const atrRaw = calcATR(atrCandles, 14);
-      if (!atrRaw) continue;
-
-      const atr = Number(atrRaw);
-      const entry_price = Number(bucket_price);
-      await cleanBuckets(symbol, timeframe, atr, price_now);
-
-      // TP/SL FIAT‑PRO (ARA SÍ NUMÈRIC)
-      const tp = side === "long"
-        ? entry_price + atr
-        : entry_price - atr;
-
-      const sl = side === "long"
-        ? entry_price - atr
-        : entry_price + atr;
-
-
-      await orderManager({
-        symbol,
-        timeframe: "1H",
-        price_now,
-        high,
-        low,
-        atr,
-        bucket_price,
-        side,
-        entry_price,
-        tp,
-        sl,
-        zone_ts: new Date(bucket.updated_at).getTime()
-      });
-
-    } catch (err) {
-      console.log("Error FIAT‑PRO institucional", symbol, err.message);
+    if (!mark || !oi) {
+      console.log("NO DATA", symbol, mark, oi);
+      continue;
     }
+
+    const price_now = mark.markPx;
+    const ts = Date.now();
+
+    await updateSLReconstruction(symbol, price_now, oi.oi, ts);
+
+    const curr = await getOpenCandle(symbol, "1H");
+    if (!curr) continue;
+
+    const high = curr.high;
+    const low = curr.low;
+
+    // 1) ATR actual
+    const atrCandles = await getCandlesFromDB(symbol, "1H", 80);
+    const atrRaw = calcATR(atrCandles, 14);
+    if (!atrRaw) continue;
+
+    const atr = Number(atrRaw);
+
+    // 2) 🔥 Neteja institucional de buckets (ABANS de seleccionar bucket)
+    await cleanBuckets(symbol, "1H", atr, price_now);
+
+    // 3) Ara sí: bucket net, coherent i actualitzat
+    const bucketRes = await client.query(
+      `
+      SELECT *
+      FROM sl_buckets
+      WHERE symbol = $1
+      ORDER BY updated_at DESC
+      LIMIT 1
+      `,
+      [symbol]
+    );
+
+    if (bucketRes.rows.length === 0) continue;
+
+    const bucket = bucketRes.rows[0];
+    const bucket_price = Number(bucket.bucket_price);
+    const side = bucket.side;
+    const entry_price = bucket_price;
+
+    // 4) TP/SL FIAT‑PRO amb ATR actual
+    const tp = side === "long"
+      ? entry_price + atr
+      : entry_price - atr;
+
+    const sl = side === "long"
+      ? entry_price - atr
+      : entry_price + atr;
+
+    // 5) Ordre institucional
+    await orderManager({
+      symbol,
+      timeframe: "1H",
+      price_now,
+      high,
+      low,
+      atr,
+      bucket_price,
+      side,
+      entry_price,
+      tp,
+      sl,
+      zone_ts: new Date(bucket.updated_at).getTime()
+    });
+
+  } catch (err) {
+    console.log("Error FIAT‑PRO institucional", symbol, err.message);
   }
+}
+
 }
 
 // -------------------------------------------------------------
