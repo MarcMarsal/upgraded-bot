@@ -247,7 +247,7 @@ async function mainLoop() {
   // 3) Tracking TP/SL antic
   await checkOpenSignals();
 
-  // -------------------------------------------------------------
+// -------------------------------------------------------------
 // 4) FIAT‑PRO INSTITUCIONAL: reconstructor + ordres
 // -------------------------------------------------------------
 for (const symbol of ["BTC-USDT", "ETH-USDT", "BNB-USDT", "SOL-USDT"]) {
