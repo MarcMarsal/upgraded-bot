@@ -13,6 +13,7 @@ import { updateSLReconstruction } from "./core/sl_reconstructor.js";
 
 import { orderManager } from "./core/orders/orderManager.js";
 import { getOpenCandle } from "./core/candles/getOpenCandle.js";
+import { cleanBuckets } from "./core/buckets/cleanBuckets.js";
 
 // -------------------------------------------------------------
 // CONFIG
@@ -294,6 +295,7 @@ async function mainLoop() {
 
       const atr = Number(atrRaw);
       const entry_price = Number(bucket_price);
+      await cleanBuckets(symbol, timeframe, atr, price_now);
 
       // TP/SL FIAT‑PRO (ARA SÍ NUMÈRIC)
       const tp = side === "long"
