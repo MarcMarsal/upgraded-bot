@@ -247,9 +247,7 @@ async function mainLoop() {
   // 3) Tracking TP/SL antic
   await checkOpenSignals();
 
-// -------------------------------------------------------------
-// 4) FIAT‑PRO INSTITUCIONAL: reconstructor + ordres
-// -------------------------------------------------------------
+  // 4) FIAT‑PRO INSTITUCIONAL: reconstructor + ordres
 for (const symbol of ["BTC-USDT", "ETH-USDT", "BNB-USDT", "SOL-USDT"]) {
   try {
     const mark = await fetchMarkPrice(symbol);
@@ -263,7 +261,15 @@ for (const symbol of ["BTC-USDT", "ETH-USDT", "BNB-USDT", "SOL-USDT"]) {
     const price_now = mark.markPx;
     const ts = Date.now();
 
-    await updateSLReconstruction(symbol, price_now, oi.oi, ts);
+    // 1) ATR actual (ABANS del reconstructor)
+    const atrCandles = await getCandlesFromDB(symbol, "1H", 80);
+    const atrRaw = calcATR(atrCandles, 14);
+    if (!atrRaw) continue;
+
+    const atr = Number(atrRaw);
+
+    // 2) Reconstrucció institucional FIAT‑PRO (ARA SÍ amb ATR)
+    await updateSLReconstruction(symbol, price_now, oi.oi, ts, atr, "1H");
 
     const curr = await getOpenCandle(symbol, "1H");
     if (!curr) continue;
@@ -271,17 +277,10 @@ for (const symbol of ["BTC-USDT", "ETH-USDT", "BNB-USDT", "SOL-USDT"]) {
     const high = curr.high;
     const low = curr.low;
 
-    // 1) ATR actual
-    const atrCandles = await getCandlesFromDB(symbol, "1H", 80);
-    const atrRaw = calcATR(atrCandles, 14);
-    if (!atrRaw) continue;
-
-    const atr = Number(atrRaw);
-
-    // 2) 🔥 Neteja institucional de buckets (ABANS de seleccionar bucket)
+    // 3) Neteja institucional de buckets
     await cleanBuckets(symbol, "1H", atr, price_now);
 
-    // 3) Ara sí: bucket net, coherent i actualitzat
+    // 4) Bucket institucional actualitzat
     const bucketRes = await client.query(
       `
       SELECT *
@@ -300,16 +299,11 @@ for (const symbol of ["BTC-USDT", "ETH-USDT", "BNB-USDT", "SOL-USDT"]) {
     const side = bucket.side;
     const entry_price = bucket_price;
 
-    // 4) TP/SL FIAT‑PRO amb ATR actual
-    const tp = side === "long"
-      ? entry_price + atr
-      : entry_price - atr;
+    // 5) TP/SL institucional amb ATR actual
+    const tp = side === "long" ? entry_price + atr : entry_price - atr;
+    const sl = side === "long" ? entry_price - atr : entry_price + atr;
 
-    const sl = side === "long"
-      ? entry_price - atr
-      : entry_price + atr;
-
-    // 5) Ordre institucional
+    // 6) Ordre institucional
     await orderManager({
       symbol,
       timeframe: "1H",
@@ -329,6 +323,7 @@ for (const symbol of ["BTC-USDT", "ETH-USDT", "BNB-USDT", "SOL-USDT"]) {
     console.log("Error FIAT‑PRO institucional", symbol, err.message);
   }
 }
+
 
 }
 
