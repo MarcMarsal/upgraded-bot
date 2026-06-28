@@ -285,17 +285,25 @@ async function mainLoop() {
 
       const bucket = bucketRes.rows[0];
 
-      const bucket_price = bucket.bucket_price;
+      const bucket_price = Number(bucket.bucket_price);
       const side = bucket.side;
 
       const atrCandles = await getCandlesFromDB(symbol, "1H", 80);
-      const atr = calcATR(atrCandles, 14);
-      if (!atr) continue;
+      const atrRaw = calcATR(atrCandles, 14);
+      if (!atrRaw) continue;
 
-      const entry_price = bucket_price;
+      const atr = Number(atrRaw);
+      const entry_price = Number(bucket_price);
 
-      const tp = side === "long" ? entry_price + atr : entry_price - atr;
-      const sl = side === "long" ? entry_price - atr : entry_price + atr;
+      // TP/SL FIAT‑PRO (ARA SÍ NUMÈRIC)
+      const tp = side === "long"
+        ? entry_price + atr
+        : entry_price - atr;
+
+      const sl = side === "long"
+        ? entry_price - atr
+        : entry_price + atr;
+
 
       await orderManager({
         symbol,
