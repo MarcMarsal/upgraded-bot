@@ -56,30 +56,29 @@ export async function cleanBuckets(symbol, timeframe, atr, price_now) {
     }
   }
 
- // F) Neteja per solapament (buckets massa propers)
-const res2 = await client.query(
-  `
-  SELECT id, bucket_price, total_size
-  FROM sl_buckets
-  WHERE symbol = $1 AND timeframe = $2
-  ORDER BY bucket_price ASC
-  `,
-  [symbol, timeframe]
-);
+  // F) Neteja per solapament (buckets massa propers)
+  const res2 = await client.query(
+    `
+    SELECT id, bucket_price, total_size
+    FROM sl_buckets
+    WHERE symbol = $1 AND timeframe = $2
+    ORDER BY bucket_price ASC
+    `,
+    [symbol, timeframe]
+  );
 
-const sorted = res2.rows;
+  const sorted = res2.rows;
 
-for (let i = 0; i < sorted.length - 1; i++) {
-  const b1 = sorted[i];
-  const b2 = sorted[i + 1];
+  for (let i = 0; i < sorted.length - 1; i++) {
+    const b1 = sorted[i];
+    const b2 = sorted[i + 1];
 
-  if (Math.abs(b1.bucket_price - b2.bucket_price) < atr) {
+    if (Math.abs(b1.bucket_price - b2.bucket_price) < atr) {
 
-    // Eliminar el bucket amb SIZE més petit
-    const weaker = Number(b1.total_size) < Number(b2.total_size) ? b1 : b2;
+      // Eliminar el bucket amb SIZE més petit (FIAT‑PRO DOMINANT)
+      const weaker = Number(b1.total_size) < Number(b2.total_size) ? b1 : b2;
 
-    await client.query(`DELETE FROM sl_buckets WHERE id = $1`, [weaker.id]);
+      await client.query(`DELETE FROM sl_buckets WHERE id = $1`, [weaker.id]);
+    }
   }
-}
-
 }
