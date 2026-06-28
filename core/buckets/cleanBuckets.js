@@ -6,7 +6,8 @@ export async function cleanBuckets(symbol, timeframe, atr, price_now) {
   // 1) Obtenir tots els buckets del símbol/timeframe
   const res = await client.query(
     `
-    SELECT id, bucket_price, atr AS atr_at_creation, timestamp_created
+    SELECT id, bucket_price, atr AS atr_at_creation, timestamp_created,
+           total_size, avg_leverage
     FROM sl_buckets
     WHERE symbol = $1 AND timeframe = $2
     ORDER BY timestamp_created DESC
@@ -15,25 +16,47 @@ export async function cleanBuckets(symbol, timeframe, atr, price_now) {
   );
 
   const buckets = res.rows;
+  const now = Date.now();
 
   for (const b of buckets) {
 
     const distance = Math.abs(price_now - b.bucket_price);
 
-    // A) Neteja per ATR antic (>30% de diferència)
+    // A) ATR antic (>30% de diferència)
     if (Math.abs(b.atr_at_creation - atr) / b.atr_at_creation > 0.30) {
       await client.query(`DELETE FROM sl_buckets WHERE id = $1`, [b.id]);
       continue;
     }
 
-    // B) Neteja per distància (>5 × ATR)
+    // B) Massa lluny del preu (>5 × ATR)
     if (distance > atr * 5) {
+      await client.query(`DELETE FROM sl_buckets WHERE id = $1`, [b.id]);
+      continue;
+    }
+
+    // C) Massa antic (>3 × timeframe)
+    const ageMs = now - Number(b.timestamp_created);
+    const maxAgeMs = 3 * 60 * 60 * 1000; // 3 hores per timeframe 1H
+
+    if (ageMs > maxAgeMs) {
+      await client.query(`DELETE FROM sl_buckets WHERE id = $1`, [b.id]);
+      continue;
+    }
+
+    // D) Size massa petit (no institucional)
+    if (b.total_size < atr * 1000) {
+      await client.query(`DELETE FROM sl_buckets WHERE id = $1`, [b.id]);
+      continue;
+    }
+
+    // E) Leverage incoherent (retail heavy)
+    if (b.avg_leverage > 20) {
       await client.query(`DELETE FROM sl_buckets WHERE id = $1`, [b.id]);
       continue;
     }
   }
 
-  // C) Neteja per solapament (buckets massa propers)
+  // F) Neteja per solapament (buckets massa propers)
   const res2 = await client.query(
     `
     SELECT id, bucket_price
