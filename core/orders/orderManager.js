@@ -27,7 +27,8 @@ export async function orderManager({
   for (const order of pendingOrders) {
     const isFar = Math.abs(price_now - order.bucket_price) > 2 * atr;
     if (isFar) {
-      await cancelOrder(order, price_now);
+       await cancelOrder(order, price_now, atr);
+
     }
   }
 
