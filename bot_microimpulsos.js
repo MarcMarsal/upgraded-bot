@@ -1,4 +1,4 @@
-// bot_microimpulsos.js — FIAT‑PRO (patrons + ATR + tracking)
+// bot_microimpulsos.js — FIAT‑PRO (patrons + ATR + tracking + ordres)
 
 import cron from "node-cron";
 import { client, initDB } from "./db/client.js";
@@ -7,15 +7,12 @@ import { saveSignal2 } from "./db/saveSignal2.js";
 import { detectMSES } from "./core/patterns.js";
 import { fetchAndStoreCandles } from "./core/fetchcandles.js";
 import { splitSpainDate } from "./core/utils.js";
+
 import { fetchMarkPrice, fetchOpenInterest } from "./core/fetchMarketData.js";
 import { updateSLReconstruction } from "./core/sl_reconstructor.js";
 
-
-function timeframeToMs(tf) {
-  if (tf === "1H") return 60 * 60 * 1000;
-  if (tf === "4H") return 4 * 60 * 60 * 1000;
-  throw new Error("Timeframe no suportat: " + tf);
-}
+import { orderManager } from "./core/orders/orderManager.js";
+import { getOpenCandle } from "./core/candles/getOpenCandle.js";
 
 // -------------------------------------------------------------
 // CONFIG
@@ -29,6 +26,15 @@ const ACTIVE_CRYPTOS = [
 ];
 
 const TIMEFRAMES = ["1H", "4H"];
+
+// -------------------------------------------------------------
+// TIMEFRAME → MS
+// -------------------------------------------------------------
+function timeframeToMs(tf) {
+  if (tf === "1H") return 60 * 60 * 1000;
+  if (tf === "4H") return 4 * 60 * 60 * 1000;
+  throw new Error("Timeframe no suportat: " + tf);
+}
 
 // -------------------------------------------------------------
 // LLEGIR VELAS DE LA DB
@@ -135,7 +141,6 @@ export async function processSymbol(symbol, timeframe) {
 
     console.log("[FIAT‑PRO]", symbol, timeframe, sig.type, sig.timestamp);
 
-    // 1) CALCULAR ATR I TARGETS
     const { entry, entryr, tp, sl } = calcTargets(
       sig.type,
       sig.thirdCandle,
@@ -146,7 +151,6 @@ export async function processSymbol(symbol, timeframe) {
     sig.tp = tp;
     sig.sl = sl;
 
-    // 2) GUARDAR SENYAL (simple)
     await saveSignal2({
       symbol: sig.symbol,
       timeframe: sig.timeframe,
@@ -161,7 +165,7 @@ export async function processSymbol(symbol, timeframe) {
 }
 
 // -------------------------------------------------------------
-// TRACKING TP/SL
+// TRACKING TP/SL ANTIC
 // -------------------------------------------------------------
 async function checkOpenSignals() {
   const res = await client.query(`
@@ -173,10 +177,9 @@ async function checkOpenSignals() {
   for (const s of res.rows) {
     if (s.tp == null && s.sl == null) continue;
 
-    const candles = await getCandlesFromDB(s.symbol, s.timeframe, 1);
-    if (!candles || candles.length === 0) continue;
+    const curr = await getOpenCandle(s.symbol, s.timeframe);
+    if (!curr) continue;
 
-    const curr = candles[candles.length - 1];
     const high = curr.high;
     const low = curr.low;
 
@@ -219,7 +222,7 @@ async function checkOpenSignals() {
 }
 
 // -------------------------------------------------------------
-// LOOP PRINCIPAL
+// LOOP PRINCIPAL FIAT‑PRO
 // -------------------------------------------------------------
 async function mainLoop() {
   // 1) Actualitzar veles
@@ -229,7 +232,7 @@ async function mainLoop() {
     }
   }
 
-  // 2) Processar patrons FIAT‑PRO
+  // 2) Processar patrons FIAT‑PRO (M/E)
   for (const symbol of ACTIVE_CRYPTOS) {
     for (const timeframe of TIMEFRAMES) {
       try {
@@ -240,31 +243,77 @@ async function mainLoop() {
     }
   }
 
-  // 3) Tracking TP/SL
+  // 3) Tracking TP/SL antic
   await checkOpenSignals();
 
-  // 4) 🔥 FIAT‑PRO: reconstrucció SL dels trades oberts
-  for (const symbol of ["BTC-USDT"]) {
+  // -------------------------------------------------------------
+  // 4) FIAT‑PRO INSTITUCIONAL: reconstructor + ordres
+  // -------------------------------------------------------------
+  for (const symbol of ["BTC-USDT", "ETH-USDT", "BNB-USDT", "SOL-USDT"]) {
     try {
-      const mark = await fetchMarkPrice(symbol);      // <-- NECESSARI
-      const oi = await fetchOpenInterest(symbol);     // <-- NECESSARI
+      const mark = await fetchMarkPrice(symbol);
+      const oi = await fetchOpenInterest(symbol);
 
       if (!mark || !oi) {
         console.log("NO DATA", symbol, mark, oi);
         continue;
       }
 
-      console.log("SL DEBUG", symbol, mark.markPx, oi.oi);
+      const price_now = mark.markPx;
+      const ts = Date.now();
 
-      await updateSLReconstruction(
-        symbol,
-        mark.markPx,
-        oi.oi,
-        Date.now()
+      await updateSLReconstruction(symbol, price_now, oi.oi, ts);
+
+      const curr = await getOpenCandle(symbol, "1H");
+      if (!curr) continue;
+
+      const high = curr.high;
+      const low = curr.low;
+
+      const bucketRes = await client.query(
+        `
+        SELECT *
+        FROM sl_buckets
+        WHERE symbol = $1
+        ORDER BY updated_at DESC
+        LIMIT 1
+        `,
+        [symbol]
       );
 
+      if (bucketRes.rows.length === 0) continue;
+
+      const bucket = bucketRes.rows[0];
+
+      const bucket_price = bucket.bucket_price;
+      const side = bucket.side;
+
+      const atrCandles = await getCandlesFromDB(symbol, "1H", 80);
+      const atr = calcATR(atrCandles, 14);
+      if (!atr) continue;
+
+      const entry_price = bucket_price;
+
+      const tp = side === "long" ? entry_price + atr : entry_price - atr;
+      const sl = side === "long" ? entry_price - atr : entry_price + atr;
+
+      await orderManager({
+        symbol,
+        timeframe: "1H",
+        price_now,
+        high,
+        low,
+        atr,
+        bucket_price,
+        side,
+        entry_price,
+        tp,
+        sl,
+        zone_ts: new Date(bucket.updated_at).getTime()
+      });
+
     } catch (err) {
-      console.log("Error SL Reconstruction", symbol, err.message);
+      console.log("Error FIAT‑PRO institucional", symbol, err.message);
     }
   }
 }
@@ -274,9 +323,7 @@ async function mainLoop() {
 // -------------------------------------------------------------
 async function startBot() {
   await initDB();
-  console.log("Bot FIAT‑PRO en marxa (patrons + ATR + tracking)");
-  //testTiers;
-
+  console.log("Bot FIAT‑PRO en marxa (patrons + ATR + tracking + ordres)");
   cron.schedule("* * * * *", mainLoop);
 }
 
