@@ -19,6 +19,19 @@ export async function createOrder({
 }) {
   const now = Date.now();
 
+  console.log("[CREATEORDER] INSERT", {
+    symbol,
+    timeframe,
+    bucket_price,
+    side,
+    entry_price,
+    atr,
+    tp,
+    sl,
+    zone_ts,
+    price_now
+  });
+
   // 1) Comprovar si ja existeix una ordre viva per aquest bucket
   const existing = await client.query(
     `
@@ -37,19 +50,23 @@ export async function createOrder({
     return null;
   }
 
-  // 2) Inserir ordre nova
+  // 2) Inserir ordre nova (totes les columnes de la taula)
   const res = await client.query(
     `
     INSERT INTO orders
       (symbol, timeframe, bucket_price, side,
        entry_price, atr, tp, sl,
        status, timestamp_created,
-       price_at_creation, zone_ts, last_update)
+       timestamp_activated, timestamp_closed,
+       price_at_creation, price_at_activation, price_at_close,
+       zone_ts, last_update)
     VALUES
       ($1,$2,$3,$4,
        $5,$6,$7,$8,
        'PENDING_ENTRY', $9,
-       $10, $11, $12)
+       NULL, NULL,
+       $10, NULL, NULL,
+       $11, $12)
     RETURNING *
     `,
     [
@@ -61,16 +78,16 @@ export async function createOrder({
       atr,
       tp,
       sl,
-      now,
-      price_now,
-      zone_ts,
-      now
+      now,          // timestamp_created
+      price_now,    // price_at_creation
+      zone_ts,      // zone_ts
+      now           // last_update
     ]
   );
 
   const order = res.rows[0];
 
-  console.log(`[ORDERS] Nova ordre creada → ${symbol} ${side} @ ${entry_price} (bucket ${bucket_price})`);
+  console.log(`[ORDERS] Nova ordre creada → ${symbol} ${side} @ ${entry_price} (bucket ${bucket_price}) id=${order.id}`);
 
   return order;
 }
