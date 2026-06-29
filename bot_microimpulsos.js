@@ -372,7 +372,7 @@ for (const symbol of ["BTC-USDT", "ETH-USDT", "BNB-USDT", "SOL-USDT"]) {
          atr,
          tp,
          sl,
-         zone_ts,
+         zone_ts: new Date(dominantBucket.updated_at).getTime(),
          price_now
       });
 
