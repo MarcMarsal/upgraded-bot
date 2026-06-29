@@ -14,6 +14,8 @@ import { updateSLReconstruction } from "./core/sl_reconstructor.js";
 import { orderManager } from "./core/orders/orderManager.js";
 import { getOpenCandle } from "./core/candles/getOpenCandle.js";
 import { cleanBuckets } from "./core/buckets/cleanBuckets.js";
+import { createOrder } from "./core/orders/createOrder.js";
+
 
 // -------------------------------------------------------------
 // CONFIG
