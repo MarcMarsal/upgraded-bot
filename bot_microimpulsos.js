@@ -247,150 +247,150 @@ async function mainLoop() {
   // 3) Tracking TP/SL antic
   await checkOpenSignals();
 
-  // -------------------------------------------------------------
-  // 4) FIAT‑PRO INSTITUCIONAL: buckets + ordres LIMIT (DOMINANT)
-  // -------------------------------------------------------------
-  for (const symbol of ["BTC-USDT", "ETH-USDT", "BNB-USDT", "SOL-USDT"]) {
-    try {
-      const mark = await fetchMarkPrice(symbol);
-      const oi = await fetchOpenInterest(symbol);
+// -------------------------------------------------------------
+// 4) FIAT‑PRO INSTITUCIONAL: buckets + ordres LIMIT (DOMINANT)
+// -------------------------------------------------------------
+for (const symbol of ["BTC-USDT", "ETH-USDT", "BNB-USDT", "SOL-USDT"]) {
+  try {
+    const mark = await fetchMarkPrice(symbol);
+    const oi = await fetchOpenInterest(symbol);
 
-      if (!mark || !oi) continue;
+    if (!mark || !oi) continue;
 
-      const price_now = mark.markPx;
-      const ts = Date.now();
+    const price_now = mark.markPx;
+    const ts = Date.now();
 
-      // ATR actual
-      const atrCandles = await getCandlesFromDB(symbol, "1H", 80);
-      const atrRaw = calcATR(atrCandles, 14);
-      if (!atrRaw) continue;
+    // ATR actual
+    const atrCandles = await getCandlesFromDB(symbol, "1H", 80);
+    const atrRaw = calcATR(atrCandles, 14);
+    if (!atrRaw) continue;
 
-      const atr = Number(atrRaw);
+    const atr = Number(atrRaw);
+    console.log("[ATR]", symbol, "ATR:", atr, "price:", price_now);
 
-      // Reconstrucció institucional (detecta buckets)
-      await updateSLReconstruction(symbol, price_now, oi.oi, ts, atr, "1H");
+    // Reconstrucció institucional (detecta buckets)
+    await updateSLReconstruction(symbol, price_now, oi.oi, ts, atr, "1H");
 
-      // Neteja institucional de buckets
-      await cleanBuckets(symbol, "1H", atr, price_now);
+    // Neteja institucional de buckets
+    await cleanBuckets(symbol, "1H", atr, price_now);
 
-      // Obtenir TOTS els buckets vius del símbol
-      const bucketsRes = await client.query(
-        `SELECT *
-         FROM sl_buckets
-         WHERE symbol = $1
-         ORDER BY bucket_price ASC`,
-        [symbol]
-      );
+    // Obtenir TOTS els buckets vius del símbol
+    const bucketsRes = await client.query(
+      `SELECT *
+       FROM sl_buckets
+       WHERE symbol = $1
+       ORDER BY bucket_price ASC`,
+      [symbol]
+    );
 
-      if (bucketsRes.rows.length === 0) continue;
+    if (bucketsRes.rows.length === 0) continue;
 
-      // -------------------------------------------------------------
-      // FIAT‑PRO DOMINANT: operar només el bucket dominant per SIZE
-      // -------------------------------------------------------------
+    // FIAT‑PRO DOMINANT: bucket per SIZE
+    const bucketsSymbol = bucketsRes.rows;
+    const dominantBucket = bucketsSymbol.reduce(
+      (best, b) =>
+        !best || Number(b.total_size) > Number(best.total_size) ? b : best,
+      null
+    );
 
-      // 1) buckets del symbol
-      const bucketsSymbol = bucketsRes.rows;
+    if (!dominantBucket) continue;
 
-      // 2) bucket dominant per SIZE
-      const dominantBucket = bucketsSymbol.reduce(
-        (best, b) =>
-          !best || Number(b.total_size) > Number(best.total_size) ? b : best,
-        null
-      );
+    const bucket_price = Number(dominantBucket.bucket_price);
+    const side = dominantBucket.side;
 
-      if (!dominantBucket) continue;
+    console.log("[DOMINANT]", symbol, "side:", side, "bucket:", bucket_price, "size:", dominantBucket.total_size);
 
-            const bucket_price = Number(dominantBucket.bucket_price);
-      const side = dominantBucket.side;
+    // 3) si hi ha un trade ACTIVE → NO obrir res
+    const activeRes = await client.query(
+      `SELECT *
+       FROM orders
+       WHERE symbol = $1
+         AND timeframe = '1H'
+         AND status = 'ACTIVE'
+       LIMIT 1`,
+      [symbol]
+    );
 
-      // 3) si hi ha un trade ACTIVE → NO obrir res
-      const activeRes = await client.query(
-        `SELECT *
-         FROM orders
-         WHERE symbol = $1
-           AND timeframe = '1H'
-           AND status = 'ACTIVE'
-         LIMIT 1`,
-        [symbol]
-      );
+    const hasActiveOrder = activeRes.rows.length > 0;
 
-      const hasActiveOrder = activeRes.rows.length > 0;
-
-      if (hasActiveOrder) {
-        // NO operem buckets nous fins que es tanqui l'ordre actual
-        continue;
-      }
-
-      // 4) si NO hi ha trade actiu → mirar si ja existeix ordre pendent per aquest bucket
-      const pendingRes = await client.query(
-        `SELECT *
-         FROM orders
-         WHERE symbol = $1
-           AND timeframe = '1H'
-           AND bucket_price = $2
-           AND status = 'PENDING_ENTRY'
-         LIMIT 1`,
-        [symbol, bucket_price]
-      );
-
-      const pendingOrder = pendingRes.rows[0] || null;
-      const existingPending = !!pendingOrder;
-
-      // 5) Condició institucional FIAT‑PRO:
-      // SHORT → preu ve des de sota i entra dins ATR
-      // LONG  → preu ve des de dalt i entra dins ATR
-      let isNear = false;
-
-      if (side === "short") {
-        isNear =
-          price_now < bucket_price &&
-          (bucket_price - price_now) <= atr;
-      } else if (side === "long") {
-        isNear =
-          price_now > bucket_price &&
-          (price_now - bucket_price) <= atr;
-      }
-
-      // 6) CREAR ORDRE LIMIT (només bucket dominant, entrada dins ATR)
-      if (!existingPending && isNear) {
-
-        const entry_price = bucket_price;
-
-        const tp = side === "long"
-          ? entry_price + atr
-          : entry_price - atr;
-
-        const sl = side === "long"
-          ? entry_price - atr
-          : entry_price + atr;
-
-        await orderManager({
-          symbol,
-          timeframe: "1H",
-          price_now,
-          atr,
-          bucket_price,
-          side,
-          entry_price,
-          tp,
-          sl,
-          zone_ts: new Date(dominantBucket.updated_at).getTime()
-        });
-      }
-
-      // 7) CANCEL·LAR ORDRE LIMIT si el preu se’n va (més de 2×ATR)
-      if (existingPending) {
-        const isFar = Math.abs(price_now - bucket_price) > 2 * atr;
-        if (isFar) {
-          await cancelOrder(pendingOrder.id);
-        }
-      }
-
-
-    } catch (err) {
-      console.log("Error FIAT‑PRO institucional", symbol, err.message);
+    if (hasActiveOrder) {
+      console.log("[ACTIVE BLOCK]", symbol, "ACTIVE order present, skipping");
+      continue;
     }
+
+    // 4) si NO hi ha trade actiu → mirar si ja existeix ordre pendent per aquest bucket
+    const pendingRes = await client.query(
+      `SELECT *
+       FROM orders
+       WHERE symbol = $1
+         AND timeframe = '1H'
+         AND bucket_price = $2
+         AND status = 'PENDING_ENTRY'
+       LIMIT 1`,
+      [symbol, bucket_price]
+    );
+
+    const pendingOrder = pendingRes.rows[0] || null;
+    const existingPending = !!pendingOrder;
+
+    // 5) Condició institucional FIAT‑PRO
+    let isNear = false;
+
+    if (side === "short") {
+      isNear = price_now < bucket_price &&
+               (bucket_price - price_now) <= atr;
+    } else if (side === "long") {
+      isNear = price_now > bucket_price &&
+               (price_now - bucket_price) <= atr;
+    }
+
+    console.log("[CHECK]", symbol, "side:", side, "price:", price_now, "bucket:", bucket_price, "ATR:", atr, "isNear:", isNear, "existingPending:", existingPending);
+
+    // 6) CREAR ORDRE LIMIT
+    if (!existingPending && isNear) {
+
+      const entry_price = bucket_price;
+
+      const tp = side === "long"
+        ? entry_price + atr
+        : entry_price - atr;
+
+      const sl = side === "long"
+        ? entry_price - atr
+        : entry_price + atr;
+
+      console.log("[ENTRY]", symbol, "CREATING ORDER", "side:", side, "entry:", entry_price, "tp:", tp, "sl:", sl);
+
+      await orderManager({
+        symbol,
+        timeframe: "1H",
+        price_now,
+        atr,
+        bucket_price,
+        side,
+        entry_price,
+        tp,
+        sl,
+        zone_ts: new Date(dominantBucket.updated_at).getTime()
+      });
+    }
+
+    // 7) CANCEL·LAR ORDRE LIMIT si el preu se’n va
+    if (existingPending) {
+      const isFar = Math.abs(price_now - bucket_price) > 2 * atr;
+      console.log("[CANCEL CHECK]", symbol, "price:", price_now, "bucket:", bucket_price, "isFar:", isFar);
+
+      if (isFar) {
+        console.log("[CANCEL]", symbol, "CANCEL ORDER", pendingOrder.id);
+        await cancelOrder(pendingOrder.id);
+      }
+    }
+
+  } catch (err) {
+    console.log("Error FIAT‑PRO institucional", symbol, err.message);
   }
+}
+
 }
 
 // -------------------------------------------------------------
