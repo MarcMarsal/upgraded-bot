@@ -361,18 +361,19 @@ for (const symbol of ["BTC-USDT", "ETH-USDT", "BNB-USDT", "SOL-USDT"]) {
 
       console.log("[ENTRY]", symbol, "CREATING ORDER", "side:", side, "entry:", entry_price, "tp:", tp, "sl:", sl);
 
-      await orderManager({
-        symbol,
-        timeframe: "1H",
-        price_now,
-        atr,
-        bucket_price,
-        side,
-        entry_price,
-        tp,
-        sl,
-        zone_ts: new Date(dominantBucket.updated_at).getTime()
+      await createOrder({
+         symbol,
+         timeframe: "1H",
+         bucket_price,
+         side,
+         entry_price,
+         atr,
+         tp,
+         sl,
+         zone_ts,
+         price_now
       });
+
     }
 
     // 7) CANCEL·LAR ORDRE LIMIT si el preu se’n va
