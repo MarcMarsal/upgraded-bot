@@ -300,7 +300,7 @@ async function mainLoop() {
 
       if (!dominantBucket) continue;
 
-      const bucket_price = Number(dominantBucket.bucket_price);
+            const bucket_price = Number(dominantBucket.bucket_price);
       const side = dominantBucket.side;
 
       // 3) si hi ha un trade ACTIVE → NO obrir res
@@ -333,12 +333,25 @@ async function mainLoop() {
         [symbol, bucket_price]
       );
 
-      const existingPending = pendingRes.rows.length > 0;
+      const pendingOrder = pendingRes.rows[0] || null;
+      const existingPending = !!pendingOrder;
 
-      // 5) Condició institucional: preu s'apropa a la zona
-      const isNear = Math.abs(price_now - bucket_price) <= atr;
+      // 5) Condició institucional FIAT‑PRO:
+      // SHORT → preu ve des de sota i entra dins ATR
+      // LONG  → preu ve des de dalt i entra dins ATR
+      let isNear = false;
 
-      // 6) CREAR ORDRE LIMIT (només bucket dominant)
+      if (side === "short") {
+        isNear =
+          price_now < bucket_price &&
+          (bucket_price - price_now) <= atr;
+      } else if (side === "long") {
+        isNear =
+          price_now > bucket_price &&
+          (price_now - bucket_price) <= atr;
+      }
+
+      // 6) CREAR ORDRE LIMIT (només bucket dominant, entrada dins ATR)
       if (!existingPending && isNear) {
 
         const entry_price = bucket_price;
@@ -365,13 +378,14 @@ async function mainLoop() {
         });
       }
 
-      // 7) CANCEL·LAR ORDRE LIMIT si el preu se’n va
+      // 7) CANCEL·LAR ORDRE LIMIT si el preu se’n va (més de 2×ATR)
       if (existingPending) {
         const isFar = Math.abs(price_now - bucket_price) > 2 * atr;
         if (isFar) {
-          await cancelOrder(existingPending.id);
+          await cancelOrder(pendingOrder.id);
         }
       }
+
 
     } catch (err) {
       console.log("Error FIAT‑PRO institucional", symbol, err.message);
