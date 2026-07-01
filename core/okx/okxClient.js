@@ -16,8 +16,9 @@ const PASSPHRASE = process.env.OKX_PASSPHRASE;
 // SPOT: instId correcte
 // ===============================
 function normalizeInstId(symbol) {
-  return symbol; // BTC-USDT, ETH-USDT, SOL-USDT
+  return symbol.replace("USDT", "USDC");
 }
+
 
 // ===============================
 // SPOT: side correcte
