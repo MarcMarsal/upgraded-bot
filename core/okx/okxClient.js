@@ -8,7 +8,18 @@ const API_KEY = process.env.OKX_API_KEY;
 const SECRET_KEY = process.env.OKX_SECRET_KEY;
 const PASSPHRASE = process.env.OKX_PASSPHRASE;
 
+// Normalitzar instrument a FUTURS USDT-SWAP
+function normalizeInstId(symbol) {
+  // BTC-USDT → BTC-USDT-SWAP, etc.
+  return symbol.replace("-USDT", "-USDT-SWAP");
+}
 
+// Normalitzar side a format OKX
+function normalizeSide(side) {
+  if (side === "long") return "buy";
+  if (side === "short") return "sell";
+  return side;
+}
 
 // Signatura OKX
 function sign(message) {
@@ -29,33 +40,23 @@ export async function okxCreateOrder({
 }) {
   const timestamp = new Date().toISOString();
 
-  function normalizeInstId(symbol) {
-    return symbol.replace("-USDT", "-USD-UM");
-  }
-
-
   const body = {
-    //instId,
     instId: normalizeInstId(instId),
     tdMode: "cross",
-    side,
+    side: normalizeSide(side),
     ordType: "limit",
     px: px.toString(),
-    sz: sz.toString(),
-    // TP/SL opcionals
-    tpTriggerPx: tp ? tp.toString() : undefined,
-    slTriggerPx: sl ? sl.toString() : undefined
+    sz: sz.toString()
   };
 
-  //const message = timestamp + "POST" + "/api/v5/trade/order" + JSON.stringify(body);
-  const path = "/api/v5/trade/order";
-  const message = `${timestamp}POST${path}${JSON.stringify(body)}`;
+  if (tp) body.tpTriggerPx = tp.toString();
+  if (sl) body.slTriggerPx = sl.toString();
 
+  const path = "/api/v5/trade/order";
+  const message = timestamp + "POST" + path + JSON.stringify(body);
+  const signature = sign(message);
 
   console.log("OKX REQUEST BODY:", JSON.stringify(body));
-
-  const signature = sign(message);
-  
   console.log("SIGN MESSAGE:", message);
   console.log("API_KEY:", API_KEY);
   console.log("SECRET_KEY:", SECRET_KEY);
@@ -69,7 +70,12 @@ export async function okxCreateOrder({
     "Content-Type": "application/json"
   };
 
-  const res = await axios.post(TRADING_API_URL, body, { headers });
-
-  return res.data;
+  try {
+    const res = await axios.post(TRADING_API_URL, body, { headers });
+    console.log("OKX RESPONSE:", res.data);
+    return res.data;
+  } catch (err) {
+    console.log("OKX ERROR:", err.response?.data || err.message);
+    throw err;
+  }
 }
