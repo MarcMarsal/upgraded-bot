@@ -404,12 +404,14 @@ for (const symbol of ["BTC-USDT","ETH-USDT","SOL-USDT"]) {
 
     // 7) CANCEL·LAR ORDRE LIMIT si el preu se’n va
     if (existingPending) {
+
       const isFar = Math.abs(price_now - bucket_price) > 2 * atr;
-      //.log("[CANCEL CHECK]", symbol, "price:", price_now, "bucket:", bucket_price, "isFar:", isFar);
 
       if (isFar) {
-        //.log("[CANCEL]", symbol, "CANCEL ORDER", pendingOrder.id);
-        await cancelOrder(pendingOrder.id);
+        console.log("[CANCEL]", symbol, "CANCEL ORDER", pendingOrder.id);
+
+        // CRIDA CORRECTA (objecte complet + price_now + atr)
+        await cancelOrder(pendingOrder, price_now, atr);
       }
     }
 
