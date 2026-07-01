@@ -67,13 +67,20 @@ export async function okxCreateOrder({
 
   try {
     const res = await axios.post(TRADING_API_URL, body, { headers });
+
+    // RAW RESPONSE COMPLETA
+    console.log("OKX RAW RESPONSE:", JSON.stringify(res.data, null, 2));
+
     return res.data;
   } catch (err) {
-    console.log("OKX ERROR:", err.response?.data || err.message);
+    console.log("OKX RAW ERROR:", err.response?.data || err.message);
     throw err;
   }
 }
 
+// ===============================
+// CANCEL·LAR ORDRE SPOT
+// ===============================
 export async function okxCancelOrder(instId, ordId) {
   const timestamp = new Date().toISOString();
 
@@ -97,7 +104,15 @@ export async function okxCancelOrder(instId, ordId) {
 
   const url = "https://my.okx.com/api/v5/trade/cancel-order";
 
-  const res = await axios.post(url, body, { headers });
-  return res.data;
-}
+  try {
+    const res = await axios.post(url, body, { headers });
 
+    // RAW RESPONSE COMPLETA
+    console.log("OKX RAW CANCEL RESPONSE:", JSON.stringify(res.data, null, 2));
+
+    return res.data;
+  } catch (err) {
+    console.log("OKX RAW CANCEL ERROR:", err.response?.data || err.message);
+    throw err;
+  }
+}
