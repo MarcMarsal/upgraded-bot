@@ -51,6 +51,7 @@ export async function okxCreateOrder({
 
   const body = {
     instId: normalizeInstId(instId),
+    tdMode:"cash",
     side: normalizeSide(side),
     ordType: "limit",
     px: px.toString(),
