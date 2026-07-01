@@ -44,17 +44,18 @@ export async function okxCreateOrder({
     sz: sz.toString()
   };
 
-  // TP/SL via attachAlgoOrds (format OKX Futures)
   const attachAlgoOrds = [];
 
+  // TP → MARKET (OKX requirement)
   if (tp) {
     attachAlgoOrds.push({
       algoOrdType: "tp",
       tpTriggerPx: tp.toString(),
-      tpOrdPx: tp.toString()
+      tpOrdPx: "-1"   // MARKET TP
     });
   }
 
+  // SL → LIMIT (allowed)
   if (sl) {
     attachAlgoOrds.push({
       algoOrdType: "sl",
