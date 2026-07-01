@@ -1,7 +1,9 @@
 import crypto from "crypto";
 import axios from "axios";
 
-const TRADING_API_URL = "https://my.okx.com/api/v5/trade/order";
+
+const TRADING_API_URL = "https://www.okx.com/api/v5/trade/order";
+
 
 const API_KEY = process.env.OKX_API_KEY;
 const SECRET_KEY = process.env.OKX_SECRET_KEY;
@@ -107,7 +109,8 @@ export async function okxCancelOrder(instId, ordId) {
     "x-simulated-trading": "1"
   };
 
-  const url = "https://my.okx.com/api/v5/trade/cancel-order";
+  const url = "https://www.okx.com/api/v5/trade/cancel-order";
+
 
   try {
     const res = await axios.post(url, body, { headers });
