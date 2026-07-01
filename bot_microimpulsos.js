@@ -268,7 +268,7 @@ for (const symbol of ["BTC-USDT", "ETH-USDT", "BNB-USDT", "SOL-USDT"]) {
     if (!atrRaw) continue;
 
     const atr = Number(atrRaw);
-    console.log("[ATR]", symbol, "ATR:", atr, "price:", price_now);
+    //console.log("[ATR]", symbol, "ATR:", atr, "price:", price_now);
 
     // Reconstrucció institucional (detecta buckets)
     await updateSLReconstruction(symbol, price_now, oi.oi, ts, atr, "1H");
@@ -300,7 +300,7 @@ for (const symbol of ["BTC-USDT", "ETH-USDT", "BNB-USDT", "SOL-USDT"]) {
     const bucket_price = Number(dominantBucket.bucket_price);
     const side = dominantBucket.side;
 
-    console.log("[DOMINANT]", symbol, "side:", side, "bucket:", bucket_price, "size:", dominantBucket.total_size);
+    //.log("[DOMINANT]", symbol, "side:", side, "bucket:", bucket_price, "size:", dominantBucket.total_size);
 
     // 3) si hi ha un trade ACTIVE → NO obrir res
     const activeRes = await client.query(
@@ -316,7 +316,7 @@ for (const symbol of ["BTC-USDT", "ETH-USDT", "BNB-USDT", "SOL-USDT"]) {
     const hasActiveOrder = activeRes.rows.length > 0;
 
     if (hasActiveOrder) {
-      console.log("[ACTIVE BLOCK]", symbol, "ACTIVE order present, skipping");
+      //.log("[ACTIVE BLOCK]", symbol, "ACTIVE order present, skipping");
       continue;
     }
 
@@ -346,7 +346,7 @@ for (const symbol of ["BTC-USDT", "ETH-USDT", "BNB-USDT", "SOL-USDT"]) {
                (price_now - bucket_price) <= atr;
     }
 
-    console.log("[CHECK]", symbol, "side:", side, "price:", price_now, "bucket:", bucket_price, "ATR:", atr, "isNear:", isNear, "existingPending:", existingPending);
+    //.log("[CHECK]", symbol, "side:", side, "price:", price_now, "bucket:", bucket_price, "ATR:", atr, "isNear:", isNear, "existingPending:", existingPending);
 
     // 6) CREAR ORDRE LIMIT
     if (!existingPending && isNear) {
@@ -361,7 +361,7 @@ for (const symbol of ["BTC-USDT", "ETH-USDT", "BNB-USDT", "SOL-USDT"]) {
         ? entry_price - atr
         : entry_price + atr;
 
-      console.log("[ENTRY]", symbol, "CREATING ORDER", "side:", side, "entry:", entry_price, "tp:", tp, "sl:", sl);
+      //.log("[ENTRY]", symbol, "CREATING ORDER", "side:", side, "entry:", entry_price, "tp:", tp, "sl:", sl);
 
       await createOrder({
          symbol,
@@ -381,10 +381,10 @@ for (const symbol of ["BTC-USDT", "ETH-USDT", "BNB-USDT", "SOL-USDT"]) {
     // 7) CANCEL·LAR ORDRE LIMIT si el preu se’n va
     if (existingPending) {
       const isFar = Math.abs(price_now - bucket_price) > 2 * atr;
-      console.log("[CANCEL CHECK]", symbol, "price:", price_now, "bucket:", bucket_price, "isFar:", isFar);
+      //.log("[CANCEL CHECK]", symbol, "price:", price_now, "bucket:", bucket_price, "isFar:", isFar);
 
       if (isFar) {
-        console.log("[CANCEL]", symbol, "CANCEL ORDER", pendingOrder.id);
+        //.log("[CANCEL]", symbol, "CANCEL ORDER", pendingOrder.id);
         await cancelOrder(pendingOrder.id);
       }
     }
