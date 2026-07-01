@@ -52,6 +52,9 @@ export async function okxCreateOrder({
     sz: sz.toString()
   };
 
+  // LOG IMPORTANT: REQUEST BODY
+  console.log("OKX REQUEST BODY:", JSON.stringify(body, null, 2));
+
   const path = "/api/v5/trade/order";
   const message = timestamp + "POST" + path + JSON.stringify(body);
   const signature = sign(message);
@@ -89,6 +92,8 @@ export async function okxCancelOrder(instId, ordId) {
     ordId
   };
 
+  console.log("OKX CANCEL REQUEST BODY:", JSON.stringify(body, null, 2));
+
   const path = "/api/v5/trade/cancel-order";
   const message = timestamp + "POST" + path + JSON.stringify(body);
   const signature = sign(message);
@@ -107,7 +112,6 @@ export async function okxCancelOrder(instId, ordId) {
   try {
     const res = await axios.post(url, body, { headers });
 
-    // RAW RESPONSE COMPLETA
     console.log("OKX RAW CANCEL RESPONSE:", JSON.stringify(res.data, null, 2));
 
     return res.data;
