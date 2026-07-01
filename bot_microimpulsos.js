@@ -252,7 +252,7 @@ async function mainLoop() {
 // -------------------------------------------------------------
 // 4) FIAT‑PRO INSTITUCIONAL: buckets + ordres LIMIT (DOMINANT)
 // -------------------------------------------------------------
-for (const symbol of ["ETH-USDT"]) {
+for (const symbol of ["BTC-USDT","ETH-USDT","SOL-USDT"]) {
   try {
     const mark = await fetchMarkPrice(symbol);
     const oi = await fetchOpenInterest(symbol);
