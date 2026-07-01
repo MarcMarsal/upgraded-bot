@@ -9,13 +9,16 @@ const SECRET_KEY = process.env.OKX_SECRET_KEY;
 const PASSPHRASE = process.env.OKX_PASSPHRASE;
 
 function normalizeInstId(symbol) {
-  //return symbol.replace("-USDT", "-USDT-SWAP");
-  //return symbol.replace("-USDT", "USD-UM");
-  return symbol.replace("-USDT", "-USD-SWAP");
+  const base = symbol.split("-")[0]; // BTC, ETH, XRP, SOL
 
+  // Únics derivats UM que existeixen a OKX
+  if (base === "BTC") return "BTC-USD-SWAP";
+  if (base === "ETH") return "ETH-USD-SWAP";
 
-
+  // XRP i SOL no tenen contracte UM → només SPOT
+  return null; 
 }
+
 
 function normalizeSide(side) {
   if (side === "long") return "buy";
