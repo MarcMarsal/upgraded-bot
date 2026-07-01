@@ -8,9 +8,6 @@ const API_KEY = process.env.OKX_API_KEY;
 const SECRET_KEY = process.env.OKX_SECRET_KEY;
 const PASSPHRASE = process.env.OKX_PASSPHRASE;
 
-console.log("API_KEY:", API_KEY);
-console.log("SECRET_KEY:", SECRET_KEY);
-console.log("PASSPHRASE:", PASSPHRASE);
 
 
 // Signatura OKX
@@ -54,6 +51,9 @@ export async function okxCreateOrder({
   const signature = sign(message);
   
   console.log("SIGN MESSAGE:", message);
+  console.log("API_KEY:", API_KEY);
+  console.log("SECRET_KEY:", SECRET_KEY);
+  console.log("PASSPHRASE:", PASSPHRASE);
 
   const headers = {
     "OK-ACCESS-KEY": API_KEY,
