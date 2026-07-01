@@ -8,24 +8,30 @@ const API_KEY = process.env.OKX_API_KEY;
 const SECRET_KEY = process.env.OKX_SECRET_KEY;
 const PASSPHRASE = process.env.OKX_PASSPHRASE;
 
+// ===============================
+// FIAT‑PRO: NOMÉS BTC I ETH EN UM
+// ===============================
 function normalizeInstId(symbol) {
   const base = symbol.split("-")[0]; // BTC, ETH, XRP, SOL
 
-  // Únics derivats UM que existeixen a OKX
   if (base === "BTC") return "BTC-USD-SWAP";
   if (base === "ETH") return "ETH-USD-SWAP";
 
-  // XRP i SOL no tenen contracte UM → només SPOT
-  return null; 
+  return null; // la resta NO operen derivats UM
 }
 
-
+// ===============================
+// FIAT‑PRO: SIDE CORRECTE
+// ===============================
 function normalizeSide(side) {
   if (side === "long") return "buy";
   if (side === "short") return "sell";
   return side;
 }
 
+// ===============================
+// FIAT‑PRO: SIGNATURA OKX
+// ===============================
 function sign(message) {
   return crypto
     .createHmac("sha256", SECRET_KEY)
@@ -33,6 +39,17 @@ function sign(message) {
     .digest("base64");
 }
 
+// ===============================
+// FIAT‑PRO: ROUNDING INSTITUCIONAL
+// ===============================
+// BTC-USD-SWAP i ETH-USD-SWAP → tickSize = 0.1 USD
+function roundToTick(price) {
+  return Math.round(price * 10) / 10;
+}
+
+// ===============================
+// FIAT‑PRO: CREAR ORDRE
+// ===============================
 export async function okxCreateOrder({
   instId,
   side,
@@ -43,8 +60,20 @@ export async function okxCreateOrder({
 }) {
   const timestamp = new Date().toISOString();
 
+  // InstID UM correcte
+  const normalizedInstId = normalizeInstId(instId);
+  if (!normalizedInstId) {
+    console.log("[FIAT‑PRO] Actiu sense derivats UM → NO operem:", instId);
+    return;
+  }
+
+  // Rounding institucional
+  px = roundToTick(px);
+  if (tp) tp = roundToTick(tp);
+  if (sl) sl = roundToTick(sl);
+
   const body = {
-    instId: normalizeInstId(instId),
+    instId: normalizedInstId,
     tdMode: "cross",
     side: normalizeSide(side),
     ordType: "limit",
@@ -54,16 +83,16 @@ export async function okxCreateOrder({
 
   const attachAlgoOrds = [];
 
-  // TP → MARKET (OKX requirement)
+  // TP → MARKET
   if (tp) {
     attachAlgoOrds.push({
       algoOrdType: "tp",
       tpTriggerPx: tp.toString(),
-      tpOrdPx: "-1"   // MARKET TP
+      tpOrdPx: "-1"
     });
   }
 
-  // SL → LIMIT (allowed)
+  // SL → LIMIT
   if (sl) {
     attachAlgoOrds.push({
       algoOrdType: "sl",
