@@ -31,10 +31,9 @@ export async function createOrder(orderData) {
     instId: symbol,
     side,
     px: entry_price,
-    sz: "1", // mida mínima per ara
-    tp,
-    sl
+    sz: "1"
   });
+
 
   const okxOrderId = okx.data[0].ordId;
 
