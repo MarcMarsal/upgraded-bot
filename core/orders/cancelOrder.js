@@ -1,16 +1,18 @@
 // core/orders/cancelOrder.js
 import { client } from "../../db/client.js";
+import { okxCancelOrder } from "../okx/okxClient.js";
 
 /**
- * Cancel·la una ordre FIAT‑PRO quan el preu surt de ±1.5 ATR de la zona institucional.
- * Només aplica a ordres PENDING_ENTRY.
+ * Cancel·la una ordre FIAT‑PRO quan el preu surt de ±1.5 ATR.
+ * Cancel·la en LOCAL i també a OKX (SPOT).
  */
 export async function cancelOrder(order, price_now, atr) {
   const {
     id,
     symbol,
     bucket_price,
-    status
+    status,
+    okx_order_id
   } = order;
 
   // Només cancel·lem ordres pendents
@@ -25,6 +27,17 @@ export async function cancelOrder(order, price_now, atr) {
   if (distance > cancelThreshold) {
     const now = Date.now();
 
+    // 1) CANCEL·LAR A OKX (SPOT)
+    if (okx_order_id) {
+      try {
+        await okxCancelOrder(symbol, okx_order_id);
+        console.log(`[OKX] CANCEL SENT → ${symbol} ${okx_order_id}`);
+      } catch (err) {
+        console.log("[OKX] ERROR CANCEL:", err.message);
+      }
+    }
+
+    // 2) CANCEL·LAR EN LOCAL
     await client.query(
       `
       UPDATE orders
