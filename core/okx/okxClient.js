@@ -29,8 +29,14 @@ export async function okxCreateOrder({
 }) {
   const timestamp = new Date().toISOString();
 
+  function normalizeInstId(symbol) {
+    return symbol.replace("-USDT", "-USD-UM");
+  }
+
+
   const body = {
-    instId,
+    //instId,
+    instId: normalizeInstId(instId),
     tdMode: "cross",
     side,
     ordType: "limit",
