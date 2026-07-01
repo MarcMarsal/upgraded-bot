@@ -364,18 +364,18 @@ async function mainLoop() {
 
       //.log("[ENTRY]", symbol, "CREATING ORDER", "side:", side, "entry:", entry_price, "tp:", tp, "sl:", sl);
 
-      await createOrder({
-         symbol,
-         timeframe: "1H",
-         bucket_price,
-         side,
-         entry_price,
-         atr,
-         tp,
-         sl,
-         zone_ts: new Date(dominantBucket.updated_at).getTime(),
-         price_now
-      });
+      //await createOrder({
+      //   symbol,
+      //   timeframe: "1H",
+      //   bucket_price,
+      //   side,
+      //   entry_price,
+      //   atr,
+      //   tp,
+      //   sl,
+      //   zone_ts: new Date(dominantBucket.updated_at).getTime(),
+      //   price_now
+      //});
 
     }
 
