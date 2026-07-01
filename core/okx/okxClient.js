@@ -39,7 +39,10 @@ export async function okxCreateOrder({
     slTriggerPx: sl ? sl.toString() : undefined
   };
 
-  const message = timestamp + "POST" + "/api/v5/trade/order" + JSON.stringify(body);
+  //const message = timestamp + "POST" + "/api/v5/trade/order" + JSON.stringify(body);
+  const path = "/api/v5/trade/order";
+  const message = `${timestamp}POST${path}${JSON.stringify(body)}`;
+
 
   console.log("OKX REQUEST BODY:", JSON.stringify(body));
 
