@@ -1,93 +1,56 @@
 // core/orders/createOrder.js
 import { client } from "../../db/client.js";
+import { okxCreateOrder } from "../okx/okxClient.js";
 
-/**
- * Crea una ordre FIAT‑PRO quan el preu entra a ±1 ATR de la zona institucional.
- * Status inicial: PENDING_ENTRY
- */
-export async function createOrder({
-  symbol,
-  timeframe,
-  bucket_price,
-  side,
-  entry_price,
-  atr,
-  tp,
-  sl,
-  zone_ts,
-  price_now
-}) {
-  const now = Date.now();
-
-  console.log("[CREATEORDER] INSERT", {
+export async function createOrder(orderData) {
+  const {
     symbol,
-    timeframe,
-    bucket_price,
     side,
     entry_price,
-    atr,
     tp,
     sl,
-    zone_ts,
-    price_now
-  });
+    atr,
+    bucket_price,
+    timeframe
+  } = orderData;
 
-  // 1) Comprovar si ja existeix una ordre viva per aquest bucket
-  const existing = await client.query(
-    `
-    SELECT *
-    FROM orders
-    WHERE symbol = $1
-      AND timeframe = $2
-      AND bucket_price = $3
-      AND status IN ('PENDING_ZONE','PENDING_ENTRY','ACTIVE')
-    `,
-    [symbol, timeframe, bucket_price]
-  );
-
-  if (existing.rows.length > 0) {
-    console.log(`[ORDERS] Ja existeix una ordre viva per ${symbol} bucket ${bucket_price}`);
-    return null;
-  }
-
-  // 2) Inserir ordre nova (totes les columnes de la taula)
+  // 1) Crear registre local
   const res = await client.query(
     `
-    INSERT INTO orders
-      (symbol, timeframe, bucket_price, side,
-       entry_price, atr, tp, sl,
-       status, timestamp_created,
-       timestamp_activated, timestamp_closed,
-       price_at_creation, price_at_activation, price_at_close,
-       zone_ts, last_update)
-    VALUES
-      ($1,$2,$3,$4,
-       $5,$6,$7,$8,
-       'PENDING_ENTRY', $9,
-       NULL, NULL,
-       $10, NULL, NULL,
-       $11, $12)
-    RETURNING *
+    INSERT INTO orders (symbol, side, entry_price, tp, sl, atr, bucket_price, timeframe, status_local)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'PENDING_SEND')
+    RETURNING id
     `,
-    [
-      symbol,
-      timeframe,
-      bucket_price,
-      side,
-      entry_price,
-      atr,
-      tp,
-      sl,
-      now,          // timestamp_created
-      price_now,    // price_at_creation
-      zone_ts,      // zone_ts
-      now           // last_update
-    ]
+    [symbol, side, entry_price, tp, sl, atr, bucket_price, timeframe]
   );
 
-  const order = res.rows[0];
+  const id = res.rows[0].id;
 
-  console.log(`[ORDERS] Nova ordre creada → ${symbol} ${side} @ ${entry_price} (bucket ${bucket_price}) id=${order.id}`);
+  // 2) Enviar ordre a OKX
+  const okx = await okxCreateOrder({
+    instId: symbol,
+    side,
+    px: entry_price,
+    sz: "1", // mida mínima per ara
+    tp,
+    sl
+  });
 
-  return order;
+  const okxOrderId = okx.data[0].ordId;
+
+  // 3) Actualitzar DB amb OKX
+  await client.query(
+    `
+    UPDATE orders
+    SET okx_order_id = $1,
+        status_local = 'SENT',
+        status_okx = 'live'
+    WHERE id = $2
+    `,
+    [okxOrderId, id]
+  );
+
+  console.log("[OKX] ORDER SENT:", symbol, okxOrderId);
+
+  return id;
 }
