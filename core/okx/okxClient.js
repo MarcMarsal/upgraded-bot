@@ -40,7 +40,12 @@ export async function okxCreateOrder({
   };
 
   const message = timestamp + "POST" + "/api/v5/trade/order" + JSON.stringify(body);
+
+  console.log("OKX REQUEST BODY:", JSON.stringify(body));
+
   const signature = sign(message);
+  
+  console.log("SIGN MESSAGE:", message);
 
   const headers = {
     "OK-ACCESS-KEY": API_KEY,
