@@ -73,3 +73,31 @@ export async function okxCreateOrder({
     throw err;
   }
 }
+
+export async function okxCancelOrder(instId, ordId) {
+  const timestamp = new Date().toISOString();
+
+  const body = {
+    instId,
+    ordId
+  };
+
+  const path = "/api/v5/trade/cancel-order";
+  const message = timestamp + "POST" + path + JSON.stringify(body);
+  const signature = sign(message);
+
+  const headers = {
+    "OK-ACCESS-KEY": API_KEY,
+    "OK-ACCESS-SIGN": signature,
+    "OK-ACCESS-TIMESTAMP": timestamp,
+    "OK-ACCESS-PASSPHRASE": PASSPHRASE,
+    "Content-Type": "application/json",
+    "x-simulated-trading": "1"
+  };
+
+  const url = "https://my.okx.com/api/v5/trade/cancel-order";
+
+  const res = await axios.post(url, body, { headers });
+  return res.data;
+}
+
