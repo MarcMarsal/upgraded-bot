@@ -10,7 +10,10 @@ const PASSPHRASE = process.env.OKX_PASSPHRASE;
 
 function normalizeInstId(symbol) {
   //return symbol.replace("-USDT", "-USDT-SWAP");
-  return symbol.replace("-USDT", "USD-UM");
+  //return symbol.replace("-USDT", "USD-UM");
+  return symbol.replace("-USDT", "-USD-SWAP");
+
+
 
 }
 
