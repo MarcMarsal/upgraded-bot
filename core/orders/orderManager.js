@@ -90,8 +90,73 @@ export async function managePendingCreation(symbol, price_now, atr, timeframe = 
 }
 
 export async function manageActivation(symbol, timeframe = "1H") {
-  // s'omplirà després
+
+  // 1) Buscar buckets pending
+  const res = await client.query(
+    `SELECT *
+     FROM sl_buckets
+     WHERE symbol = $1
+       AND timeframe = $2
+       AND order_status = 'pending'`,
+    [symbol, timeframe]
+  );
+
+  const buckets = res.rows;
+  if (buckets.length === 0) return;
+
+  for (const b of buckets) {
+    if (!b.order_id) continue;
+
+    // 2) Consultar estat de l’ordre a OKX
+    const status = await getOrderStatusOKX(b.order_id);
+    if (!status) continue;
+
+    // 3) Si OKX ha executat l’ordre → activar bucket
+    if (status.state === "filled" || status.state === "partially_filled") {
+
+      // 3A) Marcar bucket com activat
+      await client.query(
+        `UPDATE sl_buckets
+         SET order_status = 'active',
+             status = 'mitigated',
+             activated_at = NOW()
+         WHERE id = $1`,
+        [b.id]
+      );
+
+      // 3B) Crear TP i SL a OKX
+      await createTPOrder({
+        symbol: b.symbol,
+        entryOrderId: b.order_id,
+        tpPrice: b.tp_price
+      });
+
+      await createSLOrder({
+        symbol: b.symbol,
+        entryOrderId: b.order_id,
+        slPrice: b.sl_price
+      });
+
+      console.log("[ACTIVATED]", b.symbol, "bucket:", b.bucket_price);
+    }
+
+    // 4) Si OKX ha cancel·lat l’ordre pending
+    if (status.state === "canceled") {
+      await client.query(
+        `UPDATE sl_buckets
+         SET order_status = 'cancelled',
+             status = 'closed',
+             cancelled_at = NOW(),
+             cancel_reason = 'okx'
+         WHERE id = $1`,
+        [b.id]
+      );
+
+      console.log("[CANCELLED BY OKX]", b.symbol, "bucket:", b.bucket_price);
+    }
+  }
 }
+
 
 export async function manageClosures(symbol, timeframe = "1H") {
   // s'omplirà després
