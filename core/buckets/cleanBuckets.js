@@ -26,20 +26,31 @@ export async function cleanBuckets(symbol, timeframe, atr, price_now) {
       ["pending", "active", "tp", "sl", "cancelled"].includes(b.order_status);
 
     if (isProtected) {
-      // FIAT‑PRO: aquest bucket ja forma part del cicle institucional
       continue;
     }
 
     // 🟥 A) ATR antic (>30% de diferència)
     if (Math.abs(b.atr - atr) / b.atr > 0.30) {
-      await client.query(`DELETE FROM sl_buckets WHERE id = $1`, [b.id]);
+      await client.query(`
+        UPDATE sl_buckets
+        SET status = 'cancelled',
+            cancel_reason = 'atr_change',
+            cancelled_at = NOW()
+        WHERE id = $1
+      `, [b.id]);
       continue;
     }
 
     // 🟥 B) Massa lluny del preu (>5 × ATR)
     const distance = Math.abs(price_now - Number(b.bucket_price));
     if (distance > atr * 5) {
-      await client.query(`DELETE FROM sl_buckets WHERE id = $1`, [b.id]);
+      await client.query(`
+        UPDATE sl_buckets
+        SET status = 'cancelled',
+            cancel_reason = 'distance',
+            cancelled_at = NOW()
+        WHERE id = $1
+      `, [b.id]);
       continue;
     }
 
@@ -47,19 +58,37 @@ export async function cleanBuckets(symbol, timeframe, atr, price_now) {
     const ageMs = now - Number(b.timestamp_created);
     const maxAgeMs = 3 * 60 * 60 * 1000; // 3 hores per 1H
     if (ageMs > maxAgeMs) {
-      await client.query(`DELETE FROM sl_buckets WHERE id = $1`, [b.id]);
+      await client.query(`
+        UPDATE sl_buckets
+        SET status = 'cancelled',
+            cancel_reason = 'too_old',
+            cancelled_at = NOW()
+        WHERE id = $1
+      `, [b.id]);
       continue;
     }
 
     // 🟥 D) Size massa petit (no institucional)
     if (Number(b.total_size) < atr * 1000) {
-      await client.query(`DELETE FROM sl_buckets WHERE id = $1`, [b.id]);
+      await client.query(`
+        UPDATE sl_buckets
+        SET status = 'cancelled',
+            cancel_reason = 'weak_size',
+            cancelled_at = NOW()
+        WHERE id = $1
+      `, [b.id]);
       continue;
     }
 
     // 🟥 E) Leverage incoherent (retail heavy)
     if (Number(b.avg_leverage) > 20) {
-      await client.query(`DELETE FROM sl_buckets WHERE id = $1`, [b.id]);
+      await client.query(`
+        UPDATE sl_buckets
+        SET status = 'cancelled',
+            cancel_reason = 'retail_leverage',
+            cancelled_at = NOW()
+        WHERE id = $1
+      `, [b.id]);
       continue;
     }
   }
@@ -83,7 +112,6 @@ export async function cleanBuckets(symbol, timeframe, atr, price_now) {
 
     if (Math.abs(Number(b1.bucket_price) - Number(b2.bucket_price)) < atr) {
 
-      // FIAT‑PRO: NO eliminar buckets institucionals
       const isProtected1 =
         b1.status === "mitigated" ||
         b1.status === "closed" ||
@@ -98,11 +126,16 @@ export async function cleanBuckets(symbol, timeframe, atr, price_now) {
         continue;
       }
 
-      // Eliminar el bucket amb SIZE més petit (FIAT‑PRO DOMINANT)
       const weaker =
         Number(b1.total_size) < Number(b2.total_size) ? b1 : b2;
 
-      await client.query(`DELETE FROM sl_buckets WHERE id = $1`, [weaker.id]);
+      await client.query(`
+        UPDATE sl_buckets
+        SET status = 'cancelled',
+            cancel_reason = 'overlap',
+            cancelled_at = NOW()
+        WHERE id = $1
+      `, [weaker.id]);
     }
   }
 }
