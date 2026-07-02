@@ -17,4 +17,3 @@ export async function readPortfolio(okxClient) {
     return portfolio;
 }
 
-module.exports = { readPortfolio };
