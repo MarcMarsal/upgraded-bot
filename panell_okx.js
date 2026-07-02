@@ -21,22 +21,69 @@ async function getPortfolioFromDB() {
   return q.rows[0];
 }
 
-// Renderitzar taula
-function renderPortfolioTable(p) {
+// Llegir buckets ordenats per estat
+async function getBuckets() {
+  const q = await client.query(`
+    SELECT *
+    FROM sl_buckets
+    ORDER BY timestamp_created DESC
+  `);
+
+  const buckets = q.rows;
+
+  // Ordenació FIAT‑PRO
+  const orderMap = {
+    "available": 1,
+    "mitigated": 2,
+    "closed": 3,
+    "cancelled": 4
+  };
+
+  return buckets.sort((a, b) => {
+    const sa = orderMap[a.status] || 99;
+    const sb = orderMap[b.status] || 99;
+    return sa - sb;
+  });
+}
+
+// Renderitzar taula de buckets
+function renderBucketsTable(buckets) {
+  let rows = "";
+
+  for (const b of buckets) {
+    rows += `
+      <tr>
+        <td>${b.symbol}</td>
+        <td>${b.side}</td>
+        <td>${fmt(b.bucket_price)}</td>
+        <td>${fmt(b.tp_price)}</td>
+        <td>${fmt(b.sl_price)}</td>
+        <td>${b.status}</td>
+        <td>${b.cancel_reason || "-"}</td>
+        <td>${b.order_status || "-"}</td>
+        <td>${formatSpainTime(b.timestamp_created)}</td>
+      </tr>
+    `;
+  }
+
   return `
-    <h2>Cartera OKX (SPOT · Paper Trading)</h2>
+    <h2>Buckets FIAT‑PRO</h2>
     <table>
       <thead>
         <tr>
-          <th>Actiu</th>
-          <th>Disponible</th>
+          <th>Symbol</th>
+          <th>Side</th>
+          <th>Entry</th>
+          <th>TP</th>
+          <th>SL</th>
+          <th>Status</th>
+          <th>Cancel Reason</th>
+          <th>Order Status</th>
+          <th>Created</th>
         </tr>
       </thead>
       <tbody>
-        <tr><td>USDC</td><td>${fmt(p.usdc)}</td></tr>
-        <tr><td>BTC</td><td>${fmt(p.btc)}</td></tr>
-        <tr><td>ETH</td><td>${fmt(p.eth)}</td></tr>
-        <tr><td>SOL</td><td>${fmt(p.sol)}</td></tr>
+        ${rows}
       </tbody>
     </table>
   `;
@@ -49,7 +96,11 @@ async function startPanel() {
     if (req.url === "/") {
 
       const p = await getPortfolioFromDB();
+      const buckets = await getBuckets();
+
       const portfolioHTML = renderPortfolioTable(p);
+      const bucketsHTML = renderBucketsTable(buckets);
+
       const lastUpdate = formatSpainTime(p.updated_at);
 
       const html = `
@@ -66,7 +117,7 @@ async function startPanel() {
           }
           table {
             border-collapse: collapse;
-            width: 50%;
+            width: 90%;
             margin-bottom: 40px;
           }
           th, td {
@@ -84,6 +135,7 @@ async function startPanel() {
         <p><b>Última actualització:</b> ${lastUpdate}</p>
 
         ${portfolioHTML}
+        ${bucketsHTML}
 
       </body>
       </html>
