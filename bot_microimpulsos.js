@@ -16,7 +16,7 @@ import { getOpenCandle } from "./core/candles/getOpenCandle.js";
 import { cleanBuckets } from "./core/buckets/cleanBuckets.js";
 import { createOrder } from "./core/orders/createOrder.js";
 import { cancelOrder } from "./core/orders/cancelOrder.js";
-import { readportfolio } from "./core/portfolio.js"
+import { readPortfolio } from "./core/portfolio.js"
 
 
 
@@ -255,7 +255,7 @@ async function mainLoop() {
 // -------------------------------------------------------------
 // 4) FIAT‑PRO INSTITUCIONAL: buckets + ordres LIMIT (DOMINANT)
 // -------------------------------------------------------------
-await readportfolio();  
+await readPortfolio();  
 for (const symbol of ["BTC-USDT","ETH-USDT","SOL-USDT"]) {
   try {
     const mark = await fetchMarkPrice(symbol);
