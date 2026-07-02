@@ -2,7 +2,7 @@
 
 import http from "http";
 import { initDB } from "./db/client.js";
-import { readPortfolio } from "./core/portfolio.js";
+import { readPortfolio } from "./core/portfolio/portfolio.js";
 import { formatSpainTime } from "./core/utils.js";
 
 // Format numèric
