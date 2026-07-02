@@ -306,20 +306,10 @@ for (const symbol of ["BTC-USDT","ETH-USDT","SOL-USDT"]) {
     // FIAT‑PRO: NO operar buckets invertits
     // ===============================
     if (side === "long" && bucket_price > price_now) {
-      console.log("[FIAT‑PRO] LONG invertit → NO operem", {
-        symbol,
-        bucket_price,
-        price_now
-      });
       continue;
     }
 
     if (side === "short" && bucket_price < price_now) {
-      console.log("[FIAT‑PRO] SHORT invertit → NO operem", {
-        symbol,
-        bucket_price,
-        price_now
-      });
       continue;
     }
 
