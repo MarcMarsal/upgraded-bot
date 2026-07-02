@@ -257,77 +257,77 @@ async function mainLoop() {
 // -------------------------------------------------------------
 // 4) FIAT‑PRO INSTITUCIONAL: buckets + ordres LIMIT (DOMINANT)
 // -------------------------------------------------------------
-await readPortfolio();  
-for (const symbol of ["BTC-USDT","ETH-USDT","SOL-USDT"]) {
-  try {
-    const mark = await fetchMarkPrice(symbol);
-    const oi = await fetchOpenInterest(symbol);
+//await readPortfolio();  
+//for (const symbol of ["BTC-USDT","ETH-USDT","SOL-USDT"]) {
+//  try {
+//    const mark = await fetchMarkPrice(symbol);
+//    const oi = await fetchOpenInterest(symbol);
 
-    if (!mark || !oi) continue;
+//    if (!mark || !oi) continue;
 
-    const price_now = mark.markPx;
-    const ts = Date.now();
+//    const price_now = mark.markPx;
+//    const ts = Date.now();
 
     // ATR actual
-    const atrCandles = await getCandlesFromDB(symbol, "1H", 80);
-    const atrRaw = calcATR(atrCandles, 14);
-    if (!atrRaw) continue;
+//    const atrCandles = await getCandlesFromDB(symbol, "1H", 80);
+//    const atrRaw = calcATR(atrCandles, 14);
+//    if (!atrRaw) continue;
 
-    const atr = Number(atrRaw);
+//    const atr = Number(atrRaw);
 
     // Reconstrucció institucional (detecta buckets)
-    await updateSLReconstruction(symbol, price_now, oi.oi, ts, atr, "1H");
+//    await updateSLReconstruction(symbol, price_now, oi.oi, ts, atr, "1H");
 
     // Neteja institucional de buckets
-    await cleanBuckets(symbol, "1H", atr, price_now);
+//    await cleanBuckets(symbol, "1H", atr, price_now);
 
     // Obtenir TOTS els buckets vius del símbol
-    const bucketsRes = await client.query(
-      `SELECT *
-       FROM sl_buckets
-       WHERE symbol = $1
-       ORDER BY bucket_price ASC`,
-      [symbol]
-    );
+//    const bucketsRes = await client.query(
+//      `SELECT *
+//       FROM sl_buckets
+//       WHERE symbol = $1
+//       ORDER BY bucket_price ASC`,
+//      [symbol]
+//    );
 
-    if (bucketsRes.rows.length === 0) continue;
+//    if (bucketsRes.rows.length === 0) continue;
 
     // FIAT‑PRO DOMINANT: bucket per SIZE
-    const bucketsSymbol = bucketsRes.rows;
-    const dominantBucket = bucketsSymbol.reduce(
-      (best, b) =>
-        !best || Number(b.total_size) > Number(best.total_size) ? b : best,
-      null
-    );
+//    const bucketsSymbol = bucketsRes.rows;
+//    const dominantBucket = bucketsSymbol.reduce(
+//      (best, b) =>
+//        !best || Number(b.total_size) > Number(best.total_size) ? b : best,
+//      null
+//    );
 
-    if (!dominantBucket) continue;
+//    if (!dominantBucket) continue;
 
-    const bucket_price = Number(dominantBucket.bucket_price);
-    const side = dominantBucket.side;
+//    const bucket_price = Number(dominantBucket.bucket_price);
+//    const side = dominantBucket.side;
 
     // ===============================
     // FIAT‑PRO: NO operar buckets invertits
     // ===============================
-    if (side === "long" && bucket_price > price_now) continue;
-    if (side === "short" && bucket_price < price_now) continue;
+//    if (side === "long" && bucket_price > price_now) continue;
+//    if (side === "short" && bucket_price < price_now) continue;
 
     // -------------------------------------------------------------
     // 🔥 FIAT‑PRO INSTITUCIONAL — GESTIÓ D’ORDRES (orderManager)
     // -------------------------------------------------------------
 
     // 1) Crear pending si el preu s’aproxima al bucket
-    await managePendingCreation(symbol, price_now, atr, "1H");
+//    await managePendingCreation(symbol, price_now, atr, "1H");
 
     // 2) Cancel·lar pending si el preu s’allunya massa
-    await manageDistanceCancels(symbol, price_now, atr, "1H");
+//    await manageDistanceCancels(symbol, price_now, atr, "1H");
 
-    await monitorOrders("1H");
+//    await monitorOrders("1H");
 
 
-  } catch (err) {
-    console.log("Error FIAT‑PRO institucional", symbol, err.message);
-  }
-}
+//  } catch (err) {
+//    console.log("Error FIAT‑PRO institucional", symbol, err.message);
+//  }
+//}
 
 }
 
