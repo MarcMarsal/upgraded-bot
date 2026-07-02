@@ -127,18 +127,21 @@ export async function manageActivation(symbol, timeframe = "1H") {
         [b.id]
       );
 
-      // 3B) Crear TP i SL a OKX
+      // DINS manageActivation()
       await createTPOrder({
-        symbol: b.symbol,
-        entryOrderId: b.order_id,
-        tpPrice: b.tp_price
+        symbol,
+        side: b.side,          // "long" o "short"
+        tpPrice: b.tp,
+        size: b.size
       });
 
       await createSLOrder({
-        symbol: b.symbol,
-        entryOrderId: b.order_id,
-        slPrice: b.sl_price
+        symbol,
+        side: b.side,
+        slPrice: b.sl,
+        size: b.size
       });
+
 
       console.log("[ACTIVATED]", b.symbol, "bucket:", b.bucket_price);
     }
