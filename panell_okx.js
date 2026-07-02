@@ -5,16 +5,10 @@ import crypto from "crypto";
 import axios from "axios";
 import { formatSpainTime } from "./core/utils.js";
 
-// ===============================
-// Credencials OKX
-// ===============================
 const API_KEY = process.env.OKX_API_KEY;
 const SECRET_KEY = process.env.OKX_SECRET_KEY;
 const PASSPHRASE = process.env.OKX_PASSPHRASE;
 
-// ===============================
-// Signatura OKX (igual que la resta del bot)
-// ===============================
 function sign(message) {
   return crypto
     .createHmac("sha256", SECRET_KEY)
@@ -22,53 +16,55 @@ function sign(message) {
     .digest("base64");
 }
 
-// ===============================
-// Llegir cartera OKX (FIAT‑PRO style)
-// ===============================
 async function readPortfolio() {
-  const path = "/api/v5/account/balance";
-  const timestamp = new Date().toISOString();
-  const message = timestamp + "GET" + path;
-  const signature = sign(message);
+  try {
+    const path = "/api/v5/account/balance";
+    const timestamp = new Date().toISOString();
+    const message = timestamp + "GET" + path;
+    const signature = sign(message);
 
-  const headers = {
-    "OK-ACCESS-KEY": API_KEY,
-    "OK-ACCESS-SIGN": signature,
-    "OK-ACCESS-TIMESTAMP": timestamp,
-    "OK-ACCESS-PASSPHRASE": PASSPHRASE,
-    "x-simulated-trading": "1"
-  };
+    const headers = {
+      "OK-ACCESS-KEY": API_KEY,
+      "OK-ACCESS-SIGN": signature,
+      "OK-ACCESS-TIMESTAMP": timestamp,
+      "OK-ACCESS-PASSPHRASE": PASSPHRASE,
+      "Content-Type": "application/json",
+      "Accept": "application/json",
+      "x-simulated-trading": "1"
+    };
 
-  const url = "https://my.okx.com" + path;
+    const url = "https://www.okx.com" + path;
 
-  const res = await axios.get(url, { headers });
+    const res = await axios.get(url, {
+      headers,
+      timeout: 5000   // 🔥 evita Bad Gateway
+    });
 
-  const details = res.data.data[0].details;
+    const details = res.data.data[0].details;
 
-  const portfolio = { usdc: 0, btc: 0, eth: 0, sol: 0 };
+    const portfolio = { usdc: 0, btc: 0, eth: 0, sol: 0 };
 
-  for (const asset of details) {
-    switch (asset.ccy) {
-      case "USDC": portfolio.usdc = parseFloat(asset.availEq); break;
-      case "BTC":  portfolio.btc  = parseFloat(asset.availEq); break;
-      case "ETH":  portfolio.eth  = parseFloat(asset.availEq); break;
-      case "SOL":  portfolio.sol  = parseFloat(asset.availEq); break;
+    for (const asset of details) {
+      switch (asset.ccy) {
+        case "USDC": portfolio.usdc = parseFloat(asset.availEq); break;
+        case "BTC":  portfolio.btc  = parseFloat(asset.availEq); break;
+        case "ETH":  portfolio.eth  = parseFloat(asset.availEq); break;
+        case "SOL":  portfolio.sol  = parseFloat(asset.availEq); break;
+      }
     }
-  }
 
-  return portfolio;
+    return portfolio;
+
+  } catch (err) {
+    console.log("ERROR OKX:", err.response?.data || err.message);
+    return { usdc: "-", btc: "-", eth: "-", sol: "-" };  // 🔥 evita 502
+  }
 }
 
-// ===============================
-// Format numèric
-// ===============================
 function fmt(n) {
   return n !== null && n !== undefined ? Number(n).toFixed(6) : "-";
 }
 
-// ===============================
-// Render taula
-// ===============================
 function renderPortfolioTable(p) {
   return `
     <h2>Cartera OKX (SPOT · Paper Trading)</h2>
@@ -89,9 +85,6 @@ function renderPortfolioTable(p) {
   `;
 }
 
-// ===============================
-// Servidor HTTP
-// ===============================
 async function startPanel() {
 
   http.createServer(async (req, res) => {
