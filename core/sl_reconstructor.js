@@ -137,8 +137,21 @@ export async function updateSLReconstruction(symbol, price, oi, ts, atr, timefra
       // 🟩 INSERT FIAT‑PRO DOMINANT CORREGIT
       await client.query(
         `INSERT INTO sl_buckets
-         (symbol, timeframe, bucket_price, side, total_size, avg_leverage, liq_min, liq_max, entries_count, atr, timestamp_created, updated_at)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,NOW())`,
+         (symbol, timeframe, bucket_price, side,
+          total_size, avg_leverage, liq_min, liq_max, entries_count,
+          atr, timestamp_created, updated_at,
+          status, order_status, order_id,
+          tp_price, sl_price,
+          activated_at, closed_at,
+          cancel_reason, cancelled_at)
+         VALUES
+         ($1,$2,$3,$4,
+          $5,$6,$7,$8,$9,
+          $10,$11,NOW(),
+          'available','none',NULL,
+          NULL,NULL,
+          NULL,NULL,
+          NULL,NULL)`,
         [
           symbol,
           timeframe,
@@ -149,10 +162,11 @@ export async function updateSLReconstruction(symbol, price, oi, ts, atr, timefra
           liq_price,     // liq_min
           liq_price,     // liq_max
           1,             // entries_count
-          atr,           // atr
+          atr,
           ts             // timestamp_created
         ]
       );
+
     }
   }
 
