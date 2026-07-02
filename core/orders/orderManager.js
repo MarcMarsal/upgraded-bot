@@ -63,14 +63,14 @@ console.log("isNear:", isNear);
   const sl = side === "long"
     ? entry_price - atr
     : entry_price + atr;
-
+ console.log("TP/SL:", { tp, sl });
   // -------------------------------------------------------------
   // 🔥 6) CALCULAR SIZE INSTITUCIONAL
   // -------------------------------------------------------------
 
   // Obtenir portfolio actual
   const portfolio = await readPortfolio(); // BTC, ETH, SOL, USDC
-
+ console.log("portfolio:", portfolio);
   let size = 0;
 
   if (side === "short") {
