@@ -311,13 +311,8 @@ for (const symbol of ["BTC-USDT","ETH-USDT","SOL-USDT"]) {
     // ===============================
     // FIAT‑PRO: NO operar buckets invertits
     // ===============================
-    if (side === "long" && bucket_price > price_now) {
-      continue;
-    }
-
-    if (side === "short" && bucket_price < price_now) {
-      continue;
-    }
+    if (side === "long" && bucket_price > price_now) continue;
+    if (side === "short" && bucket_price < price_now) continue;
 
     // -------------------------------------------------------------
     // 🔥 FIAT‑PRO INSTITUCIONAL — GESTIÓ D’ORDRES (orderManager)
@@ -326,16 +321,13 @@ for (const symbol of ["BTC-USDT","ETH-USDT","SOL-USDT"]) {
     // 1) Crear pending si el preu s’aproxima al bucket
     await managePendingCreation(symbol, price_now, atr, "1H");
 
-   
-
-    // 4) Cancel·lar pending si el preu s’allunya massa
+    // 2) Cancel·lar pending si el preu s’allunya massa
     await manageDistanceCancels(symbol, price_now, atr, "1H");
 
   } catch (err) {
     console.log("Error FIAT‑PRO institucional", symbol, err.message);
   }
 }
-
 
 }
 
