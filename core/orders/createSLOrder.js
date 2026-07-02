@@ -1,17 +1,19 @@
 // core/orders/createSLOrder.js
-import { okxClient } from "../okx/client.js";
+import { okxCreateOrder } from "../okx/okxClient.js";
 
-export async function createSLOrder({ symbol, entryOrderId, slPrice }) {
+export async function createSLOrder({ symbol, side, slPrice, size }) {
   try {
-    const res = await okxClient.post("/api/v5/trade/order", {
+    const okxSide = side === "long" ? "sell" : "buy";   // SL segons side
+
+    return await okxCreateOrder({
       instId: symbol,
-      tdMode: "cross",
-      ordType: "stop-loss",
-      triggerPx: slPrice.toString(),
-      orderId: entryOrderId
+      side: okxSide,
+      ordType: "trigger",       // STOP-LIMIT SPOT
+      triggerPx: slPrice,
+      px: slPrice,
+      sz: size
     });
 
-    return res.data;
   } catch (err) {
     console.log("[SL ERROR]", symbol, err.message);
     return null;
