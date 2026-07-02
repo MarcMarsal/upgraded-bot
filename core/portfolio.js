@@ -22,6 +22,11 @@ export async function readPortfolio() {
     const message = timestamp + "GET" + path;
     const signature = sign(message);
 
+    console.log("OKX ENV portfolio.js =>", {
+  API_KEY,
+  SECRET_KEY: SECRET_KEY ? "[SET]" : "[MISSING]",
+  PASSPHRASE
+});
     const headers = {
       "OK-ACCESS-KEY": API_KEY,
       "OK-ACCESS-SIGN": signature,
