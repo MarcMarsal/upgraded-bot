@@ -2,7 +2,7 @@
 import { client } from "../../db/client.js";
 import { createOrder } from "./createOrder.js";
 import { cancelOrder } from "./cancelOrder.js";
-import { readPortfolio } from "../portfolio.js";
+import { readPortfolio } from "../../core/portfolio.js";
 // -------------------------------------------------------------
 // 1) CREACIÓ D’ORDRES LIMIT + TP/SL ADJUNTS (FIAT‑PRO SPOT)
 // -------------------------------------------------------------
