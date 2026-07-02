@@ -1,5 +1,5 @@
 // core/okx/getOrderStatusOKX.js
-import { okxClient } from "./client.js";   // el mateix client que fas servir a createOrder
+import { okxClient } from "./okxClient.js";   // el mateix client que fas servir a createOrder
 
 export async function getOrderStatusOKX(orderId) {
   try {
