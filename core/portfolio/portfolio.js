@@ -1,6 +1,6 @@
 // core/portfolio.js
 
-import { okxClient } from "../core/okx/okxClient.js";
+import { okxClient } from "../okx/okxClient.js";
 
 export async function readPortfolio(okxClient) {
     const res = await okxClient.get("/api/v5/account/balance");
