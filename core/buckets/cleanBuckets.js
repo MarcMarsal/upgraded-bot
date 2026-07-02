@@ -19,11 +19,10 @@ export async function cleanBuckets(symbol, timeframe, atr, price_now) {
 
   for (const b of buckets) {
 
-    // 🟩 FIAT‑PRO: NO eliminar buckets amb estat institucional
+    // 🟩 FIAT‑PRO: només protegim buckets operats
     const isProtected =
       b.status === "mitigated" ||
-      b.status === "closed" ||
-      ["pending", "active", "tp", "sl", "cancelled"].includes(b.order_status);
+      b.status === "closed";
 
     if (isProtected) {
       continue;
@@ -112,20 +111,20 @@ export async function cleanBuckets(symbol, timeframe, atr, price_now) {
 
     if (Math.abs(Number(b1.bucket_price) - Number(b2.bucket_price)) < atr) {
 
+      // 🟩 FIAT‑PRO: només protegim buckets operats
       const isProtected1 =
         b1.status === "mitigated" ||
-        b1.status === "closed" ||
-        ["pending", "active", "tp", "sl", "cancelled"].includes(b1.order_status);
+        b1.status === "closed";
 
       const isProtected2 =
         b2.status === "mitigated" ||
-        b2.status === "closed" ||
-        ["pending", "active", "tp", "sl", "cancelled"].includes(b2.order_status);
+        b2.status === "closed";
 
       if (isProtected1 || isProtected2) {
         continue;
       }
 
+      // Eliminar el bucket amb SIZE més petit (FIAT‑PRO DOMINANT)
       const weaker =
         Number(b1.total_size) < Number(b2.total_size) ? b1 : b2;
 
