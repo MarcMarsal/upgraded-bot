@@ -62,7 +62,28 @@ export async function managePendingCreation(symbol, price_now, atr, timeframe = 
     ? entry_price - atr
     : entry_price + atr;
 
-  // 6) Crear ordre LIMIT + TP/SL adjunts
+  // -------------------------------------------------------------
+  // 🔥 6) CALCULAR SIZE INSTITUCIONAL
+  // -------------------------------------------------------------
+
+  // Obtenir portfolio actual
+  const portfolio = await readPortfolio(); // BTC, ETH, SOL, USDC
+
+  let size = 0;
+
+  if (side === "short") {
+    // SELL → tota la cripto disponible
+    size = portfolio[symbol] || 0;
+  } else {
+    // LONG → USDC / 3
+    const usdc = portfolio["USDC"] || 0;
+    size = usdc / 3;
+  }
+
+  // Si no hi ha size → no obrir ordre
+  if (size <= 0) return;
+
+  // 7) Crear ordre LIMIT + TP/SL adjunts
   const order = await createOrder({
     symbol,
     timeframe,
@@ -72,12 +93,12 @@ export async function managePendingCreation(symbol, price_now, atr, timeframe = 
     atr,
     tp,
     sl,
-    size: dominant.total_size,
+    size,
     zone_ts: new Date(dominant.updated_at).getTime(),
     price_now
   });
 
-  // 7) Actualitzar bucket FIAT‑PRO
+  // 8) Actualitzar bucket FIAT‑PRO
   await client.query(
     `UPDATE sl_buckets
      SET order_status = 'pending',
@@ -89,9 +110,8 @@ export async function managePendingCreation(symbol, price_now, atr, timeframe = 
     [order.okxOrderId, tp, sl, dominant.id]
   );
 
-  console.log("[PENDING CREATED]", symbol, "bucket:", bucket_price);
+  console.log("[PENDING CREATED]", symbol, "bucket:", bucket_price, "size:", size);
 }
-
 
 
 // -------------------------------------------------------------
