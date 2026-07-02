@@ -69,31 +69,34 @@ export async function managePendingCreation(symbol, price_now, atr, timeframe = 
   // -------------------------------------------------------------
 
   // Obtenir portfolio actual
-  const portfolio = await readPortfolio(); // BTC, ETH, SOL, USDC
+// 🔥 SIZE INSTITUCIONAL
+const portfolio = await readPortfolio();
 
-  let size = 0;
+let size = 0;
 
-  if (side === "short") {
-    // SELL → tota la cripto disponible
-    size = portfolio[symbol] || 0;
-  } else {
-    // LONG → USDC / 3
-    const usdc = portfolio["USDC"] || 0;
-    size = usdc / 3;
-  }
+// BTC-USDT → BTC → btc
+const asset = symbol.split("-")[0].toLowerCase();
+
+if (side === "short") {
+  size = portfolio[asset] || 0;
+} else {
+  const usdc = portfolio["usdc"] || 0;
+  size = usdc / 3;
+}
+
 console.log("SIZE DEBUG", {
   side,
   symbol,
-  asset: symbol.split("-")[0],
-  portfolio_symbol: portfolio[symbol],
-  portfolio_asset: portfolio[symbol.split("-")[0]],
-  usdc: portfolio["USDC"],
+  asset,
+  portfolio_symbol: portfolio[symbol],          // sempre undefined
+  portfolio_asset: portfolio[asset],            // ara sí: btc, eth, sol
+  usdc: portfolio["usdc"],
   size
 });
 
-  // Si no hi ha size → no obrir ordre
-  if (size <= 0) return;
-  console.log("createOrder");
+if (size <= 0) return;
+console.log("createOrder");
+
   // 7) Crear ordre LIMIT + TP/SL adjunts
   const order = await createOrder({
     symbol,
