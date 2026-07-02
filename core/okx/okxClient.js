@@ -1,12 +1,7 @@
 import crypto from "crypto";
 import axios from "axios";
 
-
-
 const TRADING_API_URL = "https://my.okx.com/api/v5/trade/order";
-
-
-
 
 const API_KEY = process.env.OKX_API_KEY;
 const SECRET_KEY = process.env.OKX_SECRET_KEY;
@@ -18,7 +13,6 @@ const PASSPHRASE = process.env.OKX_PASSPHRASE;
 function normalizeInstId(symbol) {
   return symbol.replace("USDT", "USDC");
 }
-
 
 // ===============================
 // SPOT: side correcte
@@ -116,8 +110,6 @@ export async function okxCancelOrder(instId, ordId) {
 
   const url = "https://my.okx.com/api/v5/trade/cancel-order";
   
-
-
   try {
     const res = await axios.post(url, body, { headers });
 
