@@ -82,7 +82,7 @@ export async function managePendingCreation(symbol, price_now, atr, timeframe = 
 
   // Si no hi ha size → no obrir ordre
   if (size <= 0) return;
-
+  console.log("createOrder");
   // 7) Crear ordre LIMIT + TP/SL adjunts
   const order = await createOrder({
     symbol,
