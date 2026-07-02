@@ -7,7 +7,7 @@ import { readPortfolio } from "../../core/portfolio.js";
 // 1) CREACIÓ D’ORDRES LIMIT + TP/SL ADJUNTS (FIAT‑PRO SPOT)
 // -------------------------------------------------------------
 export async function managePendingCreation(symbol, price_now, atr, timeframe = "1H") {
-   console.log("managePendingCreation");
+ 
   // 1) Obtenir buckets disponibles
   const res = await client.query(
     `SELECT *
@@ -22,7 +22,7 @@ export async function managePendingCreation(symbol, price_now, atr, timeframe = 
 
   const buckets = res.rows;
 
-   console.log("buckets found:", buckets.length);
+ 
   if (buckets.length === 0) return;
 
   // 2) Bucket dominant per SIZE
@@ -31,12 +31,12 @@ export async function managePendingCreation(symbol, price_now, atr, timeframe = 
       !best || Number(b.total_size) > Number(best.total_size) ? b : best,
     null
   );
-console.log("dominant bucket:", dominant);
+
   if (!dominant) return;
 
   const bucket_price = Number(dominant.bucket_price);
   const side = dominant.side;
-  console.log("bucket_price:", bucket_price, "side:", side);
+ 
   // 3) Condició de proximitat
   let isNear = false;
 
@@ -81,7 +81,7 @@ console.log("isNear:", isNear);
     const usdc = portfolio["USDC"] || 0;
     size = usdc / 3;
   }
-
+ console.log("STOP: size <= 0");
   // Si no hi ha size → no obrir ordre
   if (size <= 0) return;
   console.log("createOrder");
