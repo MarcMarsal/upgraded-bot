@@ -1,8 +1,8 @@
 // panell_okx.js — FIAT‑PRO (portfolio)
 
 import http from "http";
-import { initDB } from "./db/client.js";
-import { readPortfolio } from "./core/portfolio/portfolio.js";
+import { readPortfolio } from "./core/portfolio.js";     // ✔ PATH correcte
+import { okxClient } from "./okx/okxClient.js";          // ✔ Import correcte
 import { formatSpainTime } from "./core/utils.js";
 
 // Format numèric
@@ -33,13 +33,12 @@ function renderPortfolioTable(p) {
 
 // Servidor HTTP
 async function startPanel() {
-  await initDB();
 
   http.createServer(async (req, res) => {
     if (req.url === "/") {
 
-      // Llegir cartera OKX
-      const portfolio = await readPortfolio();
+      // 🔥 Llegir cartera OKX amb el client correcte
+      const portfolio = await readPortfolio(okxClient);
 
       const portfolioHTML = renderPortfolioTable(portfolio);
       const lastUpdate = formatSpainTime(Date.now());
@@ -48,7 +47,7 @@ async function startPanel() {
       <html>
       <head>
         <meta charset="UTF-8">
-        <meta http-equiv="refresh" content="60">   <!-- 🔥 refresc cada minut -->
+        <meta http-equiv="refresh" content="60">
         <style>
           body {
             background-color: #000;
