@@ -1,7 +1,7 @@
 // panell_okx.js — FIAT‑PRO (portfolio)
 
 import http from "http";
-import { client } from "./db/client.js";
+import { initDB, client } from "./db/client.js";
 import { formatSpainTime } from "./core/utils.js";
 
 // Format numèric
@@ -44,7 +44,7 @@ function renderPortfolioTable(p) {
 
 // Servidor HTTP
 async function startPanel() {
-
+  await initDB();
   http.createServer(async (req, res) => {
     if (req.url === "/") {
 
