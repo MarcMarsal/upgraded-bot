@@ -2,7 +2,7 @@
 
 import http from "http";
 import { readPortfolio } from "./core/portfolio.js";     // ✔ PATH correcte
-import { okxClient } from "./okx/okxClient.js";          // ✔ Import correcte
+import { okxClient } from "./core/okx/okxClient.js";
 import { formatSpainTime } from "./core/utils.js";
 
 // Format numèric
