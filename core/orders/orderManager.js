@@ -229,5 +229,42 @@ export async function manageClosures(symbol, timeframe = "1H") {
 
 
 export async function manageDistanceCancels(symbol, price_now, atr, timeframe = "1H") {
-  // s'omplirà després
+
+  // 1) Buscar buckets pending
+  const res = await client.query(
+    `SELECT *
+     FROM sl_buckets
+     WHERE symbol = $1
+       AND timeframe = $2
+       AND order_status = 'pending'`,
+    [symbol, timeframe]
+  );
+
+  const buckets = res.rows;
+  if (buckets.length === 0) return;
+
+  for (const b of buckets) {
+
+    const distance = Math.abs(price_now - Number(b.bucket_price));
+    const isFar = distance > 2 * atr;
+
+    if (!isFar) continue;
+    if (!b.order_id) continue;
+
+    console.log("[CANCEL·LACIÓ PER DISTÀNCIA]", symbol, "bucket:", b.bucket_price);
+
+    // 2) Cancel·lar ordre a OKX (reutilitzes cancelOrder)
+    await cancelOrder({ id: b.order_id, symbol });
+
+    // 3) Actualitzar bucket FIAT‑PRO
+    await client.query(
+      `UPDATE sl_buckets
+       SET order_status = 'cancelled',
+           status = 'closed',
+           cancelled_at = NOW(),
+           cancel_reason = 'distance'
+       WHERE id = $1`,
+      [b.id]
+    );
+  }
 }
