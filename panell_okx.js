@@ -1,70 +1,27 @@
 // panell_okx.js — FIAT‑PRO (portfolio)
 
 import http from "http";
-import crypto from "crypto";
-import axios from "axios";
+import { client } from "./db/client.js";
 import { formatSpainTime } from "./core/utils.js";
 
-const API_KEY = process.env.OKX_API_KEY;
-const SECRET_KEY = process.env.OKX_SECRET_KEY;
-const PASSPHRASE = process.env.OKX_PASSPHRASE;
-
-function sign(message) {
-  return crypto
-    .createHmac("sha256", SECRET_KEY)
-    .update(message)
-    .digest("base64");
-}
-
-async function readPortfolio() {
-  try {
-    const path = "/api/v5/account/balance";
-    const timestamp = new Date().toISOString();
-    const message = timestamp + "GET" + path;
-    const signature = sign(message);
-
-    const headers = {
-      "OK-ACCESS-KEY": API_KEY,
-      "OK-ACCESS-SIGN": signature,
-      "OK-ACCESS-TIMESTAMP": timestamp,
-      "OK-ACCESS-PASSPHRASE": PASSPHRASE,
-      "Content-Type": "application/json",
-      "Accept": "application/json",
-      "x-simulated-trading": "1"
-    };
-
-    const url = "https://www.okx.com" + path;
-
-    const res = await axios.get(url, {
-      headers,
-      timeout: 5000   // 🔥 evita Bad Gateway
-    });
-
-    const details = res.data.data[0].details;
-
-    const portfolio = { usdc: 0, btc: 0, eth: 0, sol: 0 };
-
-    for (const asset of details) {
-      switch (asset.ccy) {
-        case "USDC": portfolio.usdc = parseFloat(asset.availEq); break;
-        case "BTC":  portfolio.btc  = parseFloat(asset.availEq); break;
-        case "ETH":  portfolio.eth  = parseFloat(asset.availEq); break;
-        case "SOL":  portfolio.sol  = parseFloat(asset.availEq); break;
-      }
-    }
-
-    return portfolio;
-
-  } catch (err) {
-    console.log("ERROR OKX:", err.response?.data || err.message);
-    return { usdc: "-", btc: "-", eth: "-", sol: "-" };  // 🔥 evita 502
-  }
-}
-
+// Format numèric
 function fmt(n) {
   return n !== null && n !== undefined ? Number(n).toFixed(6) : "-";
 }
 
+// Llegir l'últim portfolio OKX de la BD
+async function getPortfolioFromDB() {
+  const q = await client.query(`
+    SELECT usdc, btc, eth, sol, updated_at
+    FROM okx_portfolio
+    ORDER BY updated_at DESC
+    LIMIT 1
+  `);
+
+  return q.rows[0];
+}
+
+// Renderitzar taula
 function renderPortfolioTable(p) {
   return `
     <h2>Cartera OKX (SPOT · Paper Trading)</h2>
@@ -85,14 +42,15 @@ function renderPortfolioTable(p) {
   `;
 }
 
+// Servidor HTTP
 async function startPanel() {
 
   http.createServer(async (req, res) => {
     if (req.url === "/") {
 
-      const portfolio = await readPortfolio();
-      const portfolioHTML = renderPortfolioTable(portfolio);
-      const lastUpdate = formatSpainTime(Date.now());
+      const p = await getPortfolioFromDB();
+      const portfolioHTML = renderPortfolioTable(p);
+      const lastUpdate = formatSpainTime(p.updated_at);
 
       const html = `
       <html>
