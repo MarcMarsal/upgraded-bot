@@ -272,7 +272,6 @@ for (const symbol of ["BTC-USDT","ETH-USDT","SOL-USDT"]) {
     if (!atrRaw) continue;
 
     const atr = Number(atrRaw);
-    //console.log("[ATR]", symbol, "ATR:", atr, "price:", price_now);
 
     // Reconstrucció institucional (detecta buckets)
     await updateSLReconstruction(symbol, price_now, oi.oi, ts, atr, "1H");
@@ -315,102 +314,27 @@ for (const symbol of ["BTC-USDT","ETH-USDT","SOL-USDT"]) {
       continue;
     }
 
+    // -------------------------------------------------------------
+    // 🔥 FIAT‑PRO INSTITUCIONAL — GESTIÓ D’ORDRES (orderManager)
+    // -------------------------------------------------------------
 
-    //.log("[DOMINANT]", symbol, "side:", side, "bucket:", bucket_price, "size:", dominantBucket.total_size);
+    // 1) Crear pending si el preu s’aproxima al bucket
+    await managePendingCreation(symbol, price_now, atr, "1H");
 
-    // 3) si hi ha un trade ACTIVE → NO obrir res
-    const activeRes = await client.query(
-      `SELECT *
-       FROM orders
-       WHERE symbol = $1
-         AND timeframe = '1H'
-         AND status = 'ACTIVE'
-       LIMIT 1`,
-      [symbol]
-    );
+    // 2) Activar ordres pending quan OKX les executa
+    await manageActivation(symbol, "1H");
 
-    const hasActiveOrder = activeRes.rows.length > 0;
+    // 3) Detectar TP/SL i cancel·lacions OKX sobre ordres actives
+    await manageClosures(symbol, "1H");
 
-    if (hasActiveOrder) {
-      //.log("[ACTIVE BLOCK]", symbol, "ACTIVE order present, skipping");
-      continue;
-    }
-
-    // 4) si NO hi ha trade actiu → mirar si ja existeix ordre pendent per aquest bucket
-    const pendingRes = await client.query(
-      `SELECT *
-       FROM orders
-       WHERE symbol = $1
-         AND timeframe = '1H'
-         AND bucket_price = $2
-         AND status = 'PENDING_ENTRY'
-       LIMIT 1`,
-      [symbol, bucket_price]
-    );
-
-    const pendingOrder = pendingRes.rows[0] || null;
-    const existingPending = !!pendingOrder;
-
-    // 5) Condició institucional FIAT‑PRO
-    let isNear = false;
-
-    if (side === "short") {
-      isNear = price_now < bucket_price &&
-               (bucket_price - price_now) <= atr;
-    } else if (side === "long") {
-      isNear = price_now > bucket_price &&
-               (price_now - bucket_price) <= atr;
-    }
-
-    //.log("[CHECK]", symbol, "side:", side, "price:", price_now, "bucket:", bucket_price, "ATR:", atr, "isNear:", isNear, "existingPending:", existingPending);
-
-    // 6) CREAR ORDRE LIMIT
-    if (!existingPending && isNear) {
-
-      const entry_price = bucket_price;
-
-      const tp = side === "long"
-        ? entry_price + atr
-        : entry_price - atr;
-
-      const sl = side === "long"
-        ? entry_price - atr
-        : entry_price + atr;
-
-      //.log("[ENTRY]", symbol, "CREATING ORDER", "side:", side, "entry:", entry_price, "tp:", tp, "sl:", sl);
-
-     // await createOrder({
-     //    symbol,
-     //    timeframe: "1H",
-     //    bucket_price,
-     //    side,
-     //    entry_price,
-     //    atr,
-     //    tp,
-     //    sl,
-     //    zone_ts: new Date(dominantBucket.updated_at).getTime(),
-     //    price_now
-     // });
-
-    }
-
-    // 7) CANCEL·LAR ORDRE LIMIT si el preu se’n va
-    if (existingPending) {
-
-      const isFar = Math.abs(price_now - bucket_price) > 2 * atr;
-
-      if (isFar) {
-        console.log("[CANCEL]", symbol, "CANCEL ORDER", pendingOrder.id);
-
-        // CRIDA CORRECTA (objecte complet + price_now + atr)
-        await cancelOrder(pendingOrder, price_now, atr);
-      }
-    }
+    // 4) Cancel·lar pending si el preu s’allunya massa
+    await manageDistanceCancels(symbol, price_now, atr, "1H");
 
   } catch (err) {
     console.log("Error FIAT‑PRO institucional", symbol, err.message);
   }
 }
+
 
 }
 
