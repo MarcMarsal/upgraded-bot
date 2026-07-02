@@ -5,7 +5,7 @@ import { okxCreateOrder } from "../okx/okxClient.js";
 export async function createOrder(orderData) {
   const {
     symbol,
-    side,
+    side,          // "long" | "short"
     entry_price,
     tp,
     sl,
@@ -13,6 +13,9 @@ export async function createOrder(orderData) {
     bucket_price,
     timeframe
   } = orderData;
+
+  // Traducció institucional FIAT‑PRO SPOT
+  const okxSide = side === "long" ? "buy" : "sell";
 
   // 1) Crear registre local
   const res = await client.query(
@@ -26,14 +29,13 @@ export async function createOrder(orderData) {
 
   const id = res.rows[0].id;
 
-  // 2) Enviar ordre a OKX
+  // 2) Enviar ordre a OKX (SPOT + short simulat)
   const okx = await okxCreateOrder({
     instId: symbol,
-    side,
+    side: okxSide,        // BUY si long, SELL si short
     px: entry_price,
     sz: "1"
   });
-
 
   const okxOrderId = okx.data[0].ordId;
 
