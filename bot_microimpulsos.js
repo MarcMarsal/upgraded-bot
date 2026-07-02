@@ -324,6 +324,9 @@ for (const symbol of ["BTC-USDT","ETH-USDT","SOL-USDT"]) {
     // 2) Cancel·lar pending si el preu s’allunya massa
     await manageDistanceCancels(symbol, price_now, atr, "1H");
 
+    await monitorOrders("1H");
+
+
   } catch (err) {
     console.log("Error FIAT‑PRO institucional", symbol, err.message);
   }
