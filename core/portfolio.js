@@ -37,7 +37,8 @@ export async function readPortfolio() {
       "x-simulated-trading": "1"
     };
 
-    const url = "https://www.okx.com" + path;
+    //const url = "https://www.okx.com" + path;
+    const url = "https://my.okx.com" + path;
 
     const res = await axios.get(url, { headers, timeout: 5000 });
 
