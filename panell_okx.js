@@ -145,9 +145,9 @@ async function startPanel() {
 
     res.writeHead(200);
     res.end("Panell OKX FIAT‑PRO OK");
-  }).listen(process.env.PORT || 3001);
+  }).listen(process.env.PORT || 3000);
 
-  console.log("Panell OKX FIAT‑PRO en marxa (port 3001)");
+  console.log("Panell OKX FIAT‑PRO en marxa (port 3000)");
 }
 
 startPanel();
