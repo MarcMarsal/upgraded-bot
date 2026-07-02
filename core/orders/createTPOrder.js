@@ -1,17 +1,17 @@
 // core/orders/createTPOrder.js
-import { okxClient } from "../okx/client.js";
+import { okxCreateOrder } from "../okx/okxClient.js";
 
-export async function createTPOrder({ symbol, entryOrderId, tpPrice }) {
+export async function createTPOrder({ symbol, side, tpPrice, size }) {
   try {
-    const res = await okxClient.post("/api/v5/trade/order", {
+    const okxSide = side === "long" ? "sell" : "buy";   // TP segons side
+
+    return await okxCreateOrder({
       instId: symbol,
-      tdMode: "cross",
-      ordType: "take-profit",
-      triggerPx: tpPrice.toString(),
-      orderId: entryOrderId
+      side: okxSide,
+      px: tpPrice,
+      sz: size
     });
 
-    return res.data;
   } catch (err) {
     console.log("[TP ERROR]", symbol, err.message);
     return null;
