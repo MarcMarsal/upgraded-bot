@@ -20,12 +20,12 @@ export async function cleanBuckets(symbol, timeframe, atr, price_now) {
   for (const b of buckets) {
 
     // 🟩 FIAT‑PRO: NO eliminar buckets amb estat institucional
-    const protected =
+    const isProtected =
       b.status === "mitigated" ||
       b.status === "closed" ||
       ["pending", "active", "tp", "sl", "cancelled"].includes(b.order_status);
 
-    if (protected) {
+    if (isProtected) {
       // FIAT‑PRO: aquest bucket ja forma part del cicle institucional
       continue;
     }
@@ -84,17 +84,17 @@ export async function cleanBuckets(symbol, timeframe, atr, price_now) {
     if (Math.abs(Number(b1.bucket_price) - Number(b2.bucket_price)) < atr) {
 
       // FIAT‑PRO: NO eliminar buckets institucionals
-      const protected1 =
+      const isProtected1 =
         b1.status === "mitigated" ||
         b1.status === "closed" ||
         ["pending", "active", "tp", "sl", "cancelled"].includes(b1.order_status);
 
-      const protected2 =
+      const isProtected2 =
         b2.status === "mitigated" ||
         b2.status === "closed" ||
         ["pending", "active", "tp", "sl", "cancelled"].includes(b2.order_status);
 
-      if (protected1 || protected2) {
+      if (isProtected1 || isProtected2) {
         continue;
       }
 
