@@ -159,8 +159,74 @@ export async function manageActivation(symbol, timeframe = "1H") {
 
 
 export async function manageClosures(symbol, timeframe = "1H") {
-  // s'omplirà després
+
+  // 1) Buscar buckets actius
+  const res = await client.query(
+    `SELECT *
+     FROM sl_buckets
+     WHERE symbol = $1
+       AND timeframe = $2
+       AND order_status = 'active'`,
+    [symbol, timeframe]
+  );
+
+  const buckets = res.rows;
+  if (buckets.length === 0) return;
+
+  for (const b of buckets) {
+    if (!b.order_id) continue;
+
+    // 2) Consultar estat de l’ordre a OKX
+    const status = await getOrderStatusOKX(b.order_id);
+    if (!status) continue;
+
+    // 3) TP o SL executat
+    if (status.state === "triggered") {
+
+      if (status.triggerType === "tp") {
+        await client.query(
+          `UPDATE sl_buckets
+           SET order_status = 'tp',
+               status = 'closed',
+               closed_at = NOW()
+           WHERE id = $1`,
+          [b.id]
+        );
+
+        console.log("[TP EXECUTAT]", b.symbol, "bucket:", b.bucket_price);
+      }
+
+      if (status.triggerType === "sl") {
+        await client.query(
+          `UPDATE sl_buckets
+           SET order_status = 'sl',
+               status = 'closed',
+               closed_at = NOW()
+           WHERE id = $1`,
+          [b.id]
+        );
+
+        console.log("[SL EXECUTAT]", b.symbol, "bucket:", b.bucket_price);
+      }
+    }
+
+    // 4) Cancel·lació OKX d’una ordre activa
+    if (status.state === "canceled") {
+      await client.query(
+        `UPDATE sl_buckets
+         SET order_status = 'cancelled',
+             status = 'closed',
+             cancelled_at = NOW(),
+             cancel_reason = 'okx'
+         WHERE id = $1`,
+        [b.id]
+      );
+
+      console.log("[CANCEL·LADA PER OKX]", b.symbol, "bucket:", b.bucket_price);
+    }
+  }
 }
+
 
 export async function manageDistanceCancels(symbol, price_now, atr, timeframe = "1H") {
   // s'omplirà després
