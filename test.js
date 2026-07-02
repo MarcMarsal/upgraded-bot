@@ -1,4 +1,5 @@
-import { okxCreateOrderAttachTest } from "./core/okx/okxCreateOrderAttachTest.js";
+import { okxCreateOrderAttachTest } from "./core/okx/okxCreateOrder_testAttach.js";
+                                            
 
 async function test() {
   const res = await okxCreateOrderAttachTest({
