@@ -21,6 +21,8 @@ export async function managePendingCreation(symbol, price_now, atr, timeframe = 
   );
 
   const buckets = res.rows;
+
+   console.log("buckets found:", buckets.length);
   if (buckets.length === 0) return;
 
   // 2) Bucket dominant per SIZE
@@ -29,12 +31,12 @@ export async function managePendingCreation(symbol, price_now, atr, timeframe = 
       !best || Number(b.total_size) > Number(best.total_size) ? b : best,
     null
   );
-
+console.log("dominant bucket:", dominant);
   if (!dominant) return;
 
   const bucket_price = Number(dominant.bucket_price);
   const side = dominant.side;
-
+  console.log("bucket_price:", bucket_price, "side:", side);
   // 3) Condició de proximitat
   let isNear = false;
 
@@ -45,7 +47,7 @@ export async function managePendingCreation(symbol, price_now, atr, timeframe = 
     isNear = price_now > bucket_price &&
              (price_now - bucket_price) <= atr;
   }
-
+console.log("isNear:", isNear);
   if (!isNear) return;
 
   // 4) Si ja hi ha pending → no crear res
