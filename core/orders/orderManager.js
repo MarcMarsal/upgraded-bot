@@ -2,7 +2,10 @@
 import { client } from "../../db/client.js";
 import { createOrder } from "./createOrder.js";
 import { cancelOrder } from "./cancelOrder.js";
-// import { getOrderStatusOKX } from "./okxClient.js"; // l'afegirem després
+
+import { getOrderStatusOKX } from "../okx/getOrderStatusOKX.js";
+import { createTPOrder } from "./createTPOrder.js";
+import { createSLOrder } from "./createSLOrder.js";
 
 export async function managePendingCreation(symbol, price_now, atr, timeframe = "1H") {
 
