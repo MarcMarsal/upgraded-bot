@@ -19,8 +19,6 @@ import { cancelOrder } from "./core/orders/cancelOrder.js";
 import { readPortfolio } from "./core/portfolio.js";
 import {
   managePendingCreation,
-  manageActivation,
-  manageClosures,
   manageDistanceCancels
 } from "./core/orders/orderManager.js";
 
@@ -328,11 +326,7 @@ for (const symbol of ["BTC-USDT","ETH-USDT","SOL-USDT"]) {
     // 1) Crear pending si el preu s’aproxima al bucket
     await managePendingCreation(symbol, price_now, atr, "1H");
 
-    // 2) Activar ordres pending quan OKX les executa
-    await manageActivation(symbol, "1H");
-
-    // 3) Detectar TP/SL i cancel·lacions OKX sobre ordres actives
-    await manageClosures(symbol, "1H");
+   
 
     // 4) Cancel·lar pending si el preu s’allunya massa
     await manageDistanceCancels(symbol, price_now, atr, "1H");
