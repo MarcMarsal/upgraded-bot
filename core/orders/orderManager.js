@@ -7,7 +7,7 @@ import { readPortfolio } from "../../core/portfolio.js";
 // 1) CREACIÓ D’ORDRES LIMIT + TP/SL ADJUNTS (FIAT‑PRO SPOT)
 // -------------------------------------------------------------
 export async function managePendingCreation(symbol, price_now, atr, timeframe = "1H") {
-
+   console.log("managePendingCreation");
   // 1) Obtenir buckets disponibles
   const res = await client.query(
     `SELECT *
