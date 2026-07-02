@@ -47,7 +47,7 @@ export async function managePendingCreation(symbol, price_now, atr, timeframe = 
     isNear = price_now > bucket_price &&
              (price_now - bucket_price) <= atr;
   }
-console.log("isNear:", isNear);
+
   if (!isNear) return;
 
   // 4) Si ja hi ha pending → no crear res
@@ -63,14 +63,14 @@ console.log("isNear:", isNear);
   const sl = side === "long"
     ? entry_price - atr
     : entry_price + atr;
- console.log("TP/SL:", { tp, sl });
+
   // -------------------------------------------------------------
   // 🔥 6) CALCULAR SIZE INSTITUCIONAL
   // -------------------------------------------------------------
 
   // Obtenir portfolio actual
   const portfolio = await readPortfolio(); // BTC, ETH, SOL, USDC
- console.log("portfolio:", portfolio);
+
   let size = 0;
 
   if (side === "short") {
@@ -81,7 +81,16 @@ console.log("isNear:", isNear);
     const usdc = portfolio["USDC"] || 0;
     size = usdc / 3;
   }
- console.log("STOP: size <= 0");
+console.log("SIZE DEBUG", {
+  side,
+  symbol,
+  asset: symbol.split("-")[0],
+  portfolio_symbol: portfolio[symbol],
+  portfolio_asset: portfolio[symbol.split("-")[0]],
+  usdc: portfolio["USDC"],
+  size
+});
+
   // Si no hi ha size → no obrir ordre
   if (size <= 0) return;
   console.log("createOrder");
