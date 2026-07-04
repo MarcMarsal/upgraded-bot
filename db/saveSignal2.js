@@ -11,31 +11,28 @@ export async function saveSignal2({
   entry,
   tp,
   sl,
-  timestamp   // ms (moment de la vela)
+  timestamp,   // ms (moment de la vela)
+
+  // 🔥 FIAT‑PRO diagnostics
+  color,
+  isGood,
+  body3,
+  range1,
+  ratio
 }) {
   const tsMs = Number(timestamp);
   const createdAt = Date.now();
 
-  // Criptos activades per enviar alerta
   const ACTIVE_CRYPTOS_4H = [
-    "BTC-USDT",
-    "FET-USDT",
-    "LINK-USDT",
-    "RENDER-USDT",
-    "SOL-USDT",
-    "XRP-USDT"
+    "BTC-USDT","FET-USDT","LINK-USDT","RENDER-USDT","SOL-USDT","XRP-USDT"
   ];
 
   const ACTIVE_CRYPTOS_1H = [
-    "APT-USDT",
-    "LINK-USDT",
-    "OP-USDT",
-    "SOL-USDT"
+    "APT-USDT","LINK-USDT","OP-USDT","SOL-USDT"
   ];
 
   const activeList = timeframe === "1H" ? ACTIVE_CRYPTOS_1H : ACTIVE_CRYPTOS_4H;
 
-  // Data ES basada en la vela
   const { date_es, hora_es, timestamp_es } = splitSpainDate(tsMs);
 
   await client.query(
@@ -44,6 +41,7 @@ export async function saveSignal2({
       symbol,
       timeframe,
       type,
+      color,
       entry,
       tp,
       sl,
@@ -53,14 +51,20 @@ export async function saveSignal2({
       date_es,
       hora_es,
       created_at,
-      closed
+      closed,
+      is_good,
+      body3,
+      range1,
+      ratio
     )
     VALUES (
       $1,$2,$3,
-      $4,$5,$6,
-      $7,$8,$9,$10,$11,
-      $12,
-      false
+      $4,
+      $5,$6,$7,
+      $8,$9,$10,$11,$12,
+      $13,
+      false,
+      $14,$15,$16,$17
     )
     ON CONFLICT DO NOTHING
     `,
@@ -68,6 +72,7 @@ export async function saveSignal2({
       symbol,
       timeframe,
       type,
+      color,
       entry,
       tp,
       sl,
@@ -76,11 +81,14 @@ export async function saveSignal2({
       timestamp_es,
       date_es,
       hora_es,
-      createdAt
+      createdAt,
+      isGood,
+      body3,
+      range1,
+      ratio
     ]
   );
 
-  // Enviar alerta si la cripto està activada
   if (activeList.includes(symbol)) {
     await sendTelegram({
       bot: "FIAT-PRO",
