@@ -8,20 +8,6 @@ import { detectMSES } from "./core/patterns.js";
 import { fetchAndStoreCandles } from "./core/fetchcandles.js";
 import { splitSpainDate } from "./core/utils.js";
 
-import { fetchMarkPrice, fetchOpenInterest } from "./core/fetchMarketData.js";
-import { updateSLReconstruction } from "./core/sl_reconstructor.js";
-
-
-import { getOpenCandle } from "./core/candles/getOpenCandle.js";
-import { cleanBuckets } from "./core/buckets/cleanBuckets.js";
-import { createOrder } from "./core/orders/createOrder.js";
-import { cancelOrder } from "./core/orders/cancelOrder.js";
-import { readPortfolio } from "./core/portfolio.js";
-import { managePendingCreation, manageDistanceCancels } from "./core/orders/orderManager.js";
-import { monitorOrders } from "./core/orders/monitorOrders.js";
-
-
-
 // -------------------------------------------------------------
 // CONFIG
 // -------------------------------------------------------------
@@ -33,14 +19,14 @@ const ACTIVE_CRYPTOS = [
   "SUI-USDT","VIRTUAL-USDT","XRP-USDT","PEPE-USDT","TRUMP-USDT","LTC-USDT"
 ];
 
-const TIMEFRAMES = ["1H", "4H"];
+const TIMEFRAMES = ["1H"];
 
 // -------------------------------------------------------------
 // TIMEFRAME → MS
 // -------------------------------------------------------------
 function timeframeToMs(tf) {
   if (tf === "1H") return 60 * 60 * 1000;
-  if (tf === "4H") return 4 * 60 * 60 * 1000;
+ 
   throw new Error("Timeframe no suportat: " + tf);
 }
 
@@ -172,62 +158,6 @@ export async function processSymbol(symbol, timeframe) {
   }
 }
 
-// -------------------------------------------------------------
-// TRACKING TP/SL ANTIC
-// -------------------------------------------------------------
-async function checkOpenSignals() {
-  const res = await client.query(`
-    SELECT *
-    FROM signals_upgraded
-    WHERE closed = false
-  `);
-
-  for (const s of res.rows) {
-    if (s.tp == null && s.sl == null) continue;
-
-    const curr = await getOpenCandle(s.symbol, s.timeframe);
-    if (!curr) continue;
-
-    const high = curr.high;
-    const low = curr.low;
-
-    let hitTP = false;
-    let hitSL = false;
-
-    const isLong = s.type === "M";
-    const isShort = s.type === "E";
-
-    if (isLong) {
-      if (high >= s.tp) hitTP = true;
-      if (low <= s.sl) hitSL = true;
-    }
-
-    if (isShort) {
-      if (low <= s.tp) hitTP = true;
-      if (high >= s.sl) hitSL = true;
-    }
-
-    if (hitTP || hitSL) {
-      const nowMs = Date.now();
-      const { date_es, hora_es } = splitSpainDate(nowMs);
-
-      await client.query(
-        `
-        UPDATE signals_upgraded
-        SET closed = true,
-            result = $1,
-            timestamp_closed = $2,
-            date_es_closed = $3,
-            hora_es_closed = $4
-        WHERE id = $5
-      `,
-        [hitTP ? "TP" : "SL", nowMs, date_es, hora_es, s.id]
-      );
-
-      console.log(`[TRACK] ${s.symbol} ${s.type} → ${hitTP ? "TP" : "SL"}`);
-    }
-  }
-}
 
 // -------------------------------------------------------------
 // LOOP PRINCIPAL FIAT‑PRO
@@ -250,84 +180,6 @@ async function mainLoop() {
       }
     }
   }
-
-  // 3) Tracking TP/SL antic
-  await checkOpenSignals();
-
-// -------------------------------------------------------------
-// 4) FIAT‑PRO INSTITUCIONAL: buckets + ordres LIMIT (DOMINANT)
-// -------------------------------------------------------------
-//await readPortfolio();  
-//for (const symbol of ["BTC-USDT","ETH-USDT","SOL-USDT"]) {
-//  try {
-//    const mark = await fetchMarkPrice(symbol);
-//    const oi = await fetchOpenInterest(symbol);
-
-//    if (!mark || !oi) continue;
-
-//    const price_now = mark.markPx;
-//    const ts = Date.now();
-
-    // ATR actual
-//    const atrCandles = await getCandlesFromDB(symbol, "1H", 80);
-//    const atrRaw = calcATR(atrCandles, 14);
-//    if (!atrRaw) continue;
-
-//    const atr = Number(atrRaw);
-
-    // Reconstrucció institucional (detecta buckets)
-//    await updateSLReconstruction(symbol, price_now, oi.oi, ts, atr, "1H");
-
-    // Neteja institucional de buckets
-//    await cleanBuckets(symbol, "1H", atr, price_now);
-
-    // Obtenir TOTS els buckets vius del símbol
-//    const bucketsRes = await client.query(
-//      `SELECT *
-//       FROM sl_buckets
-//       WHERE symbol = $1
-//       ORDER BY bucket_price ASC`,
-//      [symbol]
-//    );
-
-//    if (bucketsRes.rows.length === 0) continue;
-
-    // FIAT‑PRO DOMINANT: bucket per SIZE
-//    const bucketsSymbol = bucketsRes.rows;
-//    const dominantBucket = bucketsSymbol.reduce(
-//      (best, b) =>
-//        !best || Number(b.total_size) > Number(best.total_size) ? b : best,
-//      null
-//    );
-
-//    if (!dominantBucket) continue;
-
-//    const bucket_price = Number(dominantBucket.bucket_price);
-//    const side = dominantBucket.side;
-
-    // ===============================
-    // FIAT‑PRO: NO operar buckets invertits
-    // ===============================
-//    if (side === "long" && bucket_price > price_now) continue;
-//    if (side === "short" && bucket_price < price_now) continue;
-
-    // -------------------------------------------------------------
-    // 🔥 FIAT‑PRO INSTITUCIONAL — GESTIÓ D’ORDRES (orderManager)
-    // -------------------------------------------------------------
-
-    // 1) Crear pending si el preu s’aproxima al bucket
-//    await managePendingCreation(symbol, price_now, atr, "1H");
-
-    // 2) Cancel·lar pending si el preu s’allunya massa
-//    await manageDistanceCancels(symbol, price_now, atr, "1H");
-
-//    await monitorOrders("1H");
-
-
-//  } catch (err) {
-//    console.log("Error FIAT‑PRO institucional", symbol, err.message);
-//  }
-//}
 
 }
 
