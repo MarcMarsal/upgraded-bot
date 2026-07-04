@@ -61,9 +61,9 @@ async function getCandlesFromDB(symbol, timeframe, limit, untilTimestamp = null)
 }
 
 // -------------------------------------------------------------
-// ATR14 SIMPLE
+// ATR10 SIMPLE
 // -------------------------------------------------------------
-function calcATR(candles, period = 14) {
+function calcATR(candles, period = 10) {
   if (!candles || candles.length <= period) return null;
 
   const trs = [];
@@ -117,7 +117,7 @@ export async function processSymbol(symbol, timeframe) {
 
   candles.sort((a, b) => a.timestamp - b.timestamp);
 
-  const atr = calcATR(candles, 14);
+  const atr = calcATR(candles, 10);
   if (atr == null) return;
 
   const { signals } = await detectMSES(candles, symbol, timeframe);
