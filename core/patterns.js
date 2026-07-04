@@ -32,56 +32,76 @@ function ema_TV(values, length) {
 // -------------------------------------------------------------
 // detectMSES — només detecció de patrons MS / ES
 // -------------------------------------------------------------
-export async function detectMSES(candlesRaw, symbol, timeframe) {
-  if (!candlesRaw || candlesRaw.length < 5) {
-    return { signals: [] };
-  }
+// core/patterns.js — detectMSES FIAT‑PRO (MS/ES RAW + body3 + range1 + ratio + GOOD)
 
-  // ordre cronològic
-  const candles = [...candlesRaw].sort((a, b) => a.timestamp - b.timestamp);
-  const n = candles.length;
-
+export function detectMSES(candles, symbol, timeframe) {
   const signals = [];
 
-  for (let i = 3; i < n; i++) {
-    const c3 = candles[i - 3];
-    const c2 = candles[i - 2];
-    const c1 = candles[i - 1]; // tercera vela del patró
+  // Necessitem almenys 4 veles per detectar MS/ES
+  if (!candles || candles.length < 4) {
+    return { signals };
+  }
 
-    const rangeFirst = c3.high - c3.low;
-    const indecisionOK =
-      rangeFirst === 0
-        ? true
-        : Math.abs(c2.close - c2.open) <= rangeFirst * 0.3;
+  // Recorrem totes les veles amb index suficient
+  for (let i = 3; i < candles.length; i++) {
 
-    const msRaw =
-      isBear(c3.open, c3.close) &&
-      indecisionOK &&
-      isBull(c1.open, c1.close);
+    const c1 = candles[i - 3]; // vela 1
+    const c2 = candles[i - 2]; // vela 2
+    const c3 = candles[i - 1]; // vela 3 (thirdCandle)
 
-    const esRaw =
-      isBull(c3.open, c3.close) &&
-      indecisionOK &&
-      isBear(c1.open, c1.close);
+    // MS RAW
+    const msCond =
+      c1.close < c1.open &&                                // vela 1 bearish
+      Math.abs(c2.close - c2.open) <= (c1.high - c1.low) * 0.3 && // cos petit
+      c3.close > c3.open;                                  // vela 3 bullish
 
-    if (!msRaw && !esRaw) continue;
+    // ES RAW
+    const esCond =
+      c1.close > c1.open &&                                // vela 1 bullish
+      Math.abs(c2.close - c2.open) <= (c1.high - c1.low) * 0.3 && // cos petit
+      c3.close < c3.open;                                  // vela 3 bearish
 
-    const type = msRaw ? "M" : "E";
-    const thirdCandle = c1;
-    const timestamp = thirdCandle.timestamp;
+    if (!msCond && !esCond) continue;
 
+    // FIAT‑PRO: càlculs de la tercera vela
+    const body3  = Math.abs(c3.close - c3.open);
+    const range1 = c1.high - c1.low;
+    const ratio  = range1 !== 0 ? body3 / range1 : 0;
+
+    // GOOD / DISCARD FIAT‑PRO
+    const isGood = body3 > range1 * 0.25;
+
+    // Timestamp de la tercera vela (igual que Pine Script: time[1])
+    const ts = c3.timestamp;
+
+    // Tipus de senyal
+    const type = msCond ? "M" : "E";
+
+    // FIAT‑PRO: retorn complet
     signals.push({
       symbol,
       timeframe,
       type,
-      timestamp,
-      thirdCandle
+      timestamp: ts,
+
+      // tercera vela completa
+      thirdCandle: {
+        open:  c3.open,
+        close: c3.close,
+        high:  c3.high,
+        low:   c3.low
+      },
+
+      // FIAT‑PRO diagnostics
+      body3,
+      range1,
+      ratio,
+      isGood
     });
   }
 
   return { signals };
 }
-
 
 // -------------------------------------------------------------
 // FIAT 2.0 — Pesos per cripto (1:1 TradingView)
