@@ -9,7 +9,6 @@ export async function saveSignal2({
   timeframe,
   type,        // "M" o "E"
   entry,
-  entryr,
   tp,
   sl,
   timestamp   // ms (moment de la vela)
@@ -46,7 +45,6 @@ export async function saveSignal2({
       timeframe,
       type,
       entry,
-      entryr,
       tp,
       sl,
       timestamp,
@@ -59,9 +57,9 @@ export async function saveSignal2({
     )
     VALUES (
       $1,$2,$3,
-      $4,$5,$6,$7,
-      $8,$9,$10,$11,$12,
-      $13,
+      $4,$5,$6,
+      $7,$8,$9,$10,$11,
+      $12,
       false
     )
     ON CONFLICT DO NOTHING
@@ -71,7 +69,6 @@ export async function saveSignal2({
       timeframe,
       type,
       entry,
-      entryr,
       tp,
       sl,
       tsMs,
