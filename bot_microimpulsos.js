@@ -111,13 +111,16 @@ function calcTargets(type, thirdCandle, atr) {
 // -------------------------------------------------------------
 // PROCESSAR UN SÍMBOL (FIAT‑PRO)
 // -------------------------------------------------------------
+// -------------------------------------------------------------
+// PROCESSAR UN SÍMBOL (FIAT‑PRO)
+// -------------------------------------------------------------
 export async function processSymbol(symbol, timeframe) {
   const candles = await getCandlesFromDB(symbol, timeframe, 80);
   if (!candles || candles.length < 40) return;
 
   candles.sort((a, b) => a.timestamp - b.timestamp);
 
-  const atr = calcATR(candles, 10);
+  const atr = calcATR(candles, 10);   // ATR=10 FIAT‑PRO
   if (atr == null) return;
 
   const { signals } = await detectMSES(candles, symbol, timeframe);
@@ -141,6 +144,7 @@ export async function processSymbol(symbol, timeframe) {
     sig.tp = tp;
     sig.sl = sl;
 
+    // 🔥 FIAT‑PRO: passar diagnòstic complet a la BD
     await saveSignal2({
       symbol: sig.symbol,
       timeframe: sig.timeframe,
@@ -148,11 +152,18 @@ export async function processSymbol(symbol, timeframe) {
       entry: sig.entry,
       tp: sig.tp,
       sl: sig.sl,
-      timestamp: sig.timestamp
-    });
+      timestamp: sig.timestamp,
 
+      // FIAT‑PRO diagnostics
+      color: sig.color,
+      isGood: sig.isGood,
+      body3: sig.body3,
+      range1: sig.range1,
+      ratio: sig.ratio
+    });
   }
 }
+
 
 
 // -------------------------------------------------------------
