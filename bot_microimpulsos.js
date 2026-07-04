@@ -102,15 +102,11 @@ function calcTargets(type, thirdCandle, atr) {
 
   const entry = close;
 
-  const entryr =
-    type === "M"
-      ? entry - body * 0.15
-      : entry + body * 0.15;
-
   const { tp, sl } = tpSlAtr1(type === "M", entry, atr);
 
-  return { entry, entryr, tp, sl };
+  return { entry, tp, sl };
 }
+
 
 // -------------------------------------------------------------
 // PROCESSAR UN SÍMBOL (FIAT‑PRO)
@@ -135,13 +131,13 @@ export async function processSymbol(symbol, timeframe) {
 
     console.log("[FIAT‑PRO]", symbol, timeframe, sig.type, sig.timestamp);
 
-    const { entry, entryr, tp, sl } = calcTargets(
+    const { entry, tp, sl } = calcTargets(
       sig.type,
       sig.thirdCandle,
       atr
     );
+
     sig.entry = entry;
-    sig.entryr = entryr;
     sig.tp = tp;
     sig.sl = sl;
 
@@ -150,11 +146,11 @@ export async function processSymbol(symbol, timeframe) {
       timeframe: sig.timeframe,
       type: sig.type,
       entry: sig.entry,
-      entryr: sig.entryr,
       tp: sig.tp,
       sl: sig.sl,
       timestamp: sig.timestamp
     });
+
   }
 }
 
