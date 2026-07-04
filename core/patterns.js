@@ -32,7 +32,7 @@ function ema_TV(values, length) {
 // -------------------------------------------------------------
 // detectMSES — només detecció de patrons MS / ES
 // -------------------------------------------------------------
-// core/patterns.js — detectMSES FIAT‑PRO (MS/ES RAW + body3 + range1 + ratio + GOOD)
+// core/patterns.js — detectMSES FIAT‑PRO (MS/ES RAW + body3 + range1 + ratio + GOOD + color)
 
 export function detectMSES(candles, symbol, timeframe) {
   const signals = [];
@@ -49,13 +49,15 @@ export function detectMSES(candles, symbol, timeframe) {
     const c2 = candles[i - 2]; // vela 2
     const c3 = candles[i - 1]; // vela 3 (thirdCandle)
 
-    // MS RAW
+    // ============================
+    // MS / ES RAW (igual que Pine)
+    // ============================
+
     const msCond =
       c1.close < c1.open &&                                // vela 1 bearish
       Math.abs(c2.close - c2.open) <= (c1.high - c1.low) * 0.3 && // cos petit
       c3.close > c3.open;                                  // vela 3 bullish
 
-    // ES RAW
     const esCond =
       c1.close > c1.open &&                                // vela 1 bullish
       Math.abs(c2.close - c2.open) <= (c1.high - c1.low) * 0.3 && // cos petit
@@ -63,28 +65,47 @@ export function detectMSES(candles, symbol, timeframe) {
 
     if (!msCond && !esCond) continue;
 
-    // FIAT‑PRO: càlculs de la tercera vela
+    const type = msCond ? "M" : "E";
+
+    // ============================
+    // FIAT‑PRO: càlculs de la 3a vela
+    // ============================
+
     const body3  = Math.abs(c3.close - c3.open);
     const range1 = c1.high - c1.low;
     const ratio  = range1 !== 0 ? body3 / range1 : 0;
 
-    // GOOD / DISCARD FIAT‑PRO
+    // ============================
+    // FIAT‑PRO: GOOD / DISCARD
+    // ============================
+
     const isGood = body3 > range1 * 0.25;
 
-    // Timestamp de la tercera vela (igual que Pine Script: time[1])
+    // ============================
+    // FIAT‑PRO: color (igual que Pine)
+    // ============================
+
+    const color =
+      isGood
+        ? (type === "M" ? "green" : "red")
+        : "blue";
+
+    // ============================
+    // Timestamp de la 3a vela
+    // ============================
+
     const ts = c3.timestamp;
 
-    // Tipus de senyal
-    const type = msCond ? "M" : "E";
+    // ============================
+    // Retorn FIAT‑PRO complet
+    // ============================
 
-    // FIAT‑PRO: retorn complet
     signals.push({
       symbol,
       timeframe,
       type,
       timestamp: ts,
 
-      // tercera vela completa
       thirdCandle: {
         open:  c3.open,
         close: c3.close,
@@ -92,16 +113,17 @@ export function detectMSES(candles, symbol, timeframe) {
         low:   c3.low
       },
 
-      // FIAT‑PRO diagnostics
       body3,
       range1,
       ratio,
-      isGood
+      isGood,
+      color
     });
   }
 
   return { signals };
 }
+
 
 // -------------------------------------------------------------
 // FIAT 2.0 — Pesos per cripto (1:1 TradingView)
