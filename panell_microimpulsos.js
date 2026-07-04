@@ -19,7 +19,6 @@ async function getActiveSignals() {
       timeframe,
       type,
       entry,
-      entryr,
       tp,
       sl,
       color,          -- 🟩 IMPORTANT: llegim el color
@@ -41,8 +40,8 @@ function renderActiveSignalsTable(signals) {
 
   for (const s of signals) {
 
-    // 🟩 Color FIAT 2.0 directament del camp color
-    // Si el color és "blue", el convertim a "cyan"
+    // 🟩 Color FIAT‑PRO directament del camp color
+    // Si el color és "blue", el convertim a "cyan" per visibilitat
     let color = s.color || "#00ff00";
     if (color.toLowerCase() === "blue") {
       color = "cyan";
@@ -55,7 +54,6 @@ function renderActiveSignalsTable(signals) {
         <td>${s.timeframe}</td>
         <td>${s.type}</td>
         <td>${fmt(s.entry)}</td>
-        <td>${fmt(s.entryr)}</td>
         <td>${fmt(s.tp)}</td>
         <td>${fmt(s.sl)}</td>
         <td>${s.date_es}</td>
@@ -75,7 +73,6 @@ function renderActiveSignalsTable(signals) {
           <th>Timeframe</th>
           <th>Tipus</th>
           <th>Entrada</th>
-          <th>EntradaR</th>
           <th>TP</th>
           <th>SL</th>
           <th>Data vela</th>
