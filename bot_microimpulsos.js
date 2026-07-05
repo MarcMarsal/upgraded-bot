@@ -74,29 +74,29 @@ async function getCandlesFromDB(symbol, timeframe, limit, untilTimestamp = null)
 // -------------------------------------------------------------
 // ATRSeries SIMPLE
 // -------------------------------------------------------------
-function calcATRSeries(candles, period = 10) {
-  const atrSeries = [];
+function calcATRManualSeries(candles, atrLen = 10) {
+  const atrManual = new Array(candles.length).fill(null);
 
-  for (let i = 1; i < candles.length; i++) {
-    const prev = candles[i - 1];
-    const cur = candles[i];
+  // candles ordenades de més antiga a més nova
+  for (let i = atrLen; i < candles.length; i++) {
+    let trSum = 0;
 
-    const highLow = cur.high - cur.low;
-    const highClose = Math.abs(cur.high - prev.close);
-    const lowClose = Math.abs(cur.low - prev.close);
+    for (let j = 0; j < atrLen; j++) {
+      const cur  = candles[i - j];     // high[j], low[j]
+      const prev = candles[i - j - 1]; // close[j+1]
 
-    const tr = Math.max(highLow, highClose, lowClose);
-    atrSeries.push(tr);
+      const highLow   = cur.high - cur.low;
+      const highClose = Math.abs(cur.high - prev.close);
+      const lowClose  = Math.abs(cur.low  - prev.close);
+
+      const tr = Math.max(highLow, highClose, lowClose);
+      trSum += tr;
+    }
+
+    atrManual[i] = trSum / atrLen;
   }
 
-  const atr10 = [];
-  for (let i = period; i < atrSeries.length; i++) {
-    const slice = atrSeries.slice(i - period, i);
-    const avg = slice.reduce((a, b) => a + b, 0) / period;
-    atr10.push(avg);
-  }
-
-  return atr10; // alineat amb atrManual[barsAgo]
+  return atrManual; // mateix significat que atrManual al Pine
 }
 
 function tpSlFiat(isLong, entry, atr) {
@@ -108,6 +108,15 @@ function tpSlFiat(isLong, entry, atr) {
 
   return { tp, sl };
 }
+
+function calcTargets(type, candles, atrManual, candleIndex) {
+  const entry = candles[candleIndex].close;   // close[barsAgo]
+  const atrEv = atrManual[candleIndex];       // atrManual[barsAgo]
+
+  const { tp, sl } = tpSlFiat(type === "M", entry, atrEv);
+  return { entry, tp, sl };
+}
+
 
 function calcTargets(type, thirdCandle, atrSeries, candleIndex) {
   const entry = thirdCandle.close;
@@ -122,14 +131,13 @@ function calcTargets(type, thirdCandle, atrSeries, candleIndex) {
 // PROCESSAR UN SÍMBOL (FIAT‑PRO)
 // -------------------------------------------------------------
 export async function processSymbol(symbol, timeframe) {
-  const candles = await getCandlesFromDB(symbol, timeframe, 80);
+  const candles = await getCandlesFromDB(symbol, timeframe, 120); // 80–120 és suficient
   if (!candles || candles.length < 40) return;
 
   candles.sort((a, b) => a.timestamp - b.timestamp);
 
-  // ATR per barra (igual que Pine)
-  const atrSeries = calcATRSeries(candles, 10);
-  if (!atrSeries || atrSeries.length === 0) return;
+  const atrManual = calcATRManualSeries(candles, 10);
+  if (!atrManual || atrManual.every(v => v === null)) return;
 
   const { signals } = await detectMSES(candles, symbol, timeframe);
   if (!signals || signals.length === 0) return;
@@ -140,39 +148,33 @@ export async function processSymbol(symbol, timeframe) {
     const exists = await alreadySent2(symbol, timeframe, sig.timestamp);
     if (exists) continue;
 
-    console.log("[FIAT‑PRO]", symbol, timeframe, sig.type, sig.timestamp);
-
-    // Índex de la barra de la senyal
     const candleIndex = candles.findIndex(c => c.timestamp === sig.timestamp);
     if (candleIndex === -1) continue;
 
-    // TP/SL 1:1 amb Pine Script
     const { entry, tp, sl } = calcTargets(
       sig.type,
-      sig.thirdCandle,
-      atrSeries,
+      candles,
+      atrManual,
       candleIndex
     );
 
     sig.entry = entry;
-    sig.tp = tp;
-    sig.sl = sl;
+    sig.tp    = tp;
+    sig.sl    = sl;
 
-    // Guardar senyal FIAT‑PRO
     await saveSignal2({
-      symbol: sig.symbol,
-      timeframe: sig.timeframe,
-      type: sig.type,
-      entry: sig.entry,
-      tp: sig.tp,
-      sl: sig.sl,
-      timestamp: sig.timestamp,
-
-      color: sig.color,
-      isGood: sig.isGood,
-      body3: sig.body3,
-      range1: sig.range1,
-      ratio: sig.ratio
+      symbol:   sig.symbol,
+      timeframe:sig.timeframe,
+      type:     sig.type,
+      entry:    sig.entry,
+      tp:       sig.tp,
+      sl:       sig.sl,
+      timestamp:sig.timestamp,
+      color:    sig.color,
+      isGood:   sig.isGood,
+      body3:    sig.body3,
+      range1:   sig.range1,
+      ratio:    sig.ratio
     });
   }
 }
