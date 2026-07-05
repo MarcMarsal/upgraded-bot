@@ -11,12 +11,22 @@ import { splitSpainDate } from "./core/utils.js";
 // -------------------------------------------------------------
 // CONFIG
 // -------------------------------------------------------------
+//const ACTIVE_CRYPTOS = [
+//  "ADA-USDT","APT-USDT","ARB-USDT","ATOM-USDT","ASTER-USDT",
+//  "AVAX-USDT","BCH-USDT","BNB-USDT","BTC-USDT","DOT-USDT",
+//  "ETH-USDT","FET-USDT","HBAR-USDT","INJ-USDT","LINK-USDT",
+//  "NEAR-USDT","OP-USDT","RENDER-USDT","SEI-USDT","SOL-USDT",
+//  "SUI-USDT","VIRTUAL-USDT","XRP-USDT","PEPE-USDT","TRUMP-USDT",
+//  "LTC-USDT"
+//];
+
 const ACTIVE_CRYPTOS = [
-  "ADA-USDT","APT-USDT","ARB-USDT","ATOM-USDT","ASTER-USDT",
+  "APT-USDT","ARB-USDT","ATOM-USDT",
   "AVAX-USDT","BCH-USDT","BNB-USDT","BTC-USDT","DOT-USDT",
-  "ETH-USDT","FET-USDT","HBAR-USDT","INJ-USDT","LINK-USDT",
-  "NEAR-USDT","OP-USDT","RENDER-USDT","SEI-USDT","SOL-USDT",
-  "SUI-USDT","VIRTUAL-USDT","XRP-USDT","PEPE-USDT","TRUMP-USDT","LTC-USDT"
+  "ETH-USDT","FET-USDT","HBAR-USDT","INJ-USDT","LINK-USDT","LINK-USDC",
+  "OP-USDT","RENDER-USDT","SEI-USDT","SOL-USDT",
+  "SUI-USDT","VIRTUAL-USDT","XRP-USDT","PEPE-USDT","TRUMP-USDT","TRUMP-USDC",
+  "LTC-USDT"
 ];
 
 const TIMEFRAMES = ["1H"];
