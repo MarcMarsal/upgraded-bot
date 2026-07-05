@@ -23,18 +23,12 @@ export async function saveSignal2({
   const tsMs = Number(timestamp);
   const createdAt = Date.now();
 
-  //const ACTIVE_CRYPTOS_4H = [
-  //  "BTC-USDT","FET-USDT","LINK-USDT","RENDER-USDT","SOL-USDT","XRP-USDT"
-  //];
-
-  const ACTIVE_CRYPTOS_1H = [
-    "LINK-USDC","ETH-USDC","SOL-USDC"
-  ];
-
-  const activeList = timeframe === "1H" ? ACTIVE_CRYPTOS_1H : ACTIVE_CRYPTOS_4H;
-
+  // Data ES basada en la vela
   const { date_es, hora_es, timestamp_es } = splitSpainDate(tsMs);
 
+  // -------------------------------------------------------------
+  // GUARDAR SENYAL FIAT‑PRO
+  // -------------------------------------------------------------
   await client.query(
     `
     INSERT INTO signals_upgraded (
@@ -88,16 +82,18 @@ export async function saveSignal2({
       ratio
     ]
   );
+
+  // -------------------------------------------------------------
+  // ENVIAR ALERTA TELEGRAM (FIAT‑PRO)
+  // -------------------------------------------------------------
   await sendTelegram({
     bot: "FIAT-PRO",
     symbol,
     timeframe,
     signalType: type,
-    color,   // 🟩 FIAT‑PRO: ara sí, enviem el color
+    color,
     entry: Number(entry).toFixed(4),
     tp: Number(tp).toFixed(4),
     sl: Number(sl).toFixed(4)
   });
- 
-  
 }
