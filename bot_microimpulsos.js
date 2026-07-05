@@ -118,14 +118,7 @@ function calcTargets(type, candles, atrManual, candleIndex) {
 }
 
 
-function calcTargets(type, thirdCandle, atrSeries, candleIndex) {
-  const entry = thirdCandle.close;
-  const atrEv = atrSeries[candleIndex - 1]; // ATR de la barra de la senyal
 
-  const { tp, sl } = tpSlFiat(type === "M", entry, atrEv);
-
-  return { entry, tp, sl };
-}
 
 // -------------------------------------------------------------
 // PROCESSAR UN SÍMBOL (FIAT‑PRO)
