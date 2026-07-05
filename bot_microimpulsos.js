@@ -6,30 +6,50 @@ import { alreadySent2 } from "./db/alreadySent2.js";
 import { saveSignal2 } from "./db/saveSignal2.js";
 import { detectMSES } from "./core/patterns.js";
 import { fetchAndStoreCandles } from "./core/fetchcandles.js";
-import { splitSpainDate } from "./core/utils.js";
+
+// -------------------------------------------------------------
+// LLISTES FIAT‑PRO
+// -------------------------------------------------------------
+
+// 1) Univers complet (informativa, no detecta ni envia)
+const UNIVERSE = [
+  "APT-USDT","LINK-USDT","OP-USDT","SOL-USDT","BTC-USDT","FET-USDT",
+  "RENDER-USDT","XRP-USDT","ARB-USDT","ATOM-USDT","BNB-USDT","DOT-USDT",
+  "ETH-USDT","INJ-USDT","PEPE-USDT","TRUMP-USDT","ADA-USDT","ASTER-USDT",
+  "AVAX-USDT","BCH-USDT","HBAR-USDT","NEAR-USDT","SEI-USDT","SUI-USDT",
+  "VIRTUAL-USDT","LTC-USDT"
+];
+
+// 2) Criptos bones amb filtre de volum
+const GOOD_WITH_VOLUME = [
+  "APT-USDT","OP-USDT","SOL-USDT","DOT-USDT","PEPE-USDT","VIRTUAL-USDT"
+];
+
+// 3) Criptos bones sense filtre de volum
+const GOOD_NO_VOLUME = [
+  "LINK-USDT","RENDER-USDT","TRUMP-USDT"
+];
+
+// -------------------------------------------------------------
+// NOMÉS processem les dues llistes bones
+// -------------------------------------------------------------
+function shouldProcess(symbol) {
+  return GOOD_WITH_VOLUME.includes(symbol) || GOOD_NO_VOLUME.includes(symbol);
+}
+
+// -------------------------------------------------------------
+// FILTRE DE VOLUM FIAT‑PRO
+// -------------------------------------------------------------
+function applyVolumeFilter(candles, candleIndex) {
+  const vol3 = candles[candleIndex].volume;       // tercera vela
+  const vol2 = candles[candleIndex - 1].volume;   // segona vela
+  return vol3 >= vol2;   // FIAT-PRO: volum 3a >= volum 2a
+}
 
 // -------------------------------------------------------------
 // CONFIG
 // -------------------------------------------------------------
-//const ACTIVE_CRYPTOS = [
-//  "ADA-USDT","APT-USDT","ARB-USDT","ATOM-USDT","ASTER-USDT",
-//  "AVAX-USDT","BCH-USDT","BNB-USDT","BTC-USDT","DOT-USDT",
-//  "ETH-USDT","FET-USDT","HBAR-USDT","INJ-USDT","LINK-USDT",
-//  "NEAR-USDT","OP-USDT","RENDER-USDT","SEI-USDT","SOL-USDT",
-//  "SUI-USDT","VIRTUAL-USDT","XRP-USDT","PEPE-USDT","TRUMP-USDT",
-//  "LTC-USDT"
-//];
-
-const ACTIVE_CRYPTOS = [
-  "APT-USDT","ARB-USDT","ATOM-USDT","AVAX-USDT","BCH-USDT",
-  "BNB-USDT","BTC-USDT","DOT-USDT","ETH-USDT","ETH-USDC",
-  "HBAR-USDT","INJ-USDT","LINK-USDT","LINK-USDC","OP-USDT",
-  "RENDER-USDT","SEI-USDT","SOL-USDT","SOL-USDC","SUI-USDT",
-  "VIRTUAL-USDT","XRP-USDT","PEPE-USDT","TRUMP-USDT","LTC-USDT"
-];
-
-
-
+const ACTIVE_CRYPTOS = UNIVERSE;   // univers complet, però filtrat per shouldProcess()
 const TIMEFRAMES = ["1H"];
 
 // -------------------------------------------------------------
@@ -37,7 +57,6 @@ const TIMEFRAMES = ["1H"];
 // -------------------------------------------------------------
 function timeframeToMs(tf) {
   if (tf === "1H") return 60 * 60 * 1000;
- 
   throw new Error("Timeframe no suportat: " + tf);
 }
 
@@ -77,13 +96,12 @@ async function getCandlesFromDB(symbol, timeframe, limit, untilTimestamp = null)
 function calcATRManualSeries(candles, atrLen = 10) {
   const atrManual = new Array(candles.length).fill(null);
 
-  // candles ordenades de més antiga a més nova
   for (let i = atrLen; i < candles.length; i++) {
     let trSum = 0;
 
     for (let j = 0; j < atrLen; j++) {
-      const cur  = candles[i - j];     // high[j], low[j]
-      const prev = candles[i - j - 1]; // close[j+1]
+      const cur  = candles[i - j];
+      const prev = candles[i - j - 1];
 
       const highLow   = cur.high - cur.low;
       const highClose = Math.abs(cur.high - prev.close);
@@ -96,11 +114,10 @@ function calcATRManualSeries(candles, atrLen = 10) {
     atrManual[i] = trSum / atrLen;
   }
 
-  return atrManual; // mateix significat que atrManual al Pine
+  return atrManual;
 }
 
 function tpSlFiat(isLong, entry, atr) {
-  //const tpMult = 1.5;
   const tpMult = 0.5;
   const slMult = 1.0;
 
@@ -111,21 +128,22 @@ function tpSlFiat(isLong, entry, atr) {
 }
 
 function calcTargets(type, candles, atrManual, candleIndex) {
-  const entry = candles[candleIndex].close;   // close[barsAgo]
-  const atrEv = atrManual[candleIndex];       // atrManual[barsAgo]
+  const entry = candles[candleIndex].close;
+  const atrEv = atrManual[candleIndex];
 
   const { tp, sl } = tpSlFiat(type === "M", entry, atrEv);
   return { entry, tp, sl };
 }
 
-
-
-
 // -------------------------------------------------------------
 // PROCESSAR UN SÍMBOL (FIAT‑PRO)
 // -------------------------------------------------------------
 export async function processSymbol(symbol, timeframe) {
-  const candles = await getCandlesFromDB(symbol, timeframe, 120); // 80–120 és suficient
+
+  // --- 1) Només processem criptos bones ---
+  if (!shouldProcess(symbol)) return;
+
+  const candles = await getCandlesFromDB(symbol, timeframe, 120);
   if (!candles || candles.length < 40) return;
 
   candles.sort((a, b) => a.timestamp - b.timestamp);
@@ -145,6 +163,13 @@ export async function processSymbol(symbol, timeframe) {
     const candleIndex = candles.findIndex(c => c.timestamp === sig.timestamp);
     if (candleIndex === -1) continue;
 
+    // --- 2) Si la cripto és de volum, apliquem filtre ---
+    if (GOOD_WITH_VOLUME.includes(symbol)) {
+      const ok = applyVolumeFilter(candles, candleIndex);
+      if (!ok) continue;
+    }
+
+    // --- 3) TP/SL ---
     const { entry, tp, sl } = calcTargets(
       sig.type,
       candles,
@@ -156,6 +181,7 @@ export async function processSymbol(symbol, timeframe) {
     sig.tp    = tp;
     sig.sl    = sl;
 
+    // --- 4) Guardar senyal (aquí dins ja s'envia Telegram) ---
     await saveSignal2({
       symbol:   sig.symbol,
       timeframe:sig.timeframe,
@@ -177,6 +203,7 @@ export async function processSymbol(symbol, timeframe) {
 // LOOP PRINCIPAL FIAT‑PRO
 // -------------------------------------------------------------
 async function mainLoop() {
+
   // 1) Actualitzar veles
   for (const symbol of ACTIVE_CRYPTOS) {
     for (const timeframe of TIMEFRAMES) {
@@ -184,7 +211,7 @@ async function mainLoop() {
     }
   }
 
-  // 2) Processar patrons FIAT‑PRO (M/E)
+  // 2) Processar patrons FIAT‑PRO
   for (const symbol of ACTIVE_CRYPTOS) {
     for (const timeframe of TIMEFRAMES) {
       try {
@@ -194,7 +221,6 @@ async function mainLoop() {
       }
     }
   }
-
 }
 
 // -------------------------------------------------------------
