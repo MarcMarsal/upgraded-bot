@@ -88,16 +88,17 @@ export async function saveSignal2({
       ratio
     ]
   );
+await sendTelegram({
+  bot: "FIAT-PRO",
+  symbol,
+  timeframe,
+  signalType: type,
+  color,   // 🟩 FIAT‑PRO: ara sí, enviem el color
+  entry: Number(entry).toFixed(4),
+  tp: Number(tp).toFixed(4),
+  sl: Number(sl).toFixed(4)
+});
 
-  if (activeList.includes(symbol)) {
-    await sendTelegram({
-      bot: "FIAT-PRO",
-      symbol,
-      timeframe,
-      signalType: type,
-      entry: Number(entry).toFixed(4),
-      tp: Number(tp).toFixed(4),
-      sl: Number(sl).toFixed(4)
-    });
+  
   }
 }
