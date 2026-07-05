@@ -61,12 +61,11 @@ async function getCandlesFromDB(symbol, timeframe, limit, untilTimestamp = null)
 }
 
 // -------------------------------------------------------------
-// ATR10 SIMPLE
+// ATRSeries SIMPLE
 // -------------------------------------------------------------
-function calcATR(candles, period = 10) {
-  if (!candles || candles.length <= period) return null;
+function calcATRSeries(candles, period = 10) {
+  const atrSeries = [];
 
-  const trs = [];
   for (let i = 1; i < candles.length; i++) {
     const prev = candles[i - 1];
     const cur = candles[i];
@@ -75,42 +74,39 @@ function calcATR(candles, period = 10) {
     const highClose = Math.abs(cur.high - prev.close);
     const lowClose = Math.abs(cur.low - prev.close);
 
-    trs.push(Math.max(highLow, highClose, lowClose));
+    const tr = Math.max(highLow, highClose, lowClose);
+    atrSeries.push(tr);
   }
 
-  if (trs.length < period) return null;
+  const atr10 = [];
+  for (let i = period; i < atrSeries.length; i++) {
+    const slice = atrSeries.slice(i - period, i);
+    const avg = slice.reduce((a, b) => a + b, 0) / period;
+    atr10.push(avg);
+  }
 
-  const last = trs.slice(-period);
-  return last.reduce((a, b) => a + b, 0) / period;
+  return atr10; // alineat amb atrManual[barsAgo]
 }
 
-// -------------------------------------------------------------
-// TP/SL FIAT‑PRO (ATR * 1)
-// -------------------------------------------------------------
-function tpSlAtr1(isLong, entry, atr) {
-  const tp = isLong ? entry + atr : entry - atr;
-  const sl = isLong ? entry - atr : entry + atr;
+function tpSlFiat(isLong, entry, atr) {
+  const tpMult = 1.5;
+  const slMult = 1.0;
+
+  const tp = isLong ? entry + atr * tpMult : entry - atr * tpMult;
+  const sl = isLong ? entry - atr * slMult : entry + atr * slMult;
+
   return { tp, sl };
 }
 
-// -------------------------------------------------------------
-// ENTRYR / TP / SL FIAT‑PRO
-// -------------------------------------------------------------
-function calcTargets(type, thirdCandle, atr) {
-  const { open, close } = thirdCandle;
-  const body = Math.abs(close - open);
+function calcTargets(type, thirdCandle, atrSeries, candleIndex) {
+  const entry = thirdCandle.close;
+  const atrEv = atrSeries[candleIndex - 1]; // ATR de la barra de la senyal
 
-  const entry = close;
-
-  const { tp, sl } = tpSlAtr1(type === "M", entry, atr);
+  const { tp, sl } = tpSlFiat(type === "M", entry, atrEv);
 
   return { entry, tp, sl };
 }
 
-
-// -------------------------------------------------------------
-// PROCESSAR UN SÍMBOL (FIAT‑PRO)
-// -------------------------------------------------------------
 // -------------------------------------------------------------
 // PROCESSAR UN SÍMBOL (FIAT‑PRO)
 // -------------------------------------------------------------
@@ -120,8 +116,9 @@ export async function processSymbol(symbol, timeframe) {
 
   candles.sort((a, b) => a.timestamp - b.timestamp);
 
-  const atr = calcATR(candles, 10);   // ATR=10 FIAT‑PRO
-  if (atr == null) return;
+  // ATR per barra (igual que Pine)
+  const atrSeries = calcATRSeries(candles, 10);
+  if (!atrSeries || atrSeries.length === 0) return;
 
   const { signals } = await detectMSES(candles, symbol, timeframe);
   if (!signals || signals.length === 0) return;
@@ -134,17 +131,23 @@ export async function processSymbol(symbol, timeframe) {
 
     console.log("[FIAT‑PRO]", symbol, timeframe, sig.type, sig.timestamp);
 
+    // Índex de la barra de la senyal
+    const candleIndex = candles.findIndex(c => c.timestamp === sig.timestamp);
+    if (candleIndex === -1) continue;
+
+    // TP/SL 1:1 amb Pine Script
     const { entry, tp, sl } = calcTargets(
       sig.type,
       sig.thirdCandle,
-      atr
+      atrSeries,
+      candleIndex
     );
 
     sig.entry = entry;
     sig.tp = tp;
     sig.sl = sl;
 
-    // 🔥 FIAT‑PRO: passar diagnòstic complet a la BD
+    // Guardar senyal FIAT‑PRO
     await saveSignal2({
       symbol: sig.symbol,
       timeframe: sig.timeframe,
@@ -154,7 +157,6 @@ export async function processSymbol(symbol, timeframe) {
       sl: sig.sl,
       timestamp: sig.timestamp,
 
-      // FIAT‑PRO diagnostics
       color: sig.color,
       isGood: sig.isGood,
       body3: sig.body3,
@@ -163,8 +165,6 @@ export async function processSymbol(symbol, timeframe) {
     });
   }
 }
-
-
 
 // -------------------------------------------------------------
 // LOOP PRINCIPAL FIAT‑PRO
