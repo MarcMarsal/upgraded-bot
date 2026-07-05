@@ -23,12 +23,12 @@ export async function saveSignal2({
   const tsMs = Number(timestamp);
   const createdAt = Date.now();
 
-  const ACTIVE_CRYPTOS_4H = [
-    "BTC-USDT","FET-USDT","LINK-USDT","RENDER-USDT","SOL-USDT","XRP-USDT"
-  ];
+  //const ACTIVE_CRYPTOS_4H = [
+  //  "BTC-USDT","FET-USDT","LINK-USDT","RENDER-USDT","SOL-USDT","XRP-USDT"
+  //];
 
   const ACTIVE_CRYPTOS_1H = [
-    "APT-USDT","LINK-USDT","OP-USDT","SOL-USDT"
+    "LINK-USDC","ETH-USDC","SOL-USDC"
   ];
 
   const activeList = timeframe === "1H" ? ACTIVE_CRYPTOS_1H : ACTIVE_CRYPTOS_4H;
