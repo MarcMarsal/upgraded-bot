@@ -166,7 +166,12 @@ export async function processSymbol(symbol, timeframe) {
     // --- 2) Si la cripto és de volum, apliquem filtre ---
     if (GOOD_WITH_VOLUME.includes(symbol)) {
       const ok = applyVolumeFilter(candles, candleIndex);
-      if (!ok) continue;
+      //if (!ok) continue;
+      if (!ok) {
+        // NO descartem la senyal
+        sig.isGood = false;
+        sig.color = "blue";
+      }
     }
 
     // --- 3) TP/SL ---
