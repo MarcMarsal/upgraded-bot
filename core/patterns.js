@@ -45,10 +45,42 @@ export function detectMSES(candles, symbol, timeframe) {
   // Recorrem totes les veles amb index suficient
   for (let i = 3; i < candles.length; i++) {
 
-    const c1 = candles[i - 3]; // vela 1
-    const c2 = candles[i - 2]; // vela 2
-    const c3 = candles[i - 1]; // vela 3 (thirdCandle)
+    //const c1 = candles[i - 3]; // vela 1
+    //const c2 = candles[i - 2]; // vela 2
+    //const c3 = candles[i - 1]; // vela 3 (thirdCandle)
+    
+    let c1 = candles[i - 3];
+    let c2 = candles[i - 2];
+    let c3 = candles[i - 1];
 
+    // NORMALITZACIÓ PEPE
+    if (symbol === "PEPE-USDT") {
+      const k = 1000;
+
+      c1 = {
+        ...c1,
+        open:  c1.open  * k,
+        high:  c1.high  * k,
+        low:   c1.low   * k,
+        close: c1.close * k
+      };
+
+      c2 = {
+        ...c2,
+        open:  c2.open  * k,
+        close: c2.close * k
+      };
+
+      c3 = {
+        ...c3,
+        open:  c3.open  * k,
+        high:  c3.high  * k,
+        low:   c3.low   * k,
+        close: c3.close * k
+      };
+    }
+
+    
     // ============================
     // MS / ES RAW (igual que Pine)
     // ============================
