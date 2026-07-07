@@ -22,12 +22,12 @@ const UNIVERSE = [
 
 // 2) Criptos bones amb filtre de volum
 const GOOD_WITH_VOLUME = [
-  "APT-USDT","OP-USDT","SOL-USDT","DOT-USDT","PEPE-USDT","VIRTUAL-USDT"
+  "APT-USDT","SOL-USDT","BTC-USDT","INJ-USDT","HBAR-USDT","VIRTUAL-USDT"
 ];
 
 // 3) Criptos bones sense filtre de volum
 const GOOD_NO_VOLUME = [
-  "LINK-USDT","RENDER-USDT","TRUMP-USDT"
+  "LINK-USDT","RENDER-USDT","ARB-USDT","ATOM-USDT","BNB-USDT","ETH-USDT","TRUMP-USDT","SUI-USDT"
 ];
 
 // -------------------------------------------------------------
