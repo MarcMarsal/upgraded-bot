@@ -28,7 +28,7 @@ const ACTIVE_CRYPTO_LIST = [
   "LTC-USDT",
   "OP-USDT",
   // i la que va superar el 90%
-  "SEI-USDT"
+  "SEI-USDT",
   "SOL-USDT",
   "SUI-USDT"  
 ];
