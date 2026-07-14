@@ -30,6 +30,55 @@ const GOOD_NO_VOLUME = [
   "LINK-USDT","RENDER-USDT","ARB-USDT","ATOM-USDT","BNB-USDT","ETH-USDT","TRUMP-USDT","SUI-USDT"
 ];
 
+
+function applyFiatFilters(candles, candleIndex, atrManual, type) {
+  const atr = atrManual[candleIndex];
+  if (!atr) {
+    return {
+      isGood: false,
+      slope: null,
+      wicksBoth: false,
+      color: "blue"
+    };
+  }
+
+  // --- Slope FIAT‑MS/ES v2.3 ---
+  const slopeLen = 20;
+  const slope = candles[candleIndex].close - candles[candleIndex - slopeLen].close;
+  const slopeOk = Math.abs(slope) < atr * 3.5;
+
+  // --- Wicks ATR suau ---
+  const o = candles[candleIndex].open;
+  const c = candles[candleIndex].close;
+  const h = candles[candleIndex].high;
+  const l = candles[candleIndex].low;
+
+  const wickUp   = h - Math.max(o, c);
+  const wickDown = Math.min(o, c) - l;
+
+  const wicksBoth = (wickUp > atr * 0.05) && (wickDown > atr * 0.05);
+
+  // --- Classificació GOOD/DISCARD ---
+  const isGood = slopeOk && wicksBoth;
+
+  // --- Colors FIAT ---
+  let color;
+  if (!isGood) {
+    color = "blue";                // DISCARD
+  } else {
+    color = type === "M" ? "green" // MS GOOD
+                         : "red";  // ES GOOD
+  }
+
+  return {
+    isGood,
+    slope,
+    wicksBoth,
+    color
+  };
+}
+
+
 // -------------------------------------------------------------
 // NOMÉS processem les dues llistes bones
 // -------------------------------------------------------------
@@ -163,6 +212,16 @@ export async function processSymbol(symbol, timeframe) {
     const candleIndex = candles.findIndex(c => c.timestamp === sig.timestamp);
     if (candleIndex === -1) continue;
 
+    // FIAT‑MS/ES v2.3 encapsulat
+    const { isGood, slope, wicksBoth, color } = applyFiatFilters(candles, candleIndex, atrManual, sig.type);
+    
+    // Congelar valors
+    sig.isGood = isGood;
+    sig.slope = slope;
+    sig.wicksBoth = wicksBoth;
+    sig.color = color;
+
+
     // --- 3) TP/SL ---
     const { entry, tp, sl } = calcTargets(
       sig.type,
@@ -176,6 +235,20 @@ export async function processSymbol(symbol, timeframe) {
     sig.sl    = sl;
 
     // --- 4) Guardar senyal (aquí dins ja s'envia Telegram) ---
+    //await saveSignal2({
+    //  symbol:   sig.symbol,
+    //  timeframe:sig.timeframe,
+    //  type:     sig.type,
+    //  entry:    sig.entry,
+    //  tp:       sig.tp,
+    //  sl:       sig.sl,
+    //  timestamp:sig.timestamp,
+    //  color:    sig.color,
+    //  isGood:   sig.isGood,
+    //  body3:    sig.body3,
+    //  range1:   sig.range1,
+    //  ratio:    sig.ratio
+    //});
     await saveSignal2({
       symbol:   sig.symbol,
       timeframe:sig.timeframe,
@@ -186,9 +259,8 @@ export async function processSymbol(symbol, timeframe) {
       timestamp:sig.timestamp,
       color:    sig.color,
       isGood:   sig.isGood,
-      body3:    sig.body3,
-      range1:   sig.range1,
-      ratio:    sig.ratio
+      slope:    sig.slope,
+      wicksBoth:sig.wicksBoth
     });
   }
 }
