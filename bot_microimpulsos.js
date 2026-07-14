@@ -20,20 +20,28 @@ const UNIVERSE = [
   "VIRTUAL-USDT","LTC-USDT"
 ];
 
-// 2) Criptos bones amb filtre de volum
-const GOOD_WITH_VOLUME = [
-  "APT-USDT","SOL-USDT","BTC-USDT","INJ-USDT","HBAR-USDT","VIRTUAL-USDT"
+const ACTIVE_CRYPTO_LIST = [
+  "SOL-USDT",
+  "LINK-USDT",
+  "ETH-USDT",
+  "AVAX-USDT",
+  "OP-USDT",
+  "SUI-USDT",
+  "LTC-USDT",
+  "BTC-USDT",
+  // i la que va superar el 90%
+  "SEI-USDT"
 ];
 
-// 3) Criptos bones sense filtre de volum
-const GOOD_NO_VOLUME = [
-  "LINK-USDT","RENDER-USDT","ARB-USDT","ATOM-USDT","BNB-USDT","ETH-USDT","TRUMP-USDT","SUI-USDT"
-];
+function shouldProcess(symbol) {
+  return ACTIVE_CRYPTO_LIST.includes(symbol);
+}
+
 
 
 function applyFiatFilters(candles, candleIndex, atrManual, type) {
   const atr = atrManual[candleIndex];
-  if (!atr) {
+  if (!atr || candleIndex < 20) {
     return {
       isGood: false,
       slope: null,
@@ -76,23 +84,6 @@ function applyFiatFilters(candles, candleIndex, atrManual, type) {
     wicksBoth,
     color
   };
-}
-
-
-// -------------------------------------------------------------
-// NOMÉS processem les dues llistes bones
-// -------------------------------------------------------------
-function shouldProcess(symbol) {
-  return GOOD_WITH_VOLUME.includes(symbol) || GOOD_NO_VOLUME.includes(symbol);
-}
-
-// -------------------------------------------------------------
-// FILTRE DE VOLUM FIAT‑PRO
-// -------------------------------------------------------------
-function applyVolumeFilter(candles, candleIndex) {
-  const vol3 = candles[candleIndex].volume;       // tercera vela
-  const vol2 = candles[candleIndex - 1].volume;   // segona vela
-  return vol3 >= vol2;   // FIAT-PRO: volum 3a >= volum 2a
 }
 
 // -------------------------------------------------------------
@@ -271,14 +262,14 @@ export async function processSymbol(symbol, timeframe) {
 async function mainLoop() {
 
   // 1) Actualitzar veles
-  for (const symbol of ACTIVE_CRYPTOS) {
+  for (const symbol of UNIVERSE) {
     for (const timeframe of TIMEFRAMES) {
       await fetchAndStoreCandles(symbol, timeframe);
     }
   }
 
   // 2) Processar patrons FIAT‑PRO
-  for (const symbol of ACTIVE_CRYPTOS) {
+  for (const symbol of ACTIVE_CRYPTO_LIST) {
     for (const timeframe of TIMEFRAMES) {
       try {
         await processSymbol(symbol, timeframe);
