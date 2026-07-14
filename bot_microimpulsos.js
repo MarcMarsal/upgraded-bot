@@ -163,17 +163,6 @@ export async function processSymbol(symbol, timeframe) {
     const candleIndex = candles.findIndex(c => c.timestamp === sig.timestamp);
     if (candleIndex === -1) continue;
 
-    // --- 2) Si la cripto és de volum, apliquem filtre ---
-    if (GOOD_WITH_VOLUME.includes(symbol)) {
-      const ok = applyVolumeFilter(candles, candleIndex);
-      //if (!ok) continue;
-      if (!ok) {
-        // NO descartem la senyal
-        sig.isGood = false;
-        sig.color = "blue";
-      }
-    }
-
     // --- 3) TP/SL ---
     const { entry, tp, sl } = calcTargets(
       sig.type,
