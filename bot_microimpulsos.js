@@ -21,16 +21,16 @@ const UNIVERSE = [
 ];
 
 const ACTIVE_CRYPTO_LIST = [
-  "SOL-USDT",
-  "LINK-USDT",
-  "ETH-USDT",
   "AVAX-USDT",
-  "OP-USDT",
-  "SUI-USDT",
-  "LTC-USDT",
   "BTC-USDT",
+  "ETH-USDT",
+  "LINK-USDT",
+  "LTC-USDT",
+  "OP-USDT",
   // i la que va superar el 90%
   "SEI-USDT"
+  "SOL-USDT",
+  "SUI-USDT"  
 ];
 
 function shouldProcess(symbol) {
