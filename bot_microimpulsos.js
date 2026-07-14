@@ -41,7 +41,7 @@ function shouldProcess(symbol) {
 
 function applyFiatFilters(candles, candleIndex, atrManual, type) {
   const atr = atrManual[candleIndex];
-  if (!atr || candleIndex < 20) {
+  if (!atr || candleIndex - 20 < 0) {
     return {
       isGood: false,
       slope: null,
@@ -89,7 +89,7 @@ function applyFiatFilters(candles, candleIndex, atrManual, type) {
 // -------------------------------------------------------------
 // CONFIG
 // -------------------------------------------------------------
-const ACTIVE_CRYPTOS = UNIVERSE;   // univers complet, però filtrat per shouldProcess()
+
 const TIMEFRAMES = ["1H"];
 
 // -------------------------------------------------------------
