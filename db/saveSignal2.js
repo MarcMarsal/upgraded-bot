@@ -1,4 +1,4 @@
-// db/saveSignal2.js — FIAT‑PRO SIMPLE (patrons + ATR + tracking)
+// db/saveSignal2.js — FIAT‑MS/ES v2.3 (patrons + ATR + tracking)
 
 import { client } from "./client.js";
 import { splitSpainDate } from "../core/utils.js";
@@ -13,12 +13,11 @@ export async function saveSignal2({
   sl,
   timestamp,   // ms (moment de la vela)
 
-  // 🔥 FIAT‑PRO diagnostics
+  // FIAT‑MS/ES v2.3 diagnostics
   color,
   isGood,
-  body3,
-  range1,
-  ratio
+  slope,
+  wicksBoth
 }) {
   const tsMs = Number(timestamp);
   const createdAt = Date.now();
@@ -27,7 +26,7 @@ export async function saveSignal2({
   const { date_es, hora_es, timestamp_es } = splitSpainDate(tsMs);
 
   // -------------------------------------------------------------
-  // GUARDAR SENYAL FIAT‑PRO
+  // GUARDAR SENYAL FIAT‑MS/ES v2.3
   // -------------------------------------------------------------
   await client.query(
     `
@@ -47,9 +46,8 @@ export async function saveSignal2({
       created_at,
       closed,
       is_good,
-      body3,
-      range1,
-      ratio
+      slope,
+      wicks_both
     )
     VALUES (
       $1,$2,$3,
@@ -58,7 +56,7 @@ export async function saveSignal2({
       $8,$9,$10,$11,$12,
       $13,
       false,
-      $14,$15,$16,$17
+      $14,$15,$16
     )
     ON CONFLICT DO NOTHING
     `,
@@ -77,14 +75,13 @@ export async function saveSignal2({
       hora_es,
       createdAt,
       isGood,
-      body3,
-      range1,
-      ratio
+      slope,
+      wicksBoth
     ]
   );
 
   // -------------------------------------------------------------
-  // ENVIAR ALERTA TELEGRAM (FIAT‑PRO)
+  // ENVIAR ALERTA TELEGRAM (FIAT‑MS/ES v2.3)
   // -------------------------------------------------------------
   await sendTelegram({
     bot: "FIAT-PRO",
@@ -97,3 +94,4 @@ export async function saveSignal2({
     sl: Number(sl).toFixed(4)
   });
 }
+
