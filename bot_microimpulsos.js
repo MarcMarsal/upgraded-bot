@@ -20,20 +20,14 @@ const UNIVERSE = [
   "VIRTUAL-USDT","LTC-USDT"
 ];
 
-//const ACTIVE_CRYPTO_LIST = [
-//  "ARB-USDT","AVAX-USDT","BNB-USDT","DOT-USDT","ETH-USDT",
-//  "HBAR-USDT","INJ-USDT","LINK-USDT","SOL-USDT","SUI-USDT",
-//  "VIRTUAL-USDT","XRP-USDT"
-//];
-
 const ACTIVE_CRYPTO_LIST = [
-  "ADA-USDT",
-  "ASTER-USDT",
-  "BCH-USDT",
-  "BTC-USDT",
-  "SEI-USDT",
-  "TRUMP-USDT" 
+  "ADA-USDT","ARB-USDT","ASTER-USDT","AVAX-USDT","BCH-USDT",
+  "BNB-USDT","BTC-USDT","DOT-USDT","ETH-USDT","HBAR-USDT",
+  "INJ-USDT","LINK-USDT","SEI-USDT","SOL-USDT","SUI-USDT",
+  "TRUMP-USDT","VIRTUAL-USDT","XRP-USDT"
 ];
+
+
 
 function shouldProcess(symbol) {
   return ACTIVE_CRYPTO_LIST.includes(symbol);
@@ -185,8 +179,8 @@ export async function processSymbol(symbol, timeframe) {
   // --- 1) Només processem criptos bones ---
   if (!shouldProcess(symbol)) return;
 
-  //const candles = await getCandlesFromDB(symbol, timeframe, 120);
-  const candles = await getCandlesFromDB(symbol, timeframe, 2160);
+  const candles = await getCandlesFromDB(symbol, timeframe, 120);
+  //const candles = await getCandlesFromDB(symbol, timeframe, 2160);
   if (!candles || candles.length < 40) return;
 
   candles.sort((a, b) => a.timestamp - b.timestamp);
