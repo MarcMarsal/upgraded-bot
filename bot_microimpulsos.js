@@ -153,7 +153,7 @@ function calcATRManualSeries(candles, atrLen = 10) {
 }
 
 function tpSlFiat(isLong, entry, atr) {
-  const tpMult = 0.5;
+  const tpMult = 0.4;
   const slMult = 1.0;
 
   const tp = isLong ? entry + atr * tpMult : entry - atr * tpMult;
