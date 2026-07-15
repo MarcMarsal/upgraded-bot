@@ -20,26 +20,23 @@ const UNIVERSE = [
   "VIRTUAL-USDT","LTC-USDT"
 ];
 
-//const ACTIVE_CRYPTO_LIST = [
-//  "BNB-USDT",
-//  "DOT-USDT",
-//  "ETH-USDT",
-//  "LINK-USDT",
-//  "OP-USDT",
-//  "SOL-USDT",
-//  "SUI-USDT",
-//  "VIRTUAL-USDT"
-//];
-
 const ACTIVE_CRYPTO_LIST = [
+  "APT-USDT",
   "ARB-USDT",
   "ATOM-USDT",
-  "INJ-USDT",
   "AVAX-USDT",
-  "APT-USDT",
+  "BNB-USDT",
+  "DOT-USDT",
+  "ETH-USDT",
+  "HBAR-USDT",
+  "INJ-USDT",
+  "LINK-USDT",
+  "OP-USDT",
   "RENDER-USDT",
-  "XRP-USDT",
-  "HBAR-USDT"
+  "SOL-USDT",
+  "SUI-USDT",
+  "VIRTUAL-USDT",
+  "XRP-USDT"
 ];
 
 
@@ -193,8 +190,8 @@ export async function processSymbol(symbol, timeframe) {
   // --- 1) Només processem criptos bones ---
   if (!shouldProcess(symbol)) return;
 
-  //const candles = await getCandlesFromDB(symbol, timeframe, 120);
-  const candles = await getCandlesFromDB(symbol, timeframe, 2160);
+  const candles = await getCandlesFromDB(symbol, timeframe, 120);
+  //const candles = await getCandlesFromDB(symbol, timeframe, 2160);
   if (!candles || candles.length < 40) return;
 
   candles.sort((a, b) => a.timestamp - b.timestamp);
