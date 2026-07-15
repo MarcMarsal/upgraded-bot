@@ -181,8 +181,8 @@ export async function processSymbol(symbol, timeframe) {
   // --- 1) Només processem criptos bones ---
   if (!shouldProcess(symbol)) return;
 
-  //const candles = await getCandlesFromDB(symbol, timeframe, 120);
-  const candles = await getCandlesFromDB(symbol, timeframe, 2160);
+  const candles = await getCandlesFromDB(symbol, timeframe, 120);
+  //const candles = await getCandlesFromDB(symbol, timeframe, 2160);
   if (!candles || candles.length < 40) return;
 
   candles.sort((a, b) => a.timestamp - b.timestamp);
