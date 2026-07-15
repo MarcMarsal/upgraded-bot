@@ -83,15 +83,15 @@ export async function saveSignal2({
   // -------------------------------------------------------------
   // ENVIAR ALERTA TELEGRAM (FIAT‑MS/ES v2.3)
   // -------------------------------------------------------------
-  await sendTelegram({
-    bot: "FIAT-PRO",
-    symbol,
-    timeframe,
-    signalType: type,
-    color,
-    entry: Number(entry).toFixed(4),
-    tp: Number(tp).toFixed(4),
-    sl: Number(sl).toFixed(4)
-  });
+  //await sendTelegram({
+  //  bot: "FIAT-PRO",
+  //  symbol,
+  //  timeframe,
+  //  signalType: type,
+  //  color,
+  //  entry: Number(entry).toFixed(4),
+  //  tp: Number(tp).toFixed(4),
+  //  sl: Number(sl).toFixed(4)
+  //});
 }
 
