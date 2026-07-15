@@ -20,25 +20,20 @@ const UNIVERSE = [
   "VIRTUAL-USDT","LTC-USDT"
 ];
 
-const ACTIVE_CRYPTO_LIST = [
-  "APT-USDT",
-  "ARB-USDT",
-  "ATOM-USDT",
-  "AVAX-USDT",
-  "BNB-USDT",
-  "DOT-USDT",
-  "ETH-USDT",
-  "HBAR-USDT",
-  "INJ-USDT",
-  "LINK-USDT",
-  "OP-USDT",
-  "RENDER-USDT",
-  "SOL-USDT",
-  "SUI-USDT",
-  "VIRTUAL-USDT",
-  "XRP-USDT"
-];
+//const ACTIVE_CRYPTO_LIST = [
+//  "ARB-USDT","AVAX-USDT","BNB-USDT","DOT-USDT","ETH-USDT",
+//  "HBAR-USDT","INJ-USDT","LINK-USDT","SOL-USDT","SUI-USDT",
+//  "VIRTUAL-USDT","XRP-USDT"
+//];
 
+const ACTIVE_CRYPTO_LIST = [
+  "ADA-USDT",
+  "ASTER-USDT",
+  "BCH-USDT",
+  "BTC-USDT",
+  "SEI-USDT",
+  "TRUMP-USDT" 
+];
 
 function shouldProcess(symbol) {
   return ACTIVE_CRYPTO_LIST.includes(symbol);
@@ -190,8 +185,8 @@ export async function processSymbol(symbol, timeframe) {
   // --- 1) Només processem criptos bones ---
   if (!shouldProcess(symbol)) return;
 
-  const candles = await getCandlesFromDB(symbol, timeframe, 120);
-  //const candles = await getCandlesFromDB(symbol, timeframe, 2160);
+  //const candles = await getCandlesFromDB(symbol, timeframe, 120);
+  const candles = await getCandlesFromDB(symbol, timeframe, 2160);
   if (!candles || candles.length < 40) return;
 
   candles.sort((a, b) => a.timestamp - b.timestamp);
@@ -233,21 +228,7 @@ export async function processSymbol(symbol, timeframe) {
     sig.tp    = tp;
     sig.sl    = sl;
 
-    // --- 4) Guardar senyal (aquí dins ja s'envia Telegram) ---
-    //await saveSignal2({
-    //  symbol:   sig.symbol,
-    //  timeframe:sig.timeframe,
-    //  type:     sig.type,
-    //  entry:    sig.entry,
-    //  tp:       sig.tp,
-    //  sl:       sig.sl,
-    //  timestamp:sig.timestamp,
-    //  color:    sig.color,
-    //  isGood:   sig.isGood,
-    //  body3:    sig.body3,
-    //  range1:   sig.range1,
-    //  ratio:    sig.ratio
-    //});
+    
     await saveSignal2({
       symbol:   sig.symbol,
       timeframe:sig.timeframe,
