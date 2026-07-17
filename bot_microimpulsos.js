@@ -6,6 +6,8 @@ import { alreadySent2 } from "./db/alreadySent2.js";
 import { saveSignal2 } from "./db/saveSignal2.js";
 import { detectMSES } from "./core/patterns.js";
 import { fetchAndStoreCandles } from "./core/fetchcandles.js";
+import { calculateRSI } from "./core/rsi.js";
+
 
 // -------------------------------------------------------------
 // LLISTES FIAT‑PRO
@@ -221,6 +223,20 @@ export async function processSymbol(symbol, timeframe) {
     sig.tp    = tp;
     sig.sl    = sl;
 
+    // --- 4) RSI de la cripto en el moment de la senyal ---
+    const q = await client.query(`
+      SELECT close
+      FROM candles
+      WHERE symbol=$1 AND timeframe=$2
+      ORDER BY timestamp DESC
+      LIMIT 15
+    `, [symbol, timeframe]);
+
+    const closes = q.rows.map(r => Number(r.close)).reverse();
+    const rsiValue = calculateRSI(closes);
+
+    sig.rsi = rsiValue;
+
     
     await saveSignal2({
       symbol:   sig.symbol,
@@ -233,7 +249,8 @@ export async function processSymbol(symbol, timeframe) {
       color:    sig.color,
       isGood:   sig.isGood,
       slope:    sig.slope,
-      wicksBoth:sig.wicksBoth
+      wicksBoth:sig.wicksBoth,
+      rsi:      sig.rsi
     });
   }
 }
