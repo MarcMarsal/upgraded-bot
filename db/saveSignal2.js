@@ -7,18 +7,20 @@ import { sendTelegram } from "../telegram/send.js";
 export async function saveSignal2({
   symbol,
   timeframe,
-  type,        // "M" o "E"
+  type,
   entry,
   tp,
   sl,
-  timestamp,   // ms (moment de la vela)
+  timestamp,
 
-  // FIAT‑MS/ES v2.3 diagnostics
   color,
   isGood,
   slope,
-  wicksBoth
+  wicksBoth,
+
+  rsi        // 🟩 AFEGIT
 }) {
+
   const tsMs = Number(timestamp);
   const createdAt = Date.now();
 
@@ -47,7 +49,8 @@ export async function saveSignal2({
       closed,
       is_good,
       slope,
-      wicks_both
+      wicks_both,
+      rsi
     )
     VALUES (
       $1,$2,$3,
@@ -56,7 +59,8 @@ export async function saveSignal2({
       $8,$9,$10,$11,$12,
       $13,
       false,
-      $14,$15,$16
+      $14,$15,$16,
+      $17
     )
     ON CONFLICT DO NOTHING
     `,
@@ -76,7 +80,8 @@ export async function saveSignal2({
       createdAt,
       isGood,
       slope,
-      wicksBoth
+      wicksBoth,
+      rsi
     ]
   );
 
