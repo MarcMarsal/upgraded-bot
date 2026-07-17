@@ -1,4 +1,4 @@
-// panell_microimpulsos.js — FIAT‑PRO (upgraded)
+// panell_microimpulsuls.js — FIAT‑PRO (upgraded)
 
 import http from "http";
 import { initDB, client } from "./db/client.js";
@@ -23,23 +23,19 @@ async function getMarketState() {
     const candles = q.rows;
     if (!candles || candles.length === 0) return "MORT";
 
-    // Volum mitjà
     const avgVolume =
       candles.reduce((a, c) => a + Number(c.volume || 0), 0) / candles.length;
 
-    // Cos mitjà
     const avgBody =
       candles.reduce((a, c) => a + Math.abs((c.close || 0) - (c.open || 0)), 0) /
       candles.length;
 
-    // Rang
     const highs = candles.map(c => Number(c.high || 0));
     const lows = candles.map(c => Number(c.low || 0));
     const maxHigh = Math.max(...highs);
     const minLow = Math.min(...lows);
     const range = maxHigh - minLow;
 
-    // Mechas mitjanes
     const avgWick =
       candles.reduce((a, c) => {
         const upper = (c.high || 0) - Math.max(c.open || 0, c.close || 0);
@@ -47,7 +43,6 @@ async function getMarketState() {
         return a + (upper + lower);
       }, 0) / candles.length;
 
-    // Classificació FIAT
     let score = 0;
     if (avgVolume > 150) score++;
     if (avgBody > 80) score++;
@@ -76,6 +71,7 @@ async function getActiveSignals() {
       tp,
       sl,
       color,
+      rsi,              -- 🟩 AFEGIT
       timestamp_ms,
       date_es,
       hora_es,
@@ -104,6 +100,7 @@ function renderActiveSignalsTable(signals) {
         <td>${fmt(s.entry)}</td>
         <td>${fmt(s.tp)}</td>
         <td>${fmt(s.sl)}</td>
+        <td>${fmt(s.rsi)}</td>      <!-- 🟩 AFEGIT -->
         <td>${s.date_es}</td>
         <td>${s.hora_es}</td>
         <td>${formatSpainTime(s.created_at)}</td>
@@ -123,6 +120,7 @@ function renderActiveSignalsTable(signals) {
           <th>Entrada</th>
           <th>TP</th>
           <th>SL</th>
+          <th>RSI</th>        <!-- 🟩 AFEGIT -->
           <th>Data vela</th>
           <th>Hora vela</th>
           <th>Creat (ES)</th>
@@ -145,7 +143,6 @@ async function startPanel() {
       const signalsHTML = renderActiveSignalsTable(signals);
       const lastUpdate = formatSpainTime(Date.now());
 
-      // 🟩 FIAT — Estat del mercat
       const marketState = await getMarketState();
 
       const html = `
