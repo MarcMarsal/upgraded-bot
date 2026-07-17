@@ -9,56 +9,64 @@ function fmt(n) {
   return n !== null && n !== undefined ? Number(n).toFixed(4) : "-";
 }
 
-// 🟩 FIAT — MÒDUL PER DETECTAR L’ESTAT DEL MERCAT
+// 🟩 FIAT — DETECTOR D’ESTAT DEL MERCAT
 async function getMarketState() {
-  const q = await client.query(`
-    SELECT open, high, low, close, volume
-    FROM btc_1h
-    ORDER BY timestamp DESC
-    LIMIT 24
-  `);
+  try {
+    const q = await client.query(`
+      SELECT open, high, low, close, volume
+      FROM candles
+      WHERE symbol='BTC-USDT' AND timeframe='1H'
+      ORDER BY timestamp DESC
+      LIMIT 24
+    `);
 
-  const candles = q.rows;
-  if (!candles || candles.length === 0) return "MORT";
+    const candles = q.rows;
+    if (!candles || candles.length === 0) return "MORT";
 
-  // Volum mitjà
-  const avgVolume =
-    candles.reduce((a, c) => a + Number(c.volume), 0) / candles.length;
+    // Volum mitjà
+    const avgVolume =
+      candles.reduce((a, c) => a + Number(c.volume || 0), 0) / candles.length;
 
-  // Cos mitjà
-  const avgBody =
-    candles.reduce((a, c) => a + Math.abs(c.close - c.open), 0) /
-    candles.length;
+    // Cos mitjà
+    const avgBody =
+      candles.reduce((a, c) => a + Math.abs((c.close || 0) - (c.open || 0)), 0) /
+      candles.length;
 
-  // Rang
-  const maxHigh = Math.max(...candles.map((c) => c.high));
-  const minLow = Math.min(...candles.map((c) => c.low));
-  const range = maxHigh - minLow;
+    // Rang
+    const highs = candles.map(c => Number(c.high || 0));
+    const lows = candles.map(c => Number(c.low || 0));
+    const maxHigh = Math.max(...highs);
+    const minLow = Math.min(...lows);
+    const range = maxHigh - minLow;
 
-  // Mechas mitjanes
-  const avgWick =
-    candles.reduce((a, c) => {
-      const upper = c.high - Math.max(c.open, c.close);
-      const lower = Math.min(c.open, c.close) - c.low;
-      return a + (upper + lower);
-    }, 0) / candles.length;
+    // Mechas mitjanes
+    const avgWick =
+      candles.reduce((a, c) => {
+        const upper = (c.high || 0) - Math.max(c.open || 0, c.close || 0);
+        const lower = Math.min(c.open || 0, c.close || 0) - (c.low || 0);
+        return a + (upper + lower);
+      }, 0) / candles.length;
 
-  // Classificació FIAT
-  let score = 0;
-  if (avgVolume > 150) score++;
-  if (avgBody > 80) score++;
-  if (range > 150) score++;
-  if (avgWick > 40) score++;
+    // Classificació FIAT
+    let score = 0;
+    if (avgVolume > 150) score++;
+    if (avgBody > 80) score++;
+    if (range > 150) score++;
+    if (avgWick > 40) score++;
 
-  if (score >= 3) return "VIU";
-  if (score === 2) return "RECONSTRUCCIO";
-  return "MORT";
+    if (score >= 3) return "VIU";
+    if (score === 2) return "RECONSTRUCCIO";
+    return "MORT";
+
+  } catch (err) {
+    console.error("❌ Error getMarketState:", err);
+    return "ERROR";
+  }
 }
 
-// Llegir últimes 20 alertes FIAT‑PRO (ara de signals_upgraded)
+// Llegir últimes 20 alertes FIAT‑PRO
 async function getActiveSignals() {
-  const q = await client.query(
-    `
+  const q = await client.query(`
     SELECT
       id,
       symbol,
@@ -75,8 +83,7 @@ async function getActiveSignals() {
     FROM signals_upgraded
     ORDER BY created_at DESC
     LIMIT 20
-    `
-  );
+  `);
 
   return q.rows;
 }
@@ -86,9 +93,7 @@ function renderActiveSignalsTable(signals) {
 
   for (const s of signals) {
     let color = s.color || "#00ff00";
-    if (color.toLowerCase() === "blue") {
-      color = "cyan";
-    }
+    if (color.toLowerCase() === "blue") color = "cyan";
 
     rows += `
       <tr style="color: ${color}">
@@ -134,17 +139,16 @@ function renderActiveSignalsTable(signals) {
 async function startPanel() {
   await initDB();
 
-  http
-    .createServer(async (req, res) => {
-      if (req.url === "/") {
-        const signals = await getActiveSignals();
-        const signalsHTML = renderActiveSignalsTable(signals);
-        const lastUpdate = formatSpainTime(Date.now());
+  http.createServer(async (req, res) => {
+    if (req.url === "/") {
+      const signals = await getActiveSignals();
+      const signalsHTML = renderActiveSignalsTable(signals);
+      const lastUpdate = formatSpainTime(Date.now());
 
-        // 🟩 FIAT — AFEGIM ESTAT DEL MERCAT
-        const marketState = await getMarketState();
+      // 🟩 FIAT — Estat del mercat
+      const marketState = await getMarketState();
 
-        const html = `
+      const html = `
       <html>
       <head>
         <meta charset="UTF-8">
@@ -184,18 +188,16 @@ async function startPanel() {
       </html>
       `;
 
-        res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
-        res.end(html);
-        return;
-      }
+      res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+      res.end(html);
+      return;
+    }
 
-      res.writeHead(200);
-      res.end("Panell FIAT‑PRO OK");
-    })
-    .listen(process.env.PORT || 3000);
+    res.writeHead(200);
+    res.end("Panell FIAT‑PRO OK");
+  }).listen(process.env.PORT || 3000);
 
   console.log("Panell Microimpulsos FIAT‑PRO en marxa");
 }
 
 startPanel();
-
