@@ -5,16 +5,28 @@ import { client } from "../db/client.js";
 // 🟩 Llindars FIAT per cada cripto
 // (adaptats a volum institucional vs volum retail)
 const THRESHOLDS = {
-  "BTC-USDT": { volume: 150, body: 80, range: 150, wick: 40 },
-  "ETH-USDT": { volume: 120, body: 70, range: 130, wick: 35 },
-  "SOL-USDT": { volume: 100, body: 60, range: 120, wick: 30 },
+  // 🟩 Institucionals
+  "ETH-USDT":     { volume: 120, body: 70, range: 130, wick: 35 },
+  "SOL-USDT":     { volume: 100, body: 60, range: 120, wick: 30 },
+  "BNB-USDT":     { volume: 90,  body: 55, range: 110, wick: 28 },
 
-  "AVAX-USDT": { volume: 60, body: 40, range: 80, wick: 20 },
-  "DOT-USDT":  { volume: 40, body: 30, range: 60, wick: 15 },
-  "SUI-USDT":  { volume: 25, body: 20, range: 40, wick: 10 },
-  "SEI-USDT":  { volume: 20, body: 18, range: 35, wick: 10 },
-  "OP-USDT":   { volume: 30, body: 25, range: 50, wick: 15 },
+  // 🟦 Mid‑cap retail
+  "AVAX-USDT":    { volume: 60, body: 40, range: 80,  wick: 20 },
+  "DOT-USDT":     { volume: 40, body: 30, range: 60,  wick: 15 },
+  "INJ-USDT":     { volume: 45, body: 35, range: 70,  wick: 18 },
+  "LINK-USDT":    { volume: 50, body: 35, range: 75,  wick: 18 },
+  "XRP-USDT":     { volume: 55, body: 38, range: 75,  wick: 20 },
+
+  // 🟥 Low‑cap retail
+  "SEI-USDT":     { volume: 20, body: 18, range: 35,  wick: 10 },
+  "SUI-USDT":     { volume: 25, body: 20, range: 40,  wick: 10 },
+  "HBAR-USDT":    { volume: 22, body: 18, range: 35,  wick: 10 },
+  "ARB-USDT":     { volume: 30, body: 25, range: 50,  wick: 15 },
+
+  // 🟧 Especial
+  "VIRTUAL-USDT": { volume: 10, body: 10, range: 25,  wick: 8 },
 };
+
 
 // 🟩 FIAT — DETECTOR D’ESTAT DEL MERCAT PER CRIPTO
 export async function getMarketState(symbol) {
