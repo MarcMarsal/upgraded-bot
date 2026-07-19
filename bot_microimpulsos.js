@@ -7,6 +7,7 @@ import { saveSignal2 } from "./db/saveSignal2.js";
 import { detectMSES } from "./core/patterns.js";
 import { fetchAndStoreCandles } from "./core/fetchcandles.js";
 import { calculateRSI } from "./core/rsi.js";
+import { ACTIVE_CRYPTO_LIST } from "./core/activeCryptos.js";
 
 
 // -------------------------------------------------------------
@@ -22,11 +23,11 @@ const UNIVERSE = [
   "VIRTUAL-USDT","LTC-USDT"
 ];
 
-const ACTIVE_CRYPTO_LIST = [
-  "ARB-USDT","AVAX-USDT","BNB-USDT","DOT-USDT","ETH-USDT",
-  "HBAR-USDT","INJ-USDT","LINK-USDT","SEI-USDT","SOL-USDT","SUI-USDT","VIRTUAL-USDT",
-  "XRP-USDT"
-];
+//const ACTIVE_CRYPTO_LIST = [
+//  "ARB-USDT","AVAX-USDT","BNB-USDT","DOT-USDT","ETH-USDT",
+//  "HBAR-USDT","INJ-USDT","LINK-USDT","SEI-USDT","SOL-USDT","SUI-USDT","VIRTUAL-USDT",
+//  "XRP-USDT"
+//];
 
 
 
