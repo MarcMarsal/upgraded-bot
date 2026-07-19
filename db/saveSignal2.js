@@ -3,6 +3,7 @@
 import { client } from "./client.js";
 import { splitSpainDate } from "../core/utils.js";
 import { sendTelegram } from "../telegram/send.js";
+import { getMarketState } from "../core/marketState.js";
 
 export async function saveSignal2({
   symbol,
@@ -27,6 +28,9 @@ export async function saveSignal2({
   // Data ES basada en la vela
   const { date_es, hora_es, timestamp_es } = splitSpainDate(tsMs);
 
+  // 🟩 FIAT — Estat del mercat en el moment de la senyal
+  const market_state = await getMarketState(symbol);
+
   // -------------------------------------------------------------
   // GUARDAR SENYAL FIAT‑MS/ES v2.3
   // -------------------------------------------------------------
@@ -50,7 +54,8 @@ export async function saveSignal2({
       is_good,
       slope,
       wicks_both,
-      rsi
+      rsi,
+      market_state        -- 🟩 AFEGIT
     )
     VALUES (
       $1,$2,$3,
@@ -60,7 +65,8 @@ export async function saveSignal2({
       $13,
       false,
       $14,$15,$16,
-      $17
+      $17,
+      $18                 -- 🟩 AFEGIT
     )
     ON CONFLICT DO NOTHING
     `,
@@ -81,7 +87,8 @@ export async function saveSignal2({
       isGood,
       slope,
       wicksBoth,
-      rsi
+      rsi,
+      market_state        // 🟩 AFEGIT
     ]
   );
 
@@ -99,4 +106,3 @@ export async function saveSignal2({
   //  sl: Number(sl).toFixed(4)
   //});
 }
-
