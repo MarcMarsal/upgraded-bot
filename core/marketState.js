@@ -6,9 +6,11 @@ import { client } from "../db/client.js";
 // (adaptats a volum institucional vs volum retail)
 const THRESHOLDS = {
   // 🟩 Institucionals
-  "ETH-USDT":     { volume: 120, body: 70, range: 130, wick: 35 },
-  "SOL-USDT":     { volume: 100, body: 60, range: 120, wick: 30 },
-  "BNB-USDT":     { volume: 90,  body: 55, range: 110, wick: 28 },
+  "ETH-USDT":     { volume: 20000, body: 20, range: 30, wick: 8 },
+  "SOL-USDT": { volume: 50000, body: 1.0, range: 1.5, wick: 1.0 },
+  "BNB-USDT": { volume: 384.42, body: 0.10, range: 2.20, wick: 2.10 },
+
+  
 
   // 🟦 Mid‑cap retail
   "AVAX-USDT":    { volume: 60, body: 40, range: 80,  wick: 20 },
@@ -19,7 +21,11 @@ const THRESHOLDS = {
 
   // 🟥 Low‑cap retail
   "SEI-USDT":     { volume: 20, body: 18, range: 35,  wick: 10 },
-  "SUI-USDT":     { volume: 25, body: 20, range: 40,  wick: 10 },
+  
+  //"SUI-USDT":     { volume: 25, body: 20, range: 40,  wick: 10 },
+  "SUI-USDT":     { volume: 700000, body: 0.010, range: 0.015, wick: 0.004 },
+
+
   "HBAR-USDT":    { volume: 22, body: 18, range: 35,  wick: 10 },
   "ARB-USDT":     { volume: 30, body: 25, range: 50,  wick: 15 },
 
