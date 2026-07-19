@@ -1,0 +1,7 @@
+// core/activeCryptos.js — FIAT‑PRO
+
+export const ACTIVE_CRYPTO_LIST = [
+  "ARB-USDT","AVAX-USDT","BNB-USDT","DOT-USDT","ETH-USDT",
+  "HBAR-USDT","INJ-USDT","LINK-USDT","SEI-USDT","SOL-USDT",
+  "SUI-USDT","VIRTUAL-USDT","XRP-USDT"
+];
