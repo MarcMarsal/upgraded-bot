@@ -1,23 +1,62 @@
-// panell_microimpulsos.js — FIAT‑PRO (multi‑cripto + market_state)
+// panell_microimpulsuls.js — FIAT‑PRO (upgraded)
 
 import http from "http";
 import { initDB, client } from "./db/client.js";
 import { formatSpainTime } from "./core/utils.js";
-import { ACTIVE_CRYPTO_LIST } from "./core/activeCryptos.js";
-import { getMarketState } from "./core/marketState.js";
 
 // Formatador numèric
 function fmt(n) {
   return n !== null && n !== undefined ? Number(n).toFixed(4) : "-";
 }
 
-// 🟩 Obtenir estat del mercat de totes les criptos actives
-async function getAllMarketStates() {
-  const states = {};
-  for (const symbol of ACTIVE_CRYPTO_LIST) {
-    states[symbol] = await getMarketState(symbol);
+// 🟩 FIAT — DETECTOR D’ESTAT DEL MERCAT
+async function getMarketState() {
+  try {
+    const q = await client.query(`
+      SELECT open, high, low, close, volume
+      FROM candles
+      WHERE symbol='BTC-USDT' AND timeframe='1H'
+      ORDER BY timestamp DESC
+      LIMIT 24
+    `);
+
+    const candles = q.rows;
+    if (!candles || candles.length === 0) return "MORT";
+
+    const avgVolume =
+      candles.reduce((a, c) => a + Number(c.volume || 0), 0) / candles.length;
+
+    const avgBody =
+      candles.reduce((a, c) => a + Math.abs((c.close || 0) - (c.open || 0)), 0) /
+      candles.length;
+
+    const highs = candles.map(c => Number(c.high || 0));
+    const lows = candles.map(c => Number(c.low || 0));
+    const maxHigh = Math.max(...highs);
+    const minLow = Math.min(...lows);
+    const range = maxHigh - minLow;
+
+    const avgWick =
+      candles.reduce((a, c) => {
+        const upper = (c.high || 0) - Math.max(c.open || 0, c.close || 0);
+        const lower = Math.min(c.open || 0, c.close || 0) - (c.low || 0);
+        return a + (upper + lower);
+      }, 0) / candles.length;
+
+    let score = 0;
+    if (avgVolume > 150) score++;
+    if (avgBody > 80) score++;
+    if (range > 150) score++;
+    if (avgWick > 40) score++;
+
+    if (score >= 3) return "VIU";
+    if (score === 2) return "RECONSTRUCCIO";
+    return "MORT";
+
+  } catch (err) {
+    console.error("❌ Error getMarketState:", err);
+    return "ERROR";
   }
-  return states;
 }
 
 // Llegir últimes 20 alertes FIAT‑PRO
@@ -32,8 +71,8 @@ async function getActiveSignals() {
       tp,
       sl,
       color,
-      rsi,
-      market_state,     -- 🟩 AFEGIT
+      rsi,              -- 🟩 AFEGIT
+      timestamp_ms,
       date_es,
       hora_es,
       created_at
@@ -45,7 +84,6 @@ async function getActiveSignals() {
   return q.rows;
 }
 
-// Render taula de senyals
 function renderActiveSignalsTable(signals) {
   let rows = "";
 
@@ -62,8 +100,7 @@ function renderActiveSignalsTable(signals) {
         <td>${fmt(s.entry)}</td>
         <td>${fmt(s.tp)}</td>
         <td>${fmt(s.sl)}</td>
-        <td>${fmt(s.rsi)}</td>
-        <td>${s.market_state}</td>   <!-- 🟩 AFEGIT -->
+        <td>${fmt(s.rsi)}</td>      <!-- 🟩 AFEGIT -->
         <td>${s.date_es}</td>
         <td>${s.hora_es}</td>
         <td>${formatSpainTime(s.created_at)}</td>
@@ -83,40 +120,10 @@ function renderActiveSignalsTable(signals) {
           <th>Entrada</th>
           <th>TP</th>
           <th>SL</th>
-          <th>RSI</th>
-          <th>Mercat</th>        <!-- 🟩 AFEGIT -->
+          <th>RSI</th>        <!-- 🟩 AFEGIT -->
           <th>Data vela</th>
           <th>Hora vela</th>
           <th>Creat (ES)</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${rows}
-      </tbody>
-    </table>
-  `;
-}
-
-// Render taula multi‑cripto
-function renderMarketStatesTable(states) {
-  let rows = "";
-
-  for (const symbol of ACTIVE_CRYPTO_LIST) {
-    rows += `
-      <tr>
-        <td>${symbol}</td>
-        <td>${states[symbol]}</td>
-      </tr>
-    `;
-  }
-
-  return `
-    <h2>Estat del Mercat (1H) — Criptos Actives</h2>
-    <table>
-      <thead>
-        <tr>
-          <th>Cripto</th>
-          <th>Estat</th>
         </tr>
       </thead>
       <tbody>
@@ -134,11 +141,9 @@ async function startPanel() {
     if (req.url === "/") {
       const signals = await getActiveSignals();
       const signalsHTML = renderActiveSignalsTable(signals);
-
-      const marketStates = await getAllMarketStates();
-      const marketStatesHTML = renderMarketStatesTable(marketStates);
-
       const lastUpdate = formatSpainTime(Date.now());
+
+      const marketState = await getMarketState();
 
       const html = `
       <html>
@@ -171,7 +176,9 @@ async function startPanel() {
         <h1>Panell Microimpulsos FIAT‑PRO</h1>
         <p><b>Última actualització:</b> ${lastUpdate}</p>
 
-        ${marketStatesHTML}
+        <h2>Estat del Mercat BTC (1H)</h2>
+        <p><b>${marketState}</b></p>
+
         ${signalsHTML}
 
       </body>
