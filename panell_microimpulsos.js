@@ -3,6 +3,8 @@
 import http from "http";
 import { initDB, client } from "./db/client.js";
 import { formatSpainTime } from "./core/utils.js";
+import { getMarketState } from "./core/marketState.js";
+
 
 // Formatador numèric
 function fmt(n) {
