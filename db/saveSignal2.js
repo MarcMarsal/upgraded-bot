@@ -1,4 +1,4 @@
-// db/saveSignal2.js — FIAT‑MS/ES v2.3 (patrons + ATR + tracking)
+// db/saveSignal2.js — FIAT‑MS/ES v2.4 (patrons + ATR + tracking + entryR)
 
 import { client } from "./client.js";
 import { splitSpainDate } from "../core/utils.js";
@@ -9,6 +9,7 @@ export async function saveSignal2({
   timeframe,
   type,
   entry,
+  entryr,     // 🟩 AFEGIT FIAT‑PRO v2.4
   tp,
   sl,
   timestamp,
@@ -18,18 +19,14 @@ export async function saveSignal2({
   slope,
   wicksBoth,
 
-  rsi        // 🟩 AFEGIT
+  rsi
 }) {
 
   const tsMs = Number(timestamp);
   const createdAt = Date.now();
 
-  // Data ES basada en la vela
   const { date_es, hora_es, timestamp_es } = splitSpainDate(tsMs);
 
-  // -------------------------------------------------------------
-  // GUARDAR SENYAL FIAT‑MS/ES v2.3
-  // -------------------------------------------------------------
   await client.query(
     `
     INSERT INTO signals_upgraded (
@@ -38,6 +35,7 @@ export async function saveSignal2({
       type,
       color,
       entry,
+      entryr,        -- 🟩 AFEGIT
       tp,
       sl,
       timestamp,
@@ -55,12 +53,13 @@ export async function saveSignal2({
     VALUES (
       $1,$2,$3,
       $4,
-      $5,$6,$7,
-      $8,$9,$10,$11,$12,
-      $13,
+      $5,$6,         -- entry, entryR
+      $7,$8,
+      $9,$10,$11,$12,$13,
+      $14,
       false,
-      $14,$15,$16,
-      $17
+      $15,$16,$17,
+      $18
     )
     ON CONFLICT DO NOTHING
     `,
@@ -70,6 +69,7 @@ export async function saveSignal2({
       type,
       color,
       entry,
+      entryr,        // 🟩 AFEGIT
       tp,
       sl,
       tsMs,
@@ -85,17 +85,6 @@ export async function saveSignal2({
     ]
   );
 
-  // -------------------------------------------------------------
-  // ENVIAR ALERTA TELEGRAM (FIAT‑MS/ES v2.3)
-  // -------------------------------------------------------------
-  //await sendTelegram({
-  //  bot: "FIAT-PRO",
-  //  symbol,
-  //  timeframe,
-  //  signalType: type,
-  //  color,
-  //  entry: Number(entry).toFixed(4),
-  //  tp: Number(tp).toFixed(4),
-  //  sl: Number(sl).toFixed(4)
-  //});
+  // ALERTA TELEGRAM (desactivada)
+  // await sendTelegram({...});
 }
