@@ -9,12 +9,10 @@ import { fetchAndStoreCandles } from "./core/fetchcandles.js";
 import { calculateRSI } from "./core/rsi.js";
 import { ACTIVE_CRYPTO_LIST } from "./core/activeCryptos.js";
 
-
 // -------------------------------------------------------------
 // LLISTES FIAT‑PRO
 // -------------------------------------------------------------
 
-// 1) Univers complet (informativa, no detecta ni envia)
 const UNIVERSE = [
   "APT-USDT","LINK-USDT","OP-USDT","SOL-USDT","BTC-USDT","FET-USDT",
   "RENDER-USDT","XRP-USDT","ARB-USDT","ATOM-USDT","BNB-USDT","DOT-USDT",
@@ -23,19 +21,9 @@ const UNIVERSE = [
   "VIRTUAL-USDT","LTC-USDT"
 ];
 
-//const ACTIVE_CRYPTO_LIST = [
-//  "ARB-USDT","AVAX-USDT","BNB-USDT","DOT-USDT","ETH-USDT",
-//  "HBAR-USDT","INJ-USDT","LINK-USDT","SEI-USDT","SOL-USDT","SUI-USDT","VIRTUAL-USDT",
-//  "XRP-USDT"
-//];
-
-
-
 function shouldProcess(symbol) {
   return ACTIVE_CRYPTO_LIST.includes(symbol);
 }
-
-
 
 function applyFiatFilters(candles, candleIndex, atrManual, type) {
   const atr = atrManual[candleIndex];
@@ -48,12 +36,10 @@ function applyFiatFilters(candles, candleIndex, atrManual, type) {
     };
   }
 
-  // --- Slope FIAT‑MS/ES v2.3 ---
   const slopeLen = 20;
   const slope = candles[candleIndex].close - candles[candleIndex - slopeLen].close;
   const slopeOk = Math.abs(slope) < atr * 3.5;
 
-  // --- Wicks ATR suau ---
   const o = candles[candleIndex].open;
   const c = candles[candleIndex].close;
   const h = candles[candleIndex].high;
@@ -64,16 +50,13 @@ function applyFiatFilters(candles, candleIndex, atrManual, type) {
 
   const wicksBoth = (wickUp > atr * 0.05) && (wickDown > atr * 0.05);
 
-  // --- Classificació GOOD/DISCARD ---
   const isGood = slopeOk && wicksBoth;
 
-  // --- Colors FIAT ---
   let color;
   if (!isGood) {
-    color = "blue";                // DISCARD
+    color = "blue";
   } else {
-    color = type === "M" ? "green" // MS GOOD
-                         : "red";  // ES GOOD
+    color = type === "M" ? "green" : "red";
   }
 
   return {
@@ -165,24 +148,14 @@ function tpSlFiat(isLong, entry, atr) {
   return { tp, sl };
 }
 
-function calcTargets(type, candles, atrManual, candleIndex) {
-  const entry = candles[candleIndex].close;
-  const atrEv = atrManual[candleIndex];
-
-  const { tp, sl } = tpSlFiat(type === "M", entry, atrEv);
-  return { entry, tp, sl };
-}
-
 // -------------------------------------------------------------
 // PROCESSAR UN SÍMBOL (FIAT‑PRO)
 // -------------------------------------------------------------
 export async function processSymbol(symbol, timeframe) {
 
-  // --- 1) Només processem criptos bones ---
   if (!shouldProcess(symbol)) return;
 
   const candles = await getCandlesFromDB(symbol, timeframe, 120);
-  //const candles = await getCandlesFromDB(symbol, timeframe, 2160);
   if (!candles || candles.length < 40) return;
 
   candles.sort((a, b) => a.timestamp - b.timestamp);
@@ -202,29 +175,41 @@ export async function processSymbol(symbol, timeframe) {
     const candleIndex = candles.findIndex(c => c.timestamp === sig.timestamp);
     if (candleIndex === -1) continue;
 
-    // FIAT‑MS/ES v2.3 encapsulat
     const { isGood, slope, wicksBoth, color } = applyFiatFilters(candles, candleIndex, atrManual, sig.type);
-    
-    // Congelar valors
+
     sig.isGood = isGood;
     sig.slope = slope;
     sig.wicksBoth = wicksBoth;
     sig.color = color;
 
+    // -------------------------------------------------------------
+    // ENTRYR FIAT‑PRO v2.4 (20% del cos de la 3a vela)
+    // -------------------------------------------------------------
+    const body = Math.abs(sig.thirdCandle.close - sig.thirdCandle.open);
 
-    // --- 3) TP/SL ---
-    const { entry, tp, sl } = calcTargets(
-      sig.type,
-      candles,
-      atrManual,
-      candleIndex
-    );
+    const entryR = sig.type === "M"
+      ? sig.thirdCandle.close - body * 0.20
+      : sig.thirdCandle.close + body * 0.20;
 
-    sig.entry = entry;
-    sig.tp    = tp;
-    sig.sl    = sl;
+    sig.entryr = entryR;
 
-    // --- 4) RSI de la cripto en el moment de la senyal ---
+    // -------------------------------------------------------------
+    // TP/SL amb ENTRYR
+    // -------------------------------------------------------------
+    const atrEv = atrManual[candleIndex];
+    const { tp, sl } = tpSlFiat(sig.type === "M", entryR, atrEv);
+
+    sig.tp = tp;
+    sig.sl = sl;
+
+    // -------------------------------------------------------------
+    // ENTRY original del patró (no es toca)
+    // -------------------------------------------------------------
+    sig.entry = candles[candleIndex].close;
+
+    // -------------------------------------------------------------
+    // RSI
+    // -------------------------------------------------------------
     const q = await client.query(`
       SELECT close
       FROM candles
@@ -234,16 +219,17 @@ export async function processSymbol(symbol, timeframe) {
     `, [symbol, timeframe]);
 
     const closes = q.rows.map(r => Number(r.close)).reverse();
-    const rsiValue = calculateRSI(closes);
+    sig.rsi = calculateRSI(closes);
 
-    sig.rsi = rsiValue;
-
-    
+    // -------------------------------------------------------------
+    // GUARDAR SENYAL
+    // -------------------------------------------------------------
     await saveSignal2({
       symbol:   sig.symbol,
       timeframe:sig.timeframe,
       type:     sig.type,
       entry:    sig.entry,
+      entryr:   sig.entryr,
       tp:       sig.tp,
       sl:       sig.sl,
       timestamp:sig.timestamp,
@@ -261,14 +247,12 @@ export async function processSymbol(symbol, timeframe) {
 // -------------------------------------------------------------
 async function mainLoop() {
 
-  // 1) Actualitzar veles
   for (const symbol of UNIVERSE) {
     for (const timeframe of TIMEFRAMES) {
       await fetchAndStoreCandles(symbol, timeframe);
     }
   }
 
-  // 2) Processar patrons FIAT‑PRO
   for (const symbol of ACTIVE_CRYPTO_LIST) {
     for (const timeframe of TIMEFRAMES) {
       try {
