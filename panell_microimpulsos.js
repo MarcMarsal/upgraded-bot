@@ -68,10 +68,11 @@ async function getActiveSignals() {
       timeframe,
       type,
       entry,
+      entryr,          -- 🟩 AFEGIT FIAT‑PRO v2.4
       tp,
       sl,
       color,
-      rsi,              -- 🟩 AFEGIT
+      rsi,
       timestamp_ms,
       date_es,
       hora_es,
@@ -98,9 +99,10 @@ function renderActiveSignalsTable(signals) {
         <td>${s.timeframe}</td>
         <td>${s.type}</td>
         <td>${fmt(s.entry)}</td>
+        <td>${fmt(s.entryr)}</td>     <!-- 🟩 AFEGIT -->
         <td>${fmt(s.tp)}</td>
         <td>${fmt(s.sl)}</td>
-        <td>${fmt(s.rsi)}</td>      <!-- 🟩 AFEGIT -->
+        <td>${fmt(s.rsi)}</td>
         <td>${s.date_es}</td>
         <td>${s.hora_es}</td>
         <td>${formatSpainTime(s.created_at)}</td>
@@ -118,9 +120,10 @@ function renderActiveSignalsTable(signals) {
           <th>Timeframe</th>
           <th>Tipus</th>
           <th>Entrada</th>
+          <th>EntradaR</th>     <!-- 🟩 AFEGIT -->
           <th>TP</th>
           <th>SL</th>
-          <th>RSI</th>        <!-- 🟩 AFEGIT -->
+          <th>RSI</th>
           <th>Data vela</th>
           <th>Hora vela</th>
           <th>Creat (ES)</th>
