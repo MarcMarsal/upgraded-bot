@@ -37,63 +37,54 @@ function ema_TV(values, length) {
 export function detectMSES(candles, symbol, timeframe) {
   const signals = [];
 
-  // Necessitem almenys 4 veles per detectar MS/ES
   if (!candles || candles.length < 4) {
     return { signals };
   }
 
-  // Recorrem totes les veles amb index suficient
   for (let i = 3; i < candles.length; i++) {
 
-    //const c1 = candles[i - 3]; // vela 1
-    //const c2 = candles[i - 2]; // vela 2
-    //const c3 = candles[i - 1]; // vela 3 (thirdCandle)
-    
     let c1 = candles[i - 3];
     let c2 = candles[i - 2];
     let c3 = candles[i - 1];
 
-    // NORMALITZACIÓ PEPE
+    // ============================
+    // NORMALITZACIÓ PEPE (igual que Pine)
+    // ============================
     if (symbol === "PEPE-USDT") {
       const k = 1000;
 
-      c1 = {
-        ...c1,
-        open:  c1.open  * k,
-        high:  c1.high  * k,
-        low:   c1.low   * k,
-        close: c1.close * k
-      };
-
-      c2 = {
-        ...c2,
-        open:  c2.open  * k,
-        close: c2.close * k
-      };
-
-      c3 = {
-        ...c3,
-        open:  c3.open  * k,
-        high:  c3.high  * k,
-        low:   c3.low   * k,
-        close: c3.close * k
-      };
+      c1 = { ...c1, open: c1.open * k, high: c1.high * k, low: c1.low * k, close: c1.close * k };
+      c2 = { ...c2, open: c2.open * k, close: c2.close * k };
+      c3 = { ...c3, open: c3.open * k, high: c3.high * k, low: c3.low * k, close: c3.close * k };
     }
 
-    
     // ============================
-    // MS / ES RAW (igual que Pine)
+    // RAW BASE (igual que Pine)
     // ============================
+    const rawMS =
+      c1.close < c1.open &&
+      Math.abs(c2.close - c2.open) <= (c1.high - c1.low) * 0.3 &&
+      c3.close > c3.open;
 
-    const msCond =
-      c1.close < c1.open &&                                // vela 1 bearish
-      Math.abs(c2.close - c2.open) <= (c1.high - c1.low) * 0.3 && // cos petit
-      c3.close > c3.open;                                  // vela 3 bullish
+    const rawES =
+      c1.close > c1.open &&
+      Math.abs(c2.close - c2.open) <= (c1.high - c1.low) * 0.3 &&
+      c3.close < c3.open;
 
-    const esCond =
-      c1.close > c1.open &&                                // vela 1 bullish
-      Math.abs(c2.close - c2.open) <= (c1.high - c1.low) * 0.3 && // cos petit
-      c3.close < c3.open;                                  // vela 3 bearish
+    // ============================
+    // MICRO-PULSE (cos + metxes)
+    // ============================
+    const body3 = Math.abs(c3.close - c3.open);
+    const range3 = c3.high - c3.low;
+
+    const wickUp = c3.high - Math.max(c3.open, c3.close);
+    const wickDn = Math.min(c3.open, c3.close) - c3.low;
+
+    const cosOK = body3 > range3 * 0.35;
+    const wicksOK = wickUp < range3 * 0.4 && wickDn < range3 * 0.4;
+
+    const msCond = rawMS && cosOK && wicksOK;
+    const esCond = rawES && cosOK && wicksOK;
 
     if (!msCond && !esCond) continue;
 
@@ -102,36 +93,29 @@ export function detectMSES(candles, symbol, timeframe) {
     // ============================
     // FIAT‑PRO: càlculs de la 3a vela
     // ============================
-
-    const body3  = Math.abs(c3.close - c3.open);
     const range1 = c1.high - c1.low;
-    const ratio  = range1 !== 0 ? body3 / range1 : 0;
+    const ratio = range1 !== 0 ? body3 / range1 : 0;
 
     // ============================
     // FIAT‑PRO: GOOD / DISCARD
     // ============================
-
     const isGood = body3 > range1 * 0.25;
 
     // ============================
-    // FIAT‑PRO: color (igual que Pine)
+    // FIAT‑PRO: color
     // ============================
-
-    const color =
-      isGood
-        ? (type === "M" ? "green" : "red")
-        : "blue";
+    const color = isGood
+      ? (type === "M" ? "green" : "red")
+      : "blue";
 
     // ============================
-    // Timestamp de la 3a vela
+    // Timestamp
     // ============================
-
     const ts = c3.timestamp;
 
     // ============================
     // Retorn FIAT‑PRO complet
     // ============================
-
     signals.push({
       symbol,
       timeframe,
@@ -139,10 +123,10 @@ export function detectMSES(candles, symbol, timeframe) {
       timestamp: ts,
 
       thirdCandle: {
-        open:  c3.open,
+        open: c3.open,
         close: c3.close,
-        high:  c3.high,
-        low:   c3.low
+        high: c3.high,
+        low: c3.low
       },
 
       body3,
@@ -155,6 +139,7 @@ export function detectMSES(candles, symbol, timeframe) {
 
   return { signals };
 }
+
 
 
 // -------------------------------------------------------------
