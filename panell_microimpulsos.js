@@ -14,7 +14,7 @@ async function getMarketState() {
   try {
     const q = await client.query(`
       SELECT open, high, low, close, volume
-      FROM candles_okx
+      FROM candles
       WHERE symbol='BTC-USDT' AND timeframe='1H'
       ORDER BY timestamp DESC
       LIMIT 24
