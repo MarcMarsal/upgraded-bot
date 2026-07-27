@@ -142,11 +142,9 @@ async function fetchWeex(symbol, timeframe) {
     const data = res.data.data;
     //console.log(res.data);
     if (!data || data.length === 0) return [];
-
+    console.log(data);
     return data.map(k => {
-      console.log((k[0]));
       const ts = normalizeTimestamp(k[0]); // timestamp
-      console.log(ts);
       if (!ts) return null;
 
       console.log(parseFloat(k[1]));
