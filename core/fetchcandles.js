@@ -136,7 +136,9 @@ async function fetchWeex(symbol, timeframe) {
     const url = `${API_WEEX}?symbol=${sym}&interval=${tf}`;
     console.log("WEEX URL FINAL:", url);
 
-    const res = await axios.get(url);
+    //const res = await axios.get(url);
+    const res = await axios.get(url, {headers: {"User-Agent": "Mozilla/5.0","Accept": "application/json"}});
+
     const data = res.data.data;
 
     if (!data || data.length === 0) return [];
