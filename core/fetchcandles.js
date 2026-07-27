@@ -150,21 +150,17 @@ async function fetchWeex(symbol, timeframe) {
     const tf  = normalizeTimeframeFor("WEEX", timeframe);
 
     const url = `${API_WEEX}?symbol=${sym}&interval=${tf}`;
-    //console.log("WEEX URL FINAL:", url);
-
-    //const res = await axios.get(url);
+   
     const res = await axios.get(url, {headers: {"User-Agent": "Mozilla/5.0","Accept": "application/json"}});
 
     const data = res.data;
-    console.log(data);
-    if (!data || data.length === 0) return [];
-    //console.log(data);
   
+    if (!data || data.length === 0) return [];
+   
     return data.map(k => {
       const ts = normalizeTimestamp_WEEX(k[0]); // timestamp
       if (!ts) return null;
-
-      //console.log(parseFloat(k[1]));
+    
       return toInternal(
         ts,
         parseFloat(k[1]), // open
