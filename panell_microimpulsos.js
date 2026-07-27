@@ -88,25 +88,25 @@ async function getActiveSignals() {
   return q.rows;
 }
 
-// 🟩 Colors per exchange
-function bgColor(exchange) {
-  if (exchange === "OKX") return "#ff4d4d";     // vermell
-  if (exchange === "BITUNIX") return "#4dff4d"; // verd
-  if (exchange === "WEEX") return "#ffff4d";    // groc
-  return "#222";
+// 🟩 Colors només per la cel·la Exchange
+function exchangeCellStyle(exchange) {
+  if (exchange === "OKX") return "background-color:#ff4d4d; color:black; font-weight:bold;";
+  if (exchange === "BITUNIX") return "background-color:#4dff4d; color:black; font-weight:bold;";
+  if (exchange === "WEEX") return "background-color:#ffff4d; color:black; font-weight:bold;";
+  return "";
 }
 
 function renderActiveSignalsTable(signals) {
   let rows = "";
 
   for (const s of signals) {
+    // Coloració original per M/E/discard → NO es toca
+    let color = s.color || "#00ff00";
+    if (color.toLowerCase() === "blue") color = "cyan";
+
     rows += `
-      <tr style="
-        background-color: ${bgColor(s.exchange)};
-        color: black;
-        font-weight: bold;
-      ">
-        <td>${s.exchange}</td>
+      <tr style="color:${color}">
+        <td style="${exchangeCellStyle(s.exchange)}">${s.exchange}</td>
         <td>${s.id}</td>
         <td>${s.symbol}</td>
         <td>${s.timeframe}</td>
@@ -214,4 +214,7 @@ async function startPanel() {
 }
 
 startPanel();
+
+
+
 
