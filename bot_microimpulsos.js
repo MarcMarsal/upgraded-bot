@@ -7,19 +7,7 @@ import { saveSignal2 } from "./db/saveSignal2.js";
 import { detectMSES } from "./core/patterns.js";
 import { fetchAndStoreCandles } from "./core/fetchcandles.js";
 import { calculateRSI } from "./core/rsi.js";
-import { ACTIVE_CRYPTO_LIST } from "./core/activeCryptos.js";
-
-// -------------------------------------------------------------
-// LLISTES MICRO‑PULSE
-// -------------------------------------------------------------
-
-const UNIVERSE = [
-  "APT-USDT","LINK-USDT","OP-USDT","SOL-USDT","BTC-USDT","FET-USDT",
-  "RENDER-USDT","XRP-USDT","ARB-USDT","ATOM-USDT","BNB-USDT","DOT-USDT",
-  "ETH-USDT","INJ-USDT","PEPE-USDT","TRUMP-USDT","ADA-USDT","ASTER-USDT",
-  "AVAX-USDT","BCH-USDT","HBAR-USDT","NEAR-USDT","SEI-USDT","SUI-USDT",
-  "VIRTUAL-USDT","LTC-USDT"
-];
+import { ACTIVE_CRYPTO_LIST, UNIVERSE } from "./core/activeCryptos.js";
 
 function shouldProcess(symbol) {
   return ACTIVE_CRYPTO_LIST.includes(symbol);
