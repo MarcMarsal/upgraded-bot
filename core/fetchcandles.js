@@ -172,7 +172,7 @@ export async function fetchAndStoreCandles(symbol, timeframe) {
   try {
     // OKX
     const okx = await fetchOKX(symbol, timeframe);
-    for (const c of okx) await storeCandle("candles_okx", symbol, timeframe, c);
+    for (const c of okx) await storeCandle("candles", symbol, timeframe, c);
 
     // WEEX
     const weex = await fetchWeex(symbol, timeframe);
