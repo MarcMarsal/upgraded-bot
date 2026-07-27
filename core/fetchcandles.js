@@ -6,13 +6,31 @@ const API_OKX     = process.env.API_URL;
 const API_WEEX    = process.env.API_WEEX;
 const API_BITUNIX = process.env.API_BITUNIX;
 
-// Validació robusta del timestamp (en mil·lisegons)
+// -------------------------------------------------------------
+// NORMALITZAR TIMESTAMP
+// -------------------------------------------------------------
 function normalizeTimestamp(raw) {
   if (raw === undefined || raw === null) return null;
   if (typeof raw !== "number") return null;
   if (raw === 0) return null;
   if (raw < 1600000000000) return null; // ms (2020+)
   return raw;
+}
+
+// -------------------------------------------------------------
+// NORMALITZAR SYMBOL PER EXCHANGE
+// -------------------------------------------------------------
+function normalizeSymbolFor(exchange, symbol) {
+  if (exchange === "OKX") return symbol;       // BTC-USDT
+  return symbol.replace("-", "");              // BTCUSDT
+}
+
+// -------------------------------------------------------------
+// NORMALITZAR TIMEFRAME PER EXCHANGE
+// -------------------------------------------------------------
+function normalizeTimeframeFor(exchange, timeframe) {
+  if (exchange === "OKX") return timeframe;    // 1H
+  return timeframe.toLowerCase();              // 1h
 }
 
 // -------------------------------------------------------------
@@ -33,6 +51,7 @@ function toInternal(ts, o, h, l, c, v) {
 // GUARDAR A TAULA
 // -------------------------------------------------------------
 async function storeCandle(table, symbol, timeframe, c) {
+
   const timestamp_es = new Date(
     new Date(c.timestamp).toLocaleString("en-US", {
       timeZone: "Europe/Madrid"
@@ -73,11 +92,14 @@ async function storeCandle(table, symbol, timeframe, c) {
 }
 
 // -------------------------------------------------------------
-// FETCH OKX
+// FETCH OKX → TAULA candles
 // -------------------------------------------------------------
 async function fetchOKX(symbol, timeframe) {
   try {
-    const url = `${API_OKX}?instId=${symbol}&bar=${timeframe}&limit=4`;
+    const sym = normalizeSymbolFor("OKX", symbol);
+    const tf  = normalizeTimeframeFor("OKX", timeframe);
+
+    const url = `${API_OKX}?instId=${sym}&bar=${tf}&limit=4`;
     const res = await axios.get(url);
     const data = res.data.data;
 
@@ -104,11 +126,14 @@ async function fetchOKX(symbol, timeframe) {
 }
 
 // -------------------------------------------------------------
-// FETCH WEEX
+// FETCH WEEX → TAULA candles_weex
 // -------------------------------------------------------------
 async function fetchWeex(symbol, timeframe) {
   try {
-    const url = `${API_WEEX}?symbol=${symbol}&interval=${timeframe}`;
+    const sym = normalizeSymbolFor("WEEX", symbol);
+    const tf  = normalizeTimeframeFor("WEEX", timeframe);
+
+    const url = `${API_WEEX}?symbol=${sym}&interval=${tf}`;
     const res = await axios.get(url);
     const data = res.data.data;
 
@@ -135,11 +160,14 @@ async function fetchWeex(symbol, timeframe) {
 }
 
 // -------------------------------------------------------------
-// FETCH BITUNIX
+// FETCH BITUNIX → TAULA candles_bitunix
 // -------------------------------------------------------------
 async function fetchBitunix(symbol, timeframe) {
   try {
-    const url = `${API_BITUNIX}?symbol=${symbol}&interval=${timeframe}&limit=100`;
+    const sym = normalizeSymbolFor("BITUNIX", symbol);
+    const tf  = normalizeTimeframeFor("BITUNIX", timeframe);
+
+    const url = `${API_BITUNIX}?symbol=${sym}&interval=${tf}&limit=100`;
     const res = await axios.get(url);
     const data = res.data.data;
 
@@ -166,7 +194,7 @@ async function fetchBitunix(symbol, timeframe) {
 }
 
 // -------------------------------------------------------------
-// FETCH + STORE (OKX + WEEX + BITUNIX)
+// FETCH + STORE (OKX → candles, WEEX → candles_weex, BITUNIX → candles_bitunix)
 // -------------------------------------------------------------
 export async function fetchAndStoreCandles(symbol, timeframe) {
   try {
