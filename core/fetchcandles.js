@@ -177,9 +177,6 @@ async function fetchWeex(symbol, timeframe) {
   }
 }
 
-// -------------------------------------------------------------
-// FETCH BITUNIX → TAULA candles_bitunix
-// -------------------------------------------------------------
 async function fetchBitunix(symbol, timeframe) {
   try {
     const sym = normalizeSymbolFor("BITUNIX", symbol);
@@ -187,12 +184,12 @@ async function fetchBitunix(symbol, timeframe) {
 
     const url = `${API_BITUNIX}?symbol=${sym}&interval=${tf}&limit=100`;
     const res = await axios.get(url);
-    const data = res.data.data;
 
+    const data = res.data.data;
     if (!data || data.length === 0) return [];
 
     return data.map(k => {
-      const ts = normalizeTimestamp(k.ts);
+      const ts = normalizeTimestamp_BITUNIX(k.time);   // <-- CORRECTE
       if (!ts) return null;
 
       return toInternal(
@@ -201,7 +198,7 @@ async function fetchBitunix(symbol, timeframe) {
         parseFloat(k.high),
         parseFloat(k.low),
         parseFloat(k.close),
-        parseFloat(k.volume)
+        parseFloat(k.quoteVol)   // <-- CORRECTE (o baseVol si vols)
       );
     }).filter(Boolean);
 
@@ -210,6 +207,7 @@ async function fetchBitunix(symbol, timeframe) {
     return [];
   }
 }
+
 
 // -------------------------------------------------------------
 // FETCH + STORE (OKX → candles, WEEX → candles_weex, BITUNIX → candles_bitunix)
