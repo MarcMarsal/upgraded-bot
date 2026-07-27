@@ -1,4 +1,4 @@
-// bot_microimpulsos.js — FIAT‑PRO (patrons + ATR + tracking + ordres)
+// bot_microimpulsos.js — MICRO‑PULSE (patrons + ATR + tracking + ordres)
 
 import cron from "node-cron";
 import { client, initDB } from "./db/client.js";
@@ -10,7 +10,7 @@ import { calculateRSI } from "./core/rsi.js";
 import { ACTIVE_CRYPTO_LIST } from "./core/activeCryptos.js";
 
 // -------------------------------------------------------------
-// LLISTES FIAT‑PRO
+// LLISTES MICRO‑PULSE
 // -------------------------------------------------------------
 
 const UNIVERSE = [
@@ -25,7 +25,10 @@ function shouldProcess(symbol) {
   return ACTIVE_CRYPTO_LIST.includes(symbol);
 }
 
-function applyFiatFilters(candles, candleIndex, atrManual, type) {
+// -------------------------------------------------------------
+// FILTRES MICRO‑PULSE (abans FIAT‑PRO)
+// -------------------------------------------------------------
+function applyMicroPulseFilters(candles, candleIndex, atrManual, type) {
   const atr = atrManual[candleIndex];
   if (!atr || candleIndex - 20 < 0) {
     return {
@@ -104,7 +107,7 @@ async function getCandlesFromDB(symbol, timeframe, limit, untilTimestamp = null)
     FROM candles
     WHERE symbol = $1 AND timeframe = $2
     AND timestamp <= $3
-    ORDER BY timestamp DESC
+    ORDERORDER BY timestamp DESC
     LIMIT $4
   `, [symbol, timeframe, nextTs, limit]);
 
@@ -138,7 +141,10 @@ function calcATRManualSeries(candles, atrLen = 10) {
   return atrManual;
 }
 
-function tpSlFiat(isLong, entry, atr) {
+// -------------------------------------------------------------
+// TP/SL MICRO‑PULSE (abans FIAT‑PRO)
+// -------------------------------------------------------------
+function tpSlMicroPulse(isLong, entry, atr) {
   const tpMult = 0.4;
   const slMult = 1.0;
 
@@ -149,7 +155,7 @@ function tpSlFiat(isLong, entry, atr) {
 }
 
 // -------------------------------------------------------------
-// PROCESSAR UN SÍMBOL (FIAT‑PRO)
+// PROCESSAR UN SÍMBOL (MICRO‑PULSE)
 // -------------------------------------------------------------
 export async function processSymbol(symbol, timeframe) {
 
@@ -175,7 +181,8 @@ export async function processSymbol(symbol, timeframe) {
     const candleIndex = candles.findIndex(c => c.timestamp === sig.timestamp);
     if (candleIndex === -1) continue;
 
-    const { isGood, slope, wicksBoth, color } = applyFiatFilters(candles, candleIndex, atrManual, sig.type);
+    const { isGood, slope, wicksBoth, color } =
+      applyMicroPulseFilters(candles, candleIndex, atrManual, sig.type);
 
     sig.isGood = isGood;
     sig.slope = slope;
@@ -183,16 +190,13 @@ export async function processSymbol(symbol, timeframe) {
     sig.color = color;
 
     // -------------------------------------------------------------
-    // ENTRYR FIAT‑PRO v2.4 (20% del cos de la 3a vela)
+    // ENTRYR MICRO‑PULSE (20–40% del cos de la 3a vela)
     // -------------------------------------------------------------
     const body = Math.abs(sig.thirdCandle.close - sig.thirdCandle.open);
 
     const entryR = sig.type === "M"
-      //? sig.thirdCandle.close - body * 0.20
-      //: sig.thirdCandle.close + body * 0.20;
       ? sig.thirdCandle.close - body * 0.40
       : sig.thirdCandle.close + body * 0.40;
-
 
     sig.entryr = entryR;
 
@@ -200,7 +204,7 @@ export async function processSymbol(symbol, timeframe) {
     // TP/SL amb ENTRYR
     // -------------------------------------------------------------
     const atrEv = atrManual[candleIndex];
-    const { tp, sl } = tpSlFiat(sig.type === "M", entryR, atrEv);
+    const { tp, sl } = tpSlMicroPulse(sig.type === "M", entryR, atrEv);
 
     sig.tp = tp;
     sig.sl = sl;
@@ -246,7 +250,7 @@ export async function processSymbol(symbol, timeframe) {
 }
 
 // -------------------------------------------------------------
-// LOOP PRINCIPAL FIAT‑PRO
+// LOOP PRINCIPAL MICRO‑PULSE
 // -------------------------------------------------------------
 async function mainLoop() {
 
@@ -272,7 +276,7 @@ async function mainLoop() {
 // -------------------------------------------------------------
 async function startBot() {
   await initDB();
-  console.log("Bot FIAT‑PRO en marxa (patrons + ATR + tracking + ordres)");
+  console.log("Bot MICRO‑PULSE en marxa (patrons + ATR + tracking + ordres)");
   cron.schedule("* * * * *", mainLoop);
 }
 
