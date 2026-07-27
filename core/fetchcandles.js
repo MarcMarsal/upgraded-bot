@@ -134,6 +134,8 @@ async function fetchWeex(symbol, timeframe) {
     const tf  = normalizeTimeframeFor("WEEX", timeframe);
 
     const url = `${API_WEEX}?symbol=${sym}&interval=${tf}`;
+    console.log("WEEX URL FINAL:", url);
+
     const res = await axios.get(url);
     const data = res.data.data;
 
@@ -210,7 +212,7 @@ export async function fetchAndStoreCandles(symbol, timeframe) {
     const bitunix = await fetchBitunix(symbol, timeframe);
     for (const c of bitunix) await storeCandle("candles_bitunix", symbol, timeframe, c);
 
-    console.log(`✔ Candles guardades: ${symbol} ${timeframe}`);
+    //console.log(`✔ Candles guardades: ${symbol} ${timeframe}`);
 
   } catch (err) {
     console.log("❌ Error general descarregant veles:", symbol, timeframe, err.message);
