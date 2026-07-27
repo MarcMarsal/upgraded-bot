@@ -2,7 +2,7 @@ import axios from "axios";
 import { client } from "../db/client.js";
 
 // Variables d'entorn
-const API_OKX     = process.env.API_OKX;
+const API_OKX     = process.env.API_URL;
 const API_WEEX    = process.env.API_WEEX;
 const API_BITUNIX = process.env.API_BITUNIX;
 
