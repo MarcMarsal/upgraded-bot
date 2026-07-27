@@ -156,11 +156,10 @@ async function fetchWeex(symbol, timeframe) {
     const res = await axios.get(url, {headers: {"User-Agent": "Mozilla/5.0","Accept": "application/json"}});
 
     const data = res.data.data;
-    //console.log(res.data);
+    console.log(data);
     if (!data || data.length === 0) return [];
     //console.log(data);
-    const ts = normalizeTimestamp_WEEX(k[0]); // timestamp
-    console.log(ts);
+  
     return data.map(k => {
       const ts = normalizeTimestamp_WEEX(k[0]); // timestamp
       if (!ts) return null;
