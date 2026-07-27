@@ -144,7 +144,7 @@ async function fetchWeex(symbol, timeframe) {
     if (!data || data.length === 0) return [];
 
     return data.map(k => {
-      const ts = normalizeTimestamp(k.t);
+      const ts = normalizeTimestamp(k[0]); // timestamp
       if (!ts) return null;
 
       console.log(parseFloat(k[1]));
