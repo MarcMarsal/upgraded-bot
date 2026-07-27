@@ -82,7 +82,7 @@ async function getActiveSignals() {
       ORDER BY created_at DESC
       LIMIT 10
     )
-    ORDER BY exchange ASC, created_at DESC;
+    ORDER BY created_at DESC;
   `);
 
   return q.rows;
