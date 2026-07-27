@@ -17,6 +17,22 @@ function normalizeTimestamp(raw) {
   return raw;
 }
 
+function normalizeTimestamp_WEEX(raw) {
+  if (raw === undefined || raw === null) return null;
+
+  const ts = Number(raw);
+  if (!Number.isFinite(ts)) return null;
+
+  // Si és en segons (10 dígits), convertir a ms
+  if (ts < 1000000000000) return ts * 1000;
+
+  // Si és en ms (13 dígits), acceptar-lo
+  if (ts >= 1600000000000) return ts;
+
+  return null;
+}
+
+
 // -------------------------------------------------------------
 // NORMALITZAR SYMBOL PER EXCHANGE
 // -------------------------------------------------------------
@@ -144,10 +160,10 @@ async function fetchWeex(symbol, timeframe) {
     if (!data || data.length === 0) return [];
     //console.log(data);
     return data.map(k => {
-      const ts = normalizeTimestamp(k[0]); // timestamp
+      const ts = normalizeTimestamp_WEEX(k[0]); // timestamp
       if (!ts) return null;
 
-      console.log(parseFloat(k[1]));
+      //console.log(parseFloat(k[1]));
       return toInternal(
         ts,
         parseFloat(k[1]), // open
