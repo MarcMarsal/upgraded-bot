@@ -1,4 +1,4 @@
-// panell_microimpulsuls.js — FIAT‑PRO (upgraded)
+// panell_microimpulsos.js — MicroPulse Panel
 
 import http from "http";
 import { initDB, client } from "./db/client.js";
@@ -9,12 +9,12 @@ function fmt(n) {
   return n !== null && n !== undefined ? Number(n).toFixed(4) : "-";
 }
 
-// 🟩 FIAT — DETECTOR D’ESTAT DEL MERCAT
+// 🟩 MicroPulse — Estat del Mercat BTC (1H)
 async function getMarketState() {
   try {
     const q = await client.query(`
       SELECT open, high, low, close, volume
-      FROM candles
+      FROM candles_okx
       WHERE symbol='BTC-USDT' AND timeframe='1H'
       ORDER BY timestamp DESC
       LIMIT 24
@@ -59,47 +59,60 @@ async function getMarketState() {
   }
 }
 
-// Llegir últimes 20 alertes FIAT‑PRO
+// 🟩 Llegir 10 senyals per exchange
 async function getActiveSignals() {
   const q = await client.query(`
-    SELECT
-      id,
-      symbol,
-      timeframe,
-      type,
-      entry,
-      entryr,          -- 🟩 AFEGIT FIAT‑PRO v2.4
-      tp,
-      sl,
-      color,
-      rsi,
-      timestamp_ms,
-      date_es,
-      hora_es,
-      created_at
-    FROM signals_upgraded
-    ORDER BY created_at DESC
-    LIMIT 20
+    (
+      SELECT *, 'OKX' AS exchange
+      FROM signals_upgraded
+      ORDER BY created_at DESC
+      LIMIT 10
+    )
+    UNION ALL
+    (
+      SELECT *, 'BITUNIX' AS exchange
+      FROM signals_bitunix
+      ORDER BY created_at DESC
+      LIMIT 10
+    )
+    UNION ALL
+    (
+      SELECT *, 'WEEX' AS exchange
+      FROM signals_weex
+      ORDER BY created_at DESC
+      LIMIT 10
+    )
+    ORDER BY exchange ASC, created_at DESC;
   `);
 
   return q.rows;
+}
+
+// 🟩 Colors per exchange
+function bgColor(exchange) {
+  if (exchange === "OKX") return "#ff4d4d";     // vermell
+  if (exchange === "BITUNIX") return "#4dff4d"; // verd
+  if (exchange === "WEEX") return "#ffff4d";    // groc
+  return "#222";
 }
 
 function renderActiveSignalsTable(signals) {
   let rows = "";
 
   for (const s of signals) {
-    let color = s.color || "#00ff00";
-    if (color.toLowerCase() === "blue") color = "cyan";
-
     rows += `
-      <tr style="color: ${color}">
+      <tr style="
+        background-color: ${bgColor(s.exchange)};
+        color: black;
+        font-weight: bold;
+      ">
+        <td>${s.exchange}</td>
         <td>${s.id}</td>
         <td>${s.symbol}</td>
         <td>${s.timeframe}</td>
         <td>${s.type}</td>
         <td>${fmt(s.entry)}</td>
-        <td>${fmt(s.entryr)}</td>     <!-- 🟩 AFEGIT -->
+        <td>${fmt(s.entryr)}</td>
         <td>${fmt(s.tp)}</td>
         <td>${fmt(s.sl)}</td>
         <td>${fmt(s.rsi)}</td>
@@ -111,16 +124,17 @@ function renderActiveSignalsTable(signals) {
   }
 
   return `
-    <h2>Últimes 20 alertes FIAT‑PRO</h2>
+    <h2>Últimes 10 alertes per exchange — MicroPulse</h2>
     <table>
       <thead>
         <tr>
+          <th>Exchange</th>
           <th>ID</th>
           <th>Symbol</th>
           <th>Timeframe</th>
           <th>Tipus</th>
           <th>Entrada</th>
-          <th>EntradaR</th>     <!-- 🟩 AFEGIT -->
+          <th>EntradaR</th>
           <th>TP</th>
           <th>SL</th>
           <th>RSI</th>
@@ -136,7 +150,7 @@ function renderActiveSignalsTable(signals) {
   `;
 }
 
-// Servidor HTTP
+// 🟩 Servidor HTTP
 async function startPanel() {
   await initDB();
 
@@ -145,7 +159,6 @@ async function startPanel() {
       const signals = await getActiveSignals();
       const signalsHTML = renderActiveSignalsTable(signals);
       const lastUpdate = formatSpainTime(Date.now());
-
       const marketState = await getMarketState();
 
       const html = `
@@ -176,7 +189,7 @@ async function startPanel() {
         </style>
       </head>
       <body>
-        <h1>Panell Microimpulsos FIAT‑PRO</h1>
+        <h1>Panell Microimpulsos — MicroPulse</h1>
         <p><b>Última actualització:</b> ${lastUpdate}</p>
 
         <h2>Estat del Mercat BTC (1H)</h2>
@@ -194,10 +207,11 @@ async function startPanel() {
     }
 
     res.writeHead(200);
-    res.end("Panell FIAT‑PRO OK");
+    res.end("Panell MicroPulse OK");
   }).listen(process.env.PORT || 3000);
 
-  console.log("Panell Microimpulsos FIAT‑PRO en marxa");
+  console.log("Panell Microimpulsos MicroPulse en marxa");
 }
 
 startPanel();
+
