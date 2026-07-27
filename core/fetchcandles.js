@@ -3,7 +3,7 @@ import { client } from "../db/client.js";
 
 // Variables d'entorn
 const API_OKX     = process.env.API_URL;
-const API_WEEX    = process.env.API_WEEX;
+//const API_WEEX    = process.env.API_WEEX;
 const API_BITUNIX = process.env.API_BITUNIX;
 
 // -------------------------------------------------------------
@@ -17,20 +17,20 @@ function normalizeTimestamp(raw) {
   return raw;
 }
 
-function normalizeTimestamp_WEEX(raw) {
-  if (raw === undefined || raw === null) return null;
+//function normalizeTimestamp_WEEX(raw) {
+//  if (raw === undefined || raw === null) return null;
 
-  const ts = Number(raw);
-  if (!Number.isFinite(ts)) return null;
+//  const ts = Number(raw);
+//  if (!Number.isFinite(ts)) return null;
 
   // Si és en segons (10 dígits), convertir a ms
-  if (ts < 1000000000000) return ts * 1000;
+//  if (ts < 1000000000000) return ts * 1000;
 
   // Si és en ms (13 dígits), acceptar-lo
-  if (ts >= 1600000000000) return ts;
+//  if (ts >= 1600000000000) return ts;
 
-  return null;
-}
+//  return null;
+//}
 
 function normalizeTimestamp_BITUNIX(raw) {
   if (raw === undefined || raw === null) return null;
@@ -157,38 +157,38 @@ async function fetchOKX(symbol, timeframe) {
 // -------------------------------------------------------------
 // FETCH WEEX → TAULA candles_weex
 // -------------------------------------------------------------
-async function fetchWeex(symbol, timeframe) {
-  try {
-    const sym = normalizeSymbolFor("WEEX", symbol);
-    const tf  = normalizeTimeframeFor("WEEX", timeframe);
+//async function fetchWeex(symbol, timeframe) {
+//  try {
+//    const sym = normalizeSymbolFor("WEEX", symbol);
+//    const tf  = normalizeTimeframeFor("WEEX", timeframe);
 
-    const url = `${API_WEEX}?symbol=${sym}&interval=${tf}&limit=4`;
+//    const url = `${API_WEEX}?symbol=${sym}&interval=${tf}&limit=4`;
    
-    const res = await axios.get(url, {headers: {"User-Agent": "Mozilla/5.0","Accept": "application/json"}});
+//    const res = await axios.get(url, {headers: {"User-Agent": "Mozilla/5.0","Accept": "application/json"}});
 
-    const data = res.data;
+//    const data = res.data;
   
-    if (!data || data.length === 0) return [];
+//    if (!data || data.length === 0) return [];
    
-    return data.map(k => {
-      const ts = normalizeTimestamp_WEEX(k[0]); // timestamp
-      if (!ts) return null;
+//    return data.map(k => {
+//      const ts = normalizeTimestamp_WEEX(k[0]); // timestamp
+//      if (!ts) return null;
     
-      return toInternal(
-        ts,
-        parseFloat(k[1]), // open
-        parseFloat(k[2]), // high
-        parseFloat(k[3]), // low
-        parseFloat(k[4]), // close
-        parseFloat(k[5])  // volume
-      );
-    }).filter(Boolean);
+//      return toInternal(
+//        ts,
+//        parseFloat(k[1]), // open
+//        parseFloat(k[2]), // high
+//        parseFloat(k[3]), // low
+//        parseFloat(k[4]), // close
+//        parseFloat(k[5])  // volume
+//      );
+//    }).filter(Boolean);
 
-  } catch (err) {
-    console.log("❌ Error WEEX:", symbol, timeframe, err.message);
-    return [];
-  }
-}
+//  } catch (err) {
+//    console.log("❌ Error WEEX:", symbol, timeframe, err.message);
+//    return [];
+//  }
+//}
 
 async function fetchBitunix(symbol, timeframe) {
   try {
@@ -232,8 +232,8 @@ export async function fetchAndStoreCandles(symbol, timeframe) {
     for (const c of okx) await storeCandle("candles", symbol, timeframe, c);
 
     // WEEX
-    const weex = await fetchWeex(symbol, timeframe);
-    for (const c of weex) await storeCandle("candles_weex", symbol, timeframe, c);
+//    const weex = await fetchWeex(symbol, timeframe);
+//    for (const c of weex) await storeCandle("candles_weex", symbol, timeframe, c);
 
     // BITUNIX
     const bitunix = await fetchBitunix(symbol, timeframe);
