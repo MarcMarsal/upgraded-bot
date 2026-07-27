@@ -155,7 +155,7 @@ async function fetchWeex(symbol, timeframe) {
     //const res = await axios.get(url);
     const res = await axios.get(url, {headers: {"User-Agent": "Mozilla/5.0","Accept": "application/json"}});
 
-    const data = res.data.data;
+    const data = res.data;
     console.log(data);
     if (!data || data.length === 0) return [];
     //console.log(data);
