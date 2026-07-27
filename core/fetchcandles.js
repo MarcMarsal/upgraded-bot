@@ -147,6 +147,7 @@ async function fetchWeex(symbol, timeframe) {
       const ts = normalizeTimestamp(k.t);
       if (!ts) return null;
 
+      console.log(parseFloat(k[1]));
       return toInternal(
         ts,
         parseFloat(k[1]), // open
