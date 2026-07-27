@@ -162,7 +162,7 @@ async function fetchWeex(symbol, timeframe) {
     const sym = normalizeSymbolFor("WEEX", symbol);
     const tf  = normalizeTimeframeFor("WEEX", timeframe);
 
-    const url = `${API_WEEX}?symbol=${sym}&interval=${tf}`;
+    const url = `${API_WEEX}?symbol=${sym}&interval=${tf}&limit=4`;
    
     const res = await axios.get(url, {headers: {"User-Agent": "Mozilla/5.0","Accept": "application/json"}});
 
@@ -195,7 +195,7 @@ async function fetchBitunix(symbol, timeframe) {
     const sym = normalizeSymbolFor("BITUNIX", symbol);
     const tf  = normalizeTimeframeFor("BITUNIX", timeframe);
 
-    const url = `${API_BITUNIX}?symbol=${sym}&interval=${tf}&limit=100`;
+    const url = `${API_BITUNIX}?symbol=${sym}&interval=${tf}&limit=4`;
     const res = await axios.get(url);
 
     const data = res.data.data;
