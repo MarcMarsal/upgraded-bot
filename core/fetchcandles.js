@@ -140,7 +140,7 @@ async function fetchWeex(symbol, timeframe) {
     const res = await axios.get(url, {headers: {"User-Agent": "Mozilla/5.0","Accept": "application/json"}});
 
     const data = res.data.data;
-    console.log(res.data);
+    //console.log(res.data);
     if (!data || data.length === 0) return [];
 
     return data.map(k => {
@@ -149,11 +149,11 @@ async function fetchWeex(symbol, timeframe) {
 
       return toInternal(
         ts,
-        parseFloat(k.o),
-        parseFloat(k.h),
-        parseFloat(k.l),
-        parseFloat(k.c),
-        parseFloat(k.v)
+        parseFloat(k[1]), // open
+        parseFloat(k[2]), // high
+        parseFloat(k[3]), // low
+        parseFloat(k[4]), // close
+        parseFloat(k[5])  // volume
       );
     }).filter(Boolean);
 
