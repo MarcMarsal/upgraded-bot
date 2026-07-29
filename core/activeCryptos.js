@@ -1,4 +1,4 @@
-// core/activeCryptos.js — FIAT‑PRO
+// core/activeCryptos.js — Micrpulse
 
 export const ACTIVE_CRYPTO_LIST = [
   "APT-USDT","ARB-USDT","ASTER-USDT","ATOM-USDT","AVAX-USDT",
