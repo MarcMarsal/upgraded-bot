@@ -3,11 +3,13 @@
 import http from "http";
 import { initDB, client } from "./db/client.js";
 import { formatSpainTime } from "./core/utils.js";
+import { fmt } from "./core/activeCryptos.js";
+
 
 // Formatador numèric
-function fmt(n) {
-  return n !== null && n !== undefined ? Number(n).toFixed(4) : "-";
-}
+//function fmt(n) {
+//  return n !== null && n !== undefined ? Number(n).toFixed(4) : "-";
+//}
 
 // 🟩 MicroPulse — Estat del Mercat BTC (1H)
 async function getMarketState() {
@@ -111,11 +113,12 @@ function renderActiveSignalsTable(signals) {
         <td>${s.symbol}</td>
         <td>${s.timeframe}</td>
         <td>${s.type}</td>
-        <td>${fmt(s.entry)}</td>
-        <td>${fmt(s.entryr)}</td>
-        <td>${fmt(s.tp)}</td>
-        <td>${fmt(s.sl)}</td>
-        <td>${fmt(s.rsi)}</td>
+        <td>${fmt(s.entry, s.symbol)}</td>
+        <td>${fmt(s.entryr, s.symbol)}</td>
+        <td>${fmt(s.tp, s.symbol)}</td>
+        <td>${fmt(s.sl, s.symbol)}</td>
+        <td>${fmt(s.rsi, s.symbol)}</td>
+
         <td>${s.date_es}</td>
         <td>${s.hora_es}</td>
         <td>${formatSpainTime(s.created_at)}</td>
