@@ -27,6 +27,11 @@ export async function saveSignal2({
 
   const { date_es, hora_es, timestamp_es } = splitSpainDate(tsMs);
 
+  entry  = fmt(entry,  symbol);
+  entryr = fmt(entryr, symbol);
+  tp     = fmt(tp,     symbol);
+  sl     = fmt(sl,     symbol);
+
   await client.query(
     `
     INSERT INTO signals_upgraded (
