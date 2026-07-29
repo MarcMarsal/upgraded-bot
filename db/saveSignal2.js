@@ -3,6 +3,7 @@
 import { client } from "./client.js";
 import { splitSpainDate } from "../core/utils.js";
 import { sendTelegram } from "../telegram/send.js";
+import { fmt } from "../core/activeCryptos.js";
 
 export async function saveSignal2({
   symbol,
