@@ -16,13 +16,6 @@ export const UNIVERSE = [
   "VIRTUAL-USDT","LTC-USDT"
 ];
 
-export const UNIVERSE = [
-  "APT-USDT","LINK-USDT","OP-USDT","SOL-USDT","BTC-USDT","FET-USDT",
-  "RENDER-USDT","XRP-USDT","ARB-USDT","ATOM-USDT","BNB-USDT","DOT-USDT",
-  "ETH-USDT","INJ-USDT","PEPE-USDT","TRUMP-USDT","ADA-USDT","ASTER-USDT",
-  "AVAX-USDT","BCH-USDT","HBAR-USDT","NEAR-USDT","SEI-USDT","SUI-USDT",
-  "VIRTUAL-USDT","LTC-USDT"
-];
 
 // -------------------------------------------------------------
 // DECIMALS PER SIMBOL (FIAT)
