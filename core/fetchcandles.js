@@ -4,7 +4,7 @@ import { client } from "../db/client.js";
 // Variables d'entorn
 const API_OKX     = process.env.API_URL;
 //const API_WEEX    = process.env.API_WEEX;
-const API_BITUNIX = process.env.API_BITUNIX;
+//const API_BITUNIX = process.env.API_BITUNIX;
 
 // -------------------------------------------------------------
 // NORMALITZAR TIMESTAMP
@@ -32,17 +32,17 @@ function normalizeTimestamp(raw) {
 //  return null;
 //}
 
-function normalizeTimestamp_BITUNIX(raw) {
-  if (raw === undefined || raw === null) return null;
+//function normalizeTimestamp_BITUNIX(raw) {
+//  if (raw === undefined || raw === null) return null;
 
-  const ts = Number(raw);
-  if (!Number.isFinite(ts)) return null;
+//  const ts = Number(raw);
+//  if (!Number.isFinite(ts)) return null;
 
   // Bitunix sempre ms (>= 1600000000000)
-  if (ts < 1600000000000) return null;
+//  if (ts < 1600000000000) return null;
 
-  return ts;
-}
+//  return ts;
+//}
 
 
 
