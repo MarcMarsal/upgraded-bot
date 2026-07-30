@@ -190,36 +190,36 @@ async function fetchOKX(symbol, timeframe) {
 //  }
 //}
 
-async function fetchBitunix(symbol, timeframe) {
-  try {
-    const sym = normalizeSymbolFor("BITUNIX", symbol);
-    const tf  = normalizeTimeframeFor("BITUNIX", timeframe);
+//async function fetchBitunix(symbol, timeframe) {
+//  try {
+//    const sym = normalizeSymbolFor("BITUNIX", symbol);
+//    const tf  = normalizeTimeframeFor("BITUNIX", timeframe);
 
-    const url = `${API_BITUNIX}?symbol=${sym}&interval=${tf}&limit=4`;
-    const res = await axios.get(url);
+//    const url = `${API_BITUNIX}?symbol=${sym}&interval=${tf}&limit=4`;
+//    const res = await axios.get(url);
 
-    const data = res.data.data;
-    if (!data || data.length === 0) return [];
+//    const data = res.data.data;
+//    if (!data || data.length === 0) return [];
 
-    return data.map(k => {
-      const ts = normalizeTimestamp_BITUNIX(k.time);   // <-- CORRECTE
-      if (!ts) return null;
+//    return data.map(k => {
+//      const ts = normalizeTimestamp_BITUNIX(k.time);   // <-- CORRECTE
+//      if (!ts) return null;
 
-      return toInternal(
-        ts,
-        parseFloat(k.open),
-        parseFloat(k.high),
-        parseFloat(k.low),
-        parseFloat(k.close),
-        parseFloat(k.quoteVol)   // <-- CORRECTE (o baseVol si vols)
-      );
-    }).filter(Boolean);
+//      return toInternal(
+//        ts,
+//        parseFloat(k.open),
+//        parseFloat(k.high),
+//        parseFloat(k.low),
+//        parseFloat(k.close),
+//        parseFloat(k.quoteVol)   // <-- CORRECTE (o baseVol si vols)
+//      );
+//    }).filter(Boolean);
 
-  } catch (err) {
-    console.log("❌ Error BITUNIX:", symbol, timeframe, err.message);
-    return [];
-  }
-}
+//  } catch (err) {
+//    console.log("❌ Error BITUNIX:", symbol, timeframe, err.message);
+//    return [];
+//  }
+//}
 
 
 // -------------------------------------------------------------
@@ -236,8 +236,8 @@ export async function fetchAndStoreCandles(symbol, timeframe) {
 //    for (const c of weex) await storeCandle("candles_weex", symbol, timeframe, c);
 
     // BITUNIX
-    const bitunix = await fetchBitunix(symbol, timeframe);
-    for (const c of bitunix) await storeCandle("candles_bitunix", symbol, timeframe, c);
+    //const bitunix = await fetchBitunix(symbol, timeframe);
+    //for (const c of bitunix) await storeCandle("candles_bitunix", symbol, timeframe, c);
 
     //console.log(`✔ Candles guardades: ${symbol} ${timeframe}`);
 
