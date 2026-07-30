@@ -265,7 +265,7 @@ async function mainLoop() {
   for (const symbol of ACTIVE_CRYPTO_LIST) {
     for (const timeframe of TIMEFRAMES) {
       try {
-        await processSymbol(symbol, timeframe);
+        //await processSymbol(symbol, timeframe);
       } catch (err) {
         console.log("Error processant", symbol, timeframe, err.message);
       }
@@ -279,7 +279,8 @@ async function mainLoop() {
 async function startBot() {
   await initDB();
   console.log("Bot MICRO‑PULSE en marxa (patrons + ATR + tracking + ordres)");
-  cron.schedule("* * * * *", mainLoop);
+  //cron.schedule("* * * * *", mainLoop);
+  cron.schedule("0 * * * *", mainLoop);
 }
 
 startBot();
