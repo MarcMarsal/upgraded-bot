@@ -16,9 +16,12 @@ function shouldProcess(symbol) {
 // -------------------------------------------------------------
 // FILTRES MICRO‑PULSE (abans FIAT‑PRO)
 // -------------------------------------------------------------
-function applyMicroPulseFilters(candles, candleIndex, atrManual, type) {
+function applyMicroPulseFilters(candles, candleIndex, atrManual, type, timeframe) {
   const atr = atrManual[candleIndex];
-  if (!atr || candleIndex - 20 < 0) {
+  const slopeLen = timeframe === "15m" ? 40 : 20;
+  //if (!atr || candleIndex - 20 < 0) {
+  if (!atr || candleIndex - slopeLen < 0) {
+    
     return {
       isGood: false,
       slope: null,
@@ -27,7 +30,7 @@ function applyMicroPulseFilters(candles, candleIndex, atrManual, type) {
     };
   }
 
-  const slopeLen = 20;
+  //const slopeLen = 20;
   const slope = candles[candleIndex].close - candles[candleIndex - slopeLen].close;
   const slopeOk = Math.abs(slope) < atr * 3.5;
 
@@ -62,13 +65,14 @@ function applyMicroPulseFilters(candles, candleIndex, atrManual, type) {
 // CONFIG
 // -------------------------------------------------------------
 
-const TIMEFRAMES = ["1H"];
+const TIMEFRAMES = ["1H","15m"];
 
 // -------------------------------------------------------------
 // TIMEFRAME → MS
 // -------------------------------------------------------------
 function timeframeToMs(tf) {
   if (tf === "1H") return 60 * 60 * 1000;
+  if (tf === "1H") return 15 * 60 * 1000;
   throw new Error("Timeframe no suportat: " + tf);
 }
 
@@ -151,7 +155,8 @@ export async function processSymbol(symbol, timeframe) {
 
   //const candles = await getCandlesFromDB(symbol, timeframe, 120);
   //const candles = await getCandlesFromDB(symbol, timeframe, 25);
-  let candles = await getCandlesFromDB(symbol, timeframe, 25);
+  //let candles = await getCandlesFromDB(symbol, timeframe, 25);
+  let candles = await getCandlesFromDB(symbol, timeframe, 120);
   if (!candles || candles.length < 20) return;
 
   candles.sort((a, b) => a.timestamp - b.timestamp);
@@ -184,7 +189,7 @@ export async function processSymbol(symbol, timeframe) {
     if (candleIndex === -1) continue;
 
     const { isGood, slope, wicksBoth, color } =
-      applyMicroPulseFilters(candles, candleIndex, atrManual, sig.type);
+      applyMicroPulseFilters(candles, candleIndex, atrManual, sig.type, timeframe);
 
     sig.isGood = isGood;
     sig.slope = slope;
