@@ -72,7 +72,7 @@ const TIMEFRAMES = ["1H","15m"];
 // -------------------------------------------------------------
 function timeframeToMs(tf) {
   if (tf === "1H") return 60 * 60 * 1000;
-  if (tf === "1H") return 15 * 60 * 1000;
+  if (tf === "15m") return 15 * 60 * 1000;
   throw new Error("Timeframe no suportat: " + tf);
 }
 
