@@ -70,7 +70,7 @@ export async function saveSignal2({
       false,
       $15,$16,$17,
       $18,
-      $19,$20,
+      $19,$20
       
     )
     ON CONFLICT DO NOTHING
