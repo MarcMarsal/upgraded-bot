@@ -65,7 +65,8 @@ function applyMicroPulseFilters(candles, candleIndex, atrManual, type, timeframe
 // CONFIG
 // -------------------------------------------------------------
 
-const TIMEFRAMES = ["1H","15m"];
+//const TIMEFRAMES = ["1H","15m"];
+const TIMEFRAMES = ["1H"];
 
 // -------------------------------------------------------------
 // TIMEFRAME → MS
