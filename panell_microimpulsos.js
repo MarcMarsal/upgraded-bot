@@ -102,14 +102,12 @@ function renderActiveSignalsTable(signals) {
   let rows = "";
 
   for (const s of signals) {
-    // Coloració original per M/E/discard → NO es toca
     let color = s.color || "#00ff00";
     if (color.toLowerCase() === "blue") color = "cyan";
 
     rows += `
       <tr style="color:${color}">
         <td style="${exchangeCellStyle(s.exchange)}">${s.exchange}</td>
-        <td>${s.id}</td>
         <td>${s.symbol}</td>
         <td>${s.timeframe}</td>
         <td>${s.type}</td>
@@ -117,7 +115,10 @@ function renderActiveSignalsTable(signals) {
         <td>${fmt(s.entryr, s.symbol)}</td>
         <td>${fmt(s.tp, s.symbol)}</td>
         <td>${fmt(s.sl, s.symbol)}</td>
-        <td>${fmt(s.rsi, s.symbol)}</td>
+
+        <!-- 🔥 nous camps -->
+        <td>${s.tps48h}</td>
+        <td>${s.percent48h}%</td>
 
         <td>${s.date_es}</td>
         <td>${s.hora_es}</td>
@@ -132,7 +133,6 @@ function renderActiveSignalsTable(signals) {
       <thead>
         <tr>
           <th>Exchange</th>
-          <th>ID</th>
           <th>Symbol</th>
           <th>Timeframe</th>
           <th>Tipus</th>
@@ -140,7 +140,11 @@ function renderActiveSignalsTable(signals) {
           <th>EntradaR</th>
           <th>TP</th>
           <th>SL</th>
-          <th>RSI</th>
+
+          <!-- 🔥 nous camps -->
+          <th>TPs 48h</th>
+          <th>%TP 48h</th>
+
           <th>Data vela</th>
           <th>Hora vela</th>
           <th>Creat (ES)</th>
@@ -152,6 +156,7 @@ function renderActiveSignalsTable(signals) {
     </table>
   `;
 }
+
 
 // 🟩 Servidor HTTP
 async function startPanel() {
