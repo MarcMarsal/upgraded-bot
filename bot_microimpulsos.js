@@ -1,4 +1,4 @@
-// bot_microimpulsos.js — MICRO‑PULSE (patrons + ATR + tracking + ordres)
+// bot_microimpulsos.js — MICRO‑PULSE / RAW per token (patrons + ATR + tracking + ordres)
 
 import cron from "node-cron";
 import { client, initDB } from "./db/client.js";
@@ -15,14 +15,28 @@ function shouldProcess(symbol) {
 }
 
 // -------------------------------------------------------------
-// FILTRES MICRO‑PULSE (abans FIAT‑PRO)
+// MAPA DE MODE PER TOKEN (AGOST, 1H)
+// -------------------------------------------------------------
+const MICROPULSE_TOKENS = [
+  "LTC-USDT",
+  "APT-USDT",
+  "SEI-USDT",
+  "HBAR-USDT",
+  "PEPE-USDT",
+  "INJ-USDT"
+];
+
+function getModeForSymbol(symbol) {
+  return MICROPULSE_TOKENS.includes(symbol) ? "micropulse" : "raw";
+}
+
+// -------------------------------------------------------------
+// FILTRES MICRO‑PULSE
 // -------------------------------------------------------------
 function applyMicroPulseFilters(candles, candleIndex, atrManual, type, timeframe) {
   const atr = atrManual[candleIndex];
   const slopeLen = timeframe === "15m" ? 40 : 20;
-  //if (!atr || candleIndex - 20 < 0) {
   if (!atr || candleIndex - slopeLen < 0) {
-    
     return {
       isGood: false,
       slope: null,
@@ -31,7 +45,6 @@ function applyMicroPulseFilters(candles, candleIndex, atrManual, type, timeframe
     };
   }
 
-  //const slopeLen = 20;
   const slope = candles[candleIndex].close - candles[candleIndex - slopeLen].close;
   const slopeOk = Math.abs(slope) < atr * 3.5;
 
@@ -65,8 +78,6 @@ function applyMicroPulseFilters(candles, candleIndex, atrManual, type, timeframe
 // -------------------------------------------------------------
 // CONFIG
 // -------------------------------------------------------------
-
-//const TIMEFRAMES = ["1H","15m"];
 const TIMEFRAMES = ["1H"];
 
 // -------------------------------------------------------------
@@ -101,7 +112,7 @@ async function getCandlesFromDB(symbol, timeframe, limit, untilTimestamp = null)
     FROM candles
     WHERE symbol = $1 AND timeframe = $2
     AND timestamp <= $3
-    ORDERORDER BY timestamp DESC
+    ORDER BY timestamp DESC
     LIMIT $4
   `, [symbol, timeframe, nextTs, limit]);
 
@@ -136,7 +147,7 @@ function calcATRManualSeries(candles, atrLen = 10) {
 }
 
 // -------------------------------------------------------------
-// TP/SL MICRO‑PULSE (abans FIAT‑PRO)
+// TP/SL MICRO‑PULSE
 // -------------------------------------------------------------
 function tpSlMicroPulse(isLong, entry, atr) {
   const tpMult = 0.4;
@@ -149,21 +160,31 @@ function tpSlMicroPulse(isLong, entry, atr) {
 }
 
 // -------------------------------------------------------------
-// PROCESSAR UN SÍMBOL (MICRO‑PULSE)
+// TP/SL RAW (config simple basada en ATR)
+// -------------------------------------------------------------
+function tpSlRaw(isLong, entry, atr) {
+  const tpMult = 1.5;
+  const slMult = 1.2;
+
+  const tp = isLong ? entry + atr * tpMult : entry - atr * tpMult;
+  const sl = isLong ? entry - atr * slMult : entry + atr * slMult;
+
+  return { tp, sl };
+}
+
+// -------------------------------------------------------------
+// PROCESSAR UN SÍMBOL (MODE PER TOKEN)
 // -------------------------------------------------------------
 export async function processSymbol(symbol, timeframe) {
 
   if (!shouldProcess(symbol)) return;
 
-  //const candles = await getCandlesFromDB(symbol, timeframe, 120);
-  //const candles = await getCandlesFromDB(symbol, timeframe, 25);
   let candles = await getCandlesFromDB(symbol, timeframe, 25);
-  //let candles = await getCandlesFromDB(symbol, timeframe, 120);
   if (!candles || candles.length < 20) return;
 
   candles.sort((a, b) => a.timestamp - b.timestamp);
 
-   // NORMALITZACIÓ PEPE (una sola vegada, per tot el bot)
+  // NORMALITZACIÓ PEPE
   if (symbol === "PEPE-USDT") {
     const k = 1000;
     candles = candles.map(c => ({
@@ -181,6 +202,8 @@ export async function processSymbol(symbol, timeframe) {
   const { signals } = await detectMSES(candles, symbol, timeframe);
   if (!signals || signals.length === 0) return;
 
+  const mode = getModeForSymbol(symbol); // "micropulse" o "raw"
+
   for (const sig of signals) {
     if (sig.type !== "M" && sig.type !== "E") continue;
 
@@ -190,38 +213,46 @@ export async function processSymbol(symbol, timeframe) {
     const candleIndex = candles.findIndex(c => c.timestamp === sig.timestamp);
     if (candleIndex === -1) continue;
 
-    const { isGood, slope, wicksBoth, color } =
-      applyMicroPulseFilters(candles, candleIndex, atrManual, sig.type, timeframe);
-
-    sig.isGood = isGood;
-    sig.slope = slope;
-    sig.wicksBoth = wicksBoth;
-    sig.color = color;
-
-    // -------------------------------------------------------------
-    // ENTRYR MICRO‑PULSE (20–40% del cos de la 3a vela)
-    // -------------------------------------------------------------
-    const body = Math.abs(sig.thirdCandle.close - sig.thirdCandle.open);
-
-    const entryR = sig.type === "M"
-      ? sig.thirdCandle.close - body * 0.40
-      : sig.thirdCandle.close + body * 0.40;
-
-    sig.entryr = entryR;
-
-    // -------------------------------------------------------------
-    // TP/SL amb ENTRYR
-    // -------------------------------------------------------------
     const atrEv = atrManual[candleIndex];
-    const { tp, sl } = tpSlMicroPulse(sig.type === "M", entryR, atrEv);
+    if (!atrEv) continue;
 
-    sig.tp = tp;
-    sig.sl = sl;
-
-    // -------------------------------------------------------------
     // ENTRY original del patró (no es toca)
-    // -------------------------------------------------------------
     sig.entry = candles[candleIndex].close;
+
+    if (mode === "raw") {
+      // ---------------- RAW MODE ----------------
+      sig.isGood = true;
+      sig.slope = null;
+      sig.wicksBoth = false;
+      sig.color = sig.type === "M" ? "green" : "red";
+
+      const { tp, sl } = tpSlRaw(sig.type === "M", sig.entry, atrEv);
+      sig.entryr = sig.entry; // en RAW, entryr = entry
+      sig.tp = tp;
+      sig.sl = sl;
+
+    } else {
+      // ---------------- MICROPULSE MODE ----------------
+      const { isGood, slope, wicksBoth, color } =
+        applyMicroPulseFilters(candles, candleIndex, atrManual, sig.type, timeframe);
+
+      sig.isGood = isGood;
+      sig.slope = slope;
+      sig.wicksBoth = wicksBoth;
+      sig.color = color;
+
+      const body = Math.abs(sig.thirdCandle.close - sig.thirdCandle.open);
+
+      const entryR = sig.type === "M"
+        ? sig.thirdCandle.close - body * 0.40
+        : sig.thirdCandle.close + body * 0.40;
+
+      sig.entryr = entryR;
+
+      const { tp, sl } = tpSlMicroPulse(sig.type === "M", entryR, atrEv);
+      sig.tp = tp;
+      sig.sl = sl;
+    }
 
     // -------------------------------------------------------------
     // RSI
@@ -258,7 +289,6 @@ export async function processSymbol(symbol, timeframe) {
       slope:    sig.slope,
       wicksBoth:sig.wicksBoth,
       rsi:      sig.rsi,
-      // 🔥 nous camps del panell
       tps48h:     sig.tps48h,
       percent48h: sig.percent48h
     });
@@ -266,7 +296,7 @@ export async function processSymbol(symbol, timeframe) {
 }
 
 // -------------------------------------------------------------
-// LOOP PRINCIPAL MICRO‑PULSE
+// LOOP PRINCIPAL
 // -------------------------------------------------------------
 async function mainLoop() {
 
@@ -292,9 +322,8 @@ async function mainLoop() {
 // -------------------------------------------------------------
 async function startBot() {
   await initDB();
-  console.log("Bot MICRO‑PULSE en marxa (patrons + ATR + tracking + ordres)");
+  console.log("Bot MICRO‑PULSE/RAW en marxa (mode per token, 1H agost)");
   cron.schedule("* * * * *", mainLoop);
-  //cron.schedule("0 * * * *", mainLoop);
 }
 
 startBot();
