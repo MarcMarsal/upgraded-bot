@@ -5,12 +5,6 @@ import { initDB, client } from "./db/client.js";
 import { formatSpainTime } from "./core/utils.js";
 import { fmt } from "./core/activeCryptos.js";
 
-
-// Formatador numèric
-//function fmt(n) {
-//  return n !== null && n !== undefined ? Number(n).toFixed(4) : "-";
-//}
-
 // 🟩 MicroPulse — Estat del Mercat BTC (1H)
 async function getMarketState() {
   try {
@@ -61,43 +55,19 @@ async function getMarketState() {
   }
 }
 
-// 🟩 Llegir 10 senyals per exchange
+// 🟩 Llegir 10 senyals — NOMÉS OKX
 async function getActiveSignals() {
   const q = await client.query(`
-    (
-      SELECT *, 'OKX' AS exchange
-      FROM signals_upgraded
-      ORDER BY created_at DESC
-      LIMIT 10
-    )
-    UNION ALL
-    (
-      SELECT *, 'BITUNIX' AS exchange
-      FROM signals_bitunix
-      ORDER BY created_at DESC
-      LIMIT 10
-    )
-    UNION ALL
-    (
-      SELECT *, 'WEEX' AS exchange
-      FROM signals_weex
-      ORDER BY created_at DESC
-      LIMIT 10
-    )
-    ORDER BY created_at DESC;
+    SELECT *
+    FROM signals_upgraded
+    ORDER BY created_at DESC
+    LIMIT 10;
   `);
 
   return q.rows;
 }
 
-// 🟩 Colors només per la cel·la Exchange
-function exchangeCellStyle(exchange) {
-  if (exchange === "OKX") return "background-color:#ff4d4d; color:black; font-weight:bold;";
-  if (exchange === "BITUNIX") return "background-color:#4dff4d; color:black; font-weight:bold;";
-  if (exchange === "WEEX") return "background-color:#ffff4d; color:black; font-weight:bold;";
-  return "";
-}
-
+// 🟩 Render taula sense Exchange i sense Entrada
 function renderActiveSignalsTable(signals) {
   let rows = "";
 
@@ -107,16 +77,14 @@ function renderActiveSignalsTable(signals) {
 
     rows += `
       <tr style="color:${color}">
-        <td style="${exchangeCellStyle(s.exchange)}">${s.exchange}</td>
         <td>${s.symbol}</td>
         <td>${s.timeframe}</td>
         <td>${s.type}</td>
-        <td>${fmt(s.entry, s.symbol)}</td>
+
         <td>${fmt(s.entryr, s.symbol)}</td>
         <td>${fmt(s.tp, s.symbol)}</td>
         <td>${fmt(s.sl, s.symbol)}</td>
 
-        <!-- 🔥 nous camps -->
         <td>${s.tps48h}</td>
         <td>${s.percent48h}%</td>
 
@@ -128,20 +96,18 @@ function renderActiveSignalsTable(signals) {
   }
 
   return `
-    <h2>Últimes 10 alertes per exchange — MicroPulse</h2>
+    <h2>Últimes 10 alertes — MicroPulse (OKX)</h2>
     <table>
       <thead>
         <tr>
-          <th>Exchange</th>
           <th>Symbol</th>
           <th>Timeframe</th>
           <th>Tipus</th>
-          <th>Entrada</th>
+
           <th>EntradaR</th>
           <th>TP</th>
           <th>SL</th>
 
-          <!-- 🔥 nous camps -->
           <th>TPs 48h</th>
           <th>%TP 48h</th>
 
@@ -156,7 +122,6 @@ function renderActiveSignalsTable(signals) {
     </table>
   `;
 }
-
 
 // 🟩 Servidor HTTP
 async function startPanel() {
@@ -222,7 +187,3 @@ async function startPanel() {
 }
 
 startPanel();
-
-
-
-
