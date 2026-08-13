@@ -44,6 +44,7 @@ export const DECIMALS = {
   "LTC-USDT": 2,
   "ONDO-USDT":4,
   "OP-USDT": 4,
+  "PAXG-USDT": 2,
   "PENGU-USDT": 6,
   "PEPE-USDT": 7,
    
