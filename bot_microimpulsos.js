@@ -19,7 +19,8 @@ function shouldProcess(symbol) {
 // -------------------------------------------------------------
 function applyMicroPulseFilters(candles, candleIndex, atrManual, type, timeframe) {
   const atr = atrManual[candleIndex];
-  const slopeLen = timeframe === "15m" ? 40 : 20;
+  //const slopeLen = timeframe === "15m" ? 40 : 20;
+  const slopeLen = 20;
   //if (!atr || candleIndex - 20 < 0) {
   if (!atr || candleIndex - slopeLen < 0) {
     
@@ -66,7 +67,11 @@ function applyMicroPulseFilters(candles, candleIndex, atrManual, type, timeframe
 // CONFIG
 // -------------------------------------------------------------
 //const TIMEFRAMES = ["1H"];
-const TIMEFRAMES = ["1H","1H10m"];
+//const TIMEFRAMES = ["1H","1H10m"];
+const TIMEFRAMES_DOWNLOAD = ["1H"];
+const TIMEFRAMES_EXECUTE = ["1H", "1H10m"];
+
+
 
 // -------------------------------------------------------------
 // TIMEFRAME → MS
@@ -274,21 +279,27 @@ export async function processSymbol(symbol, timeframe) {
 async function mainLoop() {
 
   for (const symbol of UNIVERSE) {
-    for (const timeframe of TIMEFRAMES) {
-      await fetchAndStoreCandles(symbol, timeframe);
+    //for (const timeframe of TIMEFRAMES) {
+    for (const timeframe of TIMEFRAMES_DOWNLOAD) {
+      await fetchAndStoreCandles(symbol, timeframe);   // 1H intacte
     }
+
+    // 🔥 nova temporalitat off-grid
+    await fetchAndStoreCandles1H10m(symbol);
   }
 
   for (const symbol of ACTIVE_CRYPTO_LIST) {
-    for (const timeframe of TIMEFRAMES) {
+    //for (const timeframe of TIMEFRAMES) {
+    for (const timeframe of TIMEFRAMES_EXECUTE) {
       try {
-        await processSymbol(symbol, timeframe);
+        await processSymbol(symbol, timeframe);   // ara també processa 1H10m
       } catch (err) {
         console.log("Error processant", symbol, timeframe, err.message);
       }
     }
   }
 }
+
 
 // -------------------------------------------------------------
 // START BOT
