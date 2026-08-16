@@ -2,6 +2,30 @@
 const current = {};        // vela real 1H10m oberta
 const dummyOpen = {};      // vela dummy oberta per detectMSES
 
+// ---------------------------------------------------------
+// FUNCIO AFEGIDA: obtenir última vela 1H tancada de la BD
+// ---------------------------------------------------------
+async function getLastClosedCandle1H(symbol) {
+  try {
+    const res = await client.query(`
+      SELECT timestamp, open, high, low, close, volume
+      FROM candles
+      WHERE symbol = $1 AND timeframe = '1H'
+      ORDER BY timestamp DESC
+      LIMIT 1
+    `, [symbol]);
+
+    return res.rows[0] || null;
+
+  } catch (err) {
+    console.log(`[1H10m][${symbol}] ERROR getLastClosedCandle1H:`, err);
+    return null;
+  }
+}
+
+// ---------------------------------------------------------
+// FUNCIO PRINCIPAL 1H10m
+// ---------------------------------------------------------
 export async function fetchAndStoreCandles1H10m(symbol) {
   const now = Date.now();
   const d = new Date(now);
@@ -13,24 +37,19 @@ export async function fetchAndStoreCandles1H10m(symbol) {
     console.log(`[1H10m][${symbol}] MINUTE=10 current=${!!current[symbol]}`);
   }
 
+  console.log(`[1H10m][${symbol}] minute===10? ${minute === 10} && current null? ${!current[symbol]}`);
+
   // ---------------------------------------------------------
   // 1) INICI DE VELA REAL (HH:10)
   // ---------------------------------------------------------
-  console.log(`[1H10m][${symbol}] minute===10? ${minute === 10} && current null? ${!current[symbol]}`);
-
   if (minute === 10 && !current[symbol]) {
 
     console.log(`[1H10m][${symbol}] → INICI condició complerta`);
 
-    let oc;
-    try {
-      oc = await getOpenCandle(symbol);
-    } catch (err) {
-      console.log(`[1H10m][${symbol}] ERROR getOpenCandle EXCEPCIÓ:`, err);
-      return;
-    }
+    // 🔥 Substituïm getOpenCandle per la nova funció
+    const oc = await getLastClosedCandle1H(symbol);
 
-    console.log(`[1H10m][${symbol}] getOpenCandle =`, oc);
+    console.log(`[1H10m][${symbol}] getLastClosedCandle1H =`, oc);
 
     if (!oc) {
       console.log(`[1H10m][${symbol}] ERROR: oc=null → NO es crea la vela`);
@@ -75,15 +94,9 @@ export async function fetchAndStoreCandles1H10m(symbol) {
   // ---------------------------------------------------------
   // 2) ACTUALITZAR VELA REAL
   // ---------------------------------------------------------
-  let oc2;
-  try {
-    oc2 = await getOpenCandle(symbol);
-  } catch (err) {
-    console.log(`[1H10m][${symbol}] ERROR getOpenCandle DURANT actualització:`, err);
-    return;
-  }
+  const oc2 = await getLastClosedCandle1H(symbol);
 
-  console.log(`[1H10m][${symbol}] getOpenCandle DURANT VELA =`, oc2);
+  console.log(`[1H10m][${symbol}] getLastClosedCandle1H DURANT VELA =`, oc2);
 
   if (!oc2) {
     console.log(`[1H10m][${symbol}] ERROR: oc=null DURANT actualització`);
