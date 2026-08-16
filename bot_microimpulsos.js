@@ -108,7 +108,7 @@ async function getCandlesFromDB(symbol, timeframe, limit, untilTimestamp = null)
     FROM candles
     WHERE symbol = $1 AND timeframe = $2
     AND timestamp <= $3
-    ORDERORDER BY timestamp DESC
+    ORDER BY timestamp DESC
     LIMIT $4
   `, [symbol, timeframe, nextTs, limit]);
 
