@@ -1,3 +1,5 @@
+import axios from "axios";
+import { client } from "../db/client.js";
 // Estructura en memòria
 const current = {};        // vela real 1H10m oberta
 const dummyOpen = {};      // vela dummy oberta per detectMSES
