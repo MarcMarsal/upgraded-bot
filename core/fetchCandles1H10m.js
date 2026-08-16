@@ -8,12 +8,12 @@ export async function fetchAndStoreCandles1H10m(symbol) {
 
   const minute = d.getMinutes();
 
-  console.log(`[1H10m] Tick ${symbol} minute=${minute} current=${!!current[symbol]}`);
+  //console.log(`[1H10m] Tick ${symbol} minute=${minute} current=${!!current[symbol]}`);
 
   // ---------------------------------------------------------
   // 1) INICI DE VELA REAL (HH:10) — només si NO existeix
   // ---------------------------------------------------------
-  console.log(`[1H10m] minute===10? ${minute === 10} && current null? ${!current[symbol]}`);
+  //console.log(`[1H10m] minute===10? ${minute === 10} && current null? ${!current[symbol]}`);
 
   if (minute === 10 && !current[symbol]) {
 
@@ -58,7 +58,7 @@ export async function fetchAndStoreCandles1H10m(symbol) {
   // Si no hi ha vela real oberta → res
   // ---------------------------------------------------------
   if (!current[symbol]) {
-    console.log(`[1H10m] No hi ha vela oberta per ${symbol}, sortint`);
+    //console.log(`[1H10m] No hi ha vela oberta per ${symbol}, sortint`);
     return;
   }
 
