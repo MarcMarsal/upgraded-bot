@@ -6,7 +6,8 @@ export async function fetchAndStoreCandles1H10m(symbol) {
   const now = Date.now();
   const d = new Date(now);
 
-  const minute = d.getUTCMinutes();
+  //const minute = d.getUTCMinutes();
+  const minute = d.getMinutes();
 
   // ---------------------------------------------------------
   // 1) INICI DE VELA REAL (HH:10) — només si NO existeix
