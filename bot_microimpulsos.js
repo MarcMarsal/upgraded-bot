@@ -65,15 +65,15 @@ function applyMicroPulseFilters(candles, candleIndex, atrManual, type, timeframe
 // -------------------------------------------------------------
 // CONFIG
 // -------------------------------------------------------------
-
-//const TIMEFRAMES = ["1H","15m"];
-const TIMEFRAMES = ["1H"];
+//const TIMEFRAMES = ["1H"];
+const TIMEFRAMES = ["1H","1H10m"];
 
 // -------------------------------------------------------------
 // TIMEFRAME → MS
 // -------------------------------------------------------------
 function timeframeToMs(tf) {
   if (tf === "1H") return 60 * 60 * 1000;
+  if (tf === "1H10m") return 60 * 60 * 1000;   // continua sent 60 min
   if (tf === "15m") return 15 * 60 * 1000;
   throw new Error("Timeframe no suportat: " + tf);
 }
