@@ -19,10 +19,9 @@ export async function fetchAndStoreCandles1H10m(symbol) {
   const d = new Date(now);
 
   const minute = d.getUTCMinutes();
-  const second = d.getUTCSeconds();
 
-  // 1) INICI DE VELA (HH:10)
-  if (minute === 10 && second === 0) {
+  // 1) INICI DE VELA (HH:10) — només si NO existeix
+  if (minute === 10 && !current[symbol]) {
     const oc = await getOpenCandle(symbol);
     if (!oc) return;
 
@@ -36,6 +35,7 @@ export async function fetchAndStoreCandles1H10m(symbol) {
       startTs: now
     };
 
+    console.log(`[1H10m] Inici vela ${symbol} @ ${new Date(now).toISOString()}`);
     return;
   }
 
@@ -54,9 +54,9 @@ export async function fetchAndStoreCandles1H10m(symbol) {
   current[symbol].close = price;
   current[symbol].volume += vol;
 
-  // 3) TANCAMENT (HH+1:10)
+  // 3) TANCAMENT (HH+1:10) — 60 minuts exactes
   const elapsed = now - current[symbol].startTs;
-  if (elapsed >= 60 * 60 * 1000) {   // 60 minuts exactes
+  if (elapsed >= 60 * 60 * 1000) {
 
     const c = current[symbol];
 
@@ -73,6 +73,8 @@ export async function fetchAndStoreCandles1H10m(symbol) {
       c.close,
       c.volume
     ]);
+
+    console.log(`[1H10m] Tancament vela ${symbol} @ ${new Date(now).toISOString()}`);
 
     current[symbol] = null;
   }
