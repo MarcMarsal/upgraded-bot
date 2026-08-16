@@ -6,15 +6,26 @@ export async function fetchAndStoreCandles1H10m(symbol) {
   const now = Date.now();
   const d = new Date(now);
 
-  //const minute = d.getUTCMinutes();
   const minute = d.getMinutes();
+
+  console.log(`[1H10m] Tick ${symbol} minute=${minute} current=${!!current[symbol]}`);
 
   // ---------------------------------------------------------
   // 1) INICI DE VELA REAL (HH:10) — només si NO existeix
   // ---------------------------------------------------------
+  console.log(`[1H10m] minute===10? ${minute === 10} && current null? ${!current[symbol]}`);
+
   if (minute === 10 && !current[symbol]) {
+
+    console.log(`[1H10m] Intentant iniciar vela real ${symbol}`);
+
     const oc = await getOpenCandle(symbol);   // vela oberta 1H de l'exchange
-    if (!oc) return;
+    console.log(`[1H10m] getOpenCandle(${symbol}) =`, oc);
+
+    if (!oc) {
+      console.log(`[1H10m] ERROR: oc=null per ${symbol}, no puc iniciar la vela`);
+      return;
+    }
 
     // Crear la vela real 1H10m
     current[symbol] = {
@@ -27,6 +38,8 @@ export async function fetchAndStoreCandles1H10m(symbol) {
       startTs: now
     };
 
+    console.log(`[1H10m] CREANT VELA REAL ${symbol}`, current[symbol]);
+
     // Crear la dummy oberta (placeholder per detectMSES)
     dummyOpen[symbol] = {
       open: 0,
@@ -37,20 +50,28 @@ export async function fetchAndStoreCandles1H10m(symbol) {
       timestamp: now
     };
 
-    console.log(`[1H10m] Inici vela real + dummy ${symbol} @ ${new Date(now).toISOString()}`);
+    console.log(`[1H10m] CREANT DUMMY ${symbol}`, dummyOpen[symbol]);
     return;
   }
 
   // ---------------------------------------------------------
   // Si no hi ha vela real oberta → res
   // ---------------------------------------------------------
-  if (!current[symbol]) return;
+  if (!current[symbol]) {
+    console.log(`[1H10m] No hi ha vela oberta per ${symbol}, sortint`);
+    return;
+  }
 
   // ---------------------------------------------------------
   // 2) ACTUALITZAR VELA REAL 1H10m AMB LA VELA OBERTA 1H
   // ---------------------------------------------------------
   const oc = await getOpenCandle(symbol);
-  if (!oc) return;
+  console.log(`[1H10m] getOpenCandle DURANT VELA ${symbol} =`, oc);
+
+  if (!oc) {
+    console.log(`[1H10m] ERROR: oc=null durant actualització per ${symbol}`);
+    return;
+  }
 
   const price = oc.close;
   const vol   = oc.volume || 0;
@@ -60,13 +81,18 @@ export async function fetchAndStoreCandles1H10m(symbol) {
   current[symbol].close = price;
   current[symbol].volume += vol;
 
+  console.log(`[1H10m] Actualitzada vela real ${symbol}:`, current[symbol]);
+
   // ---------------------------------------------------------
   // 3) TANCAMENT (HH+1:10) — 60 minuts exactes
   // ---------------------------------------------------------
   const elapsed = now - current[symbol].startTs;
+  console.log(`[1H10m] elapsed=${elapsed} startTs=${current[symbol].startTs}`);
+
   if (elapsed >= 60 * 60 * 1000) {
 
     const c = current[symbol];
+    console.log(`[1H10m] TANCANT VELA REAL ${symbol}`);
 
     // INSERT de la vela real tancada
     await client.query(`
@@ -83,8 +109,6 @@ export async function fetchAndStoreCandles1H10m(symbol) {
       c.volume
     ]);
 
-    console.log(`[1H10m] Tancament vela real ${symbol} @ ${new Date(now).toISOString()}`);
-
     // ---------------------------------------------------------
     // 4) UPDATE de la dummy → reflecteix la nova vela oberta
     // ---------------------------------------------------------
@@ -97,10 +121,13 @@ export async function fetchAndStoreCandles1H10m(symbol) {
       timestamp: now
     };
 
+    console.log(`[1H10m] DUMMY UPDATE ${symbol}:`, dummyOpen[symbol]);
+
     // ---------------------------------------------------------
     // 5) Reset de la vela real → llesta per la següent hora
     // ---------------------------------------------------------
     current[symbol] = null;
+    console.log(`[1H10m] RESET VELA REAL ${symbol}`);
   }
 }
 
@@ -108,7 +135,5 @@ export async function fetchAndStoreCandles1H10m(symbol) {
 // Funció per obtenir veles per detectMSES
 // ---------------------------------------------------------
 export function getCandlesForDetection1H10m(symbol, closedCandles) {
-  // closedCandles = veles tancades 1H10m de la BD
-  // dummyOpen[symbol] = vela oberta dummy
   return [...closedCandles, dummyOpen[symbol]];
 }
