@@ -9,6 +9,8 @@ import { fetchAndStoreCandles } from "./core/fetchcandles.js";
 import { calculateRSI } from "./core/rsi.js";
 import { ACTIVE_CRYPTO_LIST, UNIVERSE } from "./core/activeCryptos.js";
 import { getPerformance48h } from "./core/stats.js";
+import { fetchAndStoreCandles1H10m } from "./core/fetchCandles1H10m.js";
+
 
 function shouldProcess(symbol) {
   return ACTIVE_CRYPTO_LIST.includes(symbol);
