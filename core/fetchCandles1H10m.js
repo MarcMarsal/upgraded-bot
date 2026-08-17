@@ -84,19 +84,22 @@ async function storeCandle1H10m(symbol, c) {
 export async function fetchAndStoreCandles1H10m(symbol) {
 
   const oc = await getOpenCandle1H(symbol);
-  if (!oc) {
-    console.log(`[1H10m][${symbol}] NO TINC VELA 1H OBERTA`);
-    return;
-  }
+  if (!oc) return;
 
-  // ✔ Opció A: la 1H10m obre 10 minuts després de la 1H
-  const intervalStart = oc.timestamp + (10 * 60 * 1000);
+  const nextStart = oc.timestamp + (10 * 60 * 1000);   // hora d'obertura de la nova 1H10m
+  const now = Date.now();
 
   // ---------------------------------------------------------
-  // 1) CREAR VELA OBERTA SI NO EXISTEIX
+  // 1) SI NO HI HA VELA OBERTA 1H10m → crear-la només quan toca
   // ---------------------------------------------------------
   if (!current[symbol]) {
 
+    if (now < nextStart) {
+      // Encara no toca crear la nova vela 1H10m
+      return;
+    }
+
+    // Ara sí toca crear-la
     current[symbol] = {
       timeframe: "1H10m",
       open: oc.close,
@@ -104,7 +107,7 @@ export async function fetchAndStoreCandles1H10m(symbol) {
       low: oc.close,
       close: oc.close,
       volume: oc.volume || 0,
-      startTs: intervalStart
+      startTs: nextStart
     };
 
     dummyOpen[symbol] = {
@@ -113,11 +116,11 @@ export async function fetchAndStoreCandles1H10m(symbol) {
       low: oc.close,
       close: oc.close,
       volume: 0,
-      timestamp: intervalStart
+      timestamp: nextStart
     };
 
     await storeCandle1H10m(symbol, {
-      timestamp: intervalStart,
+      timestamp: nextStart,
       open: oc.close,
       high: oc.close,
       low: oc.close,
@@ -125,84 +128,80 @@ export async function fetchAndStoreCandles1H10m(symbol) {
       volume: oc.volume || 0
     });
 
-    console.log(`[1H10m][${symbol}] VELA 1H10m CREADA I GUARDADA`, new Date(intervalStart).toISOString());
     return;
   }
 
   // ---------------------------------------------------------
-  // 2) SI L’INTERVAL CANVIA → TANCAR I CREAR NOVA
+  // 2) SI JA HI HA UNA VELA OBERTA → actualitzar-la fins que toqui tancar-la
   // ---------------------------------------------------------
-  if (current[symbol].startTs !== intervalStart) {
+  if (now < current[symbol].startTs + (60 * 60 * 1000)) {
+    // Encara estem dins de la vela oberta → actualitzar
+    const oc2 = await getOpenCandle1H(symbol);
+    if (!oc2) return;
 
-    const c = current[symbol];
+    const price = oc2.close;
+    const vol   = oc2.volume || 0;
+
+    current[symbol].high = Math.max(current[symbol].high, price);
+    current[symbol].low  = Math.min(current[symbol].low,  price);
+    current[symbol].close = price;
+    current[symbol].volume += vol;
 
     await storeCandle1H10m(symbol, {
-      timestamp: c.startTs,
-      open: c.open,
-      high: c.high,
-      low: c.low,
-      close: c.close,
-      volume: c.volume
+      timestamp: current[symbol].startTs,
+      open: current[symbol].open,
+      high: current[symbol].high,
+      low: current[symbol].low,
+      close: current[symbol].close,
+      volume: current[symbol].volume
     });
 
-    console.log(`[1H10m][${symbol}] VELA TANCADA`, new Date(c.startTs).toISOString());
-
-    current[symbol] = {
-      timeframe: "1H10m",
-      open: oc.close,
-      high: oc.close,
-      low: oc.close,
-      close: oc.close,
-      volume: oc.volume || 0,
-      startTs: intervalStart
-    };
-
-    dummyOpen[symbol] = {
-      open: oc.close,
-      high: oc.close,
-      low: oc.close,
-      close: oc.close,
-      volume: 0,
-      timestamp: intervalStart
-    };
-
-    await storeCandle1H10m(symbol, {
-      timestamp: intervalStart,
-      open: oc.close,
-      high: oc.close,
-      low: oc.close,
-      close: oc.close,
-      volume: oc.volume || 0
-    });
-
-    console.log(`[1H10m][${symbol}] NOVA VELA 1H10m GUARDADA`, new Date(intervalStart).toISOString());
     return;
   }
 
   // ---------------------------------------------------------
-  // 3) ACTUALITZAR VELA OBERTA
+  // 3) SI JA HA PASSAT L'HORA REAL → tancar la vela i crear la nova
   // ---------------------------------------------------------
-  const oc2 = await getOpenCandle1H(symbol);
-  if (!oc2) {
-    console.log(`[1H10m][${symbol}] ERROR: oc2=null DURANT actualització`);
-    return;
-  }
-
-  const price = oc2.close;
-  const vol   = oc2.volume || 0;
-
-  current[symbol].high = Math.max(current[symbol].high, price);
-  current[symbol].low  = Math.min(current[symbol].low,  price);
-  current[symbol].close = price;
-  current[symbol].volume += vol;
+  const c = current[symbol];
 
   await storeCandle1H10m(symbol, {
-    timestamp: current[symbol].startTs,
-    open: current[symbol].open,
-    high: current[symbol].high,
-    low: current[symbol].low,
-    close: current[symbol].close,
-    volume: current[symbol].volume
+    timestamp: c.startTs,
+    open: c.open,
+    high: c.high,
+    low: c.low,
+    close: c.close,
+    volume: c.volume
+  });
+
+  // Crear nova vela oberta
+  const newStart = oc.timestamp + (10 * 60 * 1000);
+
+  current[symbol] = {
+    timeframe: "1H10m",
+    open: oc.close,
+    high: oc.close,
+    low: oc.close,
+    close: oc.close,
+    volume: oc.volume || 0,
+    startTs: newStart
+  };
+
+  dummyOpen[symbol] = {
+    open: oc.close,
+    high: oc.close,
+    low: oc.close,
+    close: oc.close,
+    volume: 0,
+    timestamp: newStart
+  };
+
+  await storeCandle1H10m(symbol, {
+    timestamp: newStart,
+    open: oc.close,
+    high: oc.close,
+    low: oc.close,
+    close: oc.close,
+    volume: oc.volume || 0
   });
 }
 
