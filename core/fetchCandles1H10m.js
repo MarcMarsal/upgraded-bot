@@ -1,13 +1,15 @@
-import axios from "axios";
+// fitxer fetchCandles1H10m.js
+
 import { client } from "../db/client.js";
+
 // Estructura en memòria
 const current = {};        // vela real 1H10m oberta
 const dummyOpen = {};      // vela dummy oberta per detectMSES
 
 // ---------------------------------------------------------
-// FUNCIO AFEGIDA: obtenir última vela 1H tancada de la BD
+// OBTENIR VELA OBERTA 1H (la que s'actualitza cada minut)
 // ---------------------------------------------------------
-async function getLastClosedCandle1H(symbol) {
+async function getOpenCandle1H(symbol) {
   try {
     const res = await client.query(`
       SELECT timestamp, open, high, low, close, volume
@@ -20,7 +22,7 @@ async function getLastClosedCandle1H(symbol) {
     return res.rows[0] || null;
 
   } catch (err) {
-    console.log(`[1H10m][${symbol}] ERROR getLastClosedCandle1H:`, err);
+    console.log(`[1H10m][${symbol}] ERROR getOpenCandle1H:`, err);
     return null;
   }
 }
@@ -31,15 +33,11 @@ async function getLastClosedCandle1H(symbol) {
 export async function fetchAndStoreCandles1H10m(symbol) {
   const now = Date.now();
   const d = new Date(now);
-
   const minute = d.getMinutes();
 
-  // LOG 1 — veure si entra al minut 10
   if (minute === 10) {
     console.log(`[1H10m][${symbol}] MINUTE=10 current=${!!current[symbol]}`);
   }
-
-  console.log(`[1H10m][${symbol}] minute===10? ${minute === 10} && current null? ${!current[symbol]}`);
 
   // ---------------------------------------------------------
   // 1) INICI DE VELA REAL (HH:10)
@@ -48,10 +46,9 @@ export async function fetchAndStoreCandles1H10m(symbol) {
 
     console.log(`[1H10m][${symbol}] → INICI condició complerta`);
 
-    // 🔥 Substituïm getOpenCandle per la nova funció
-    const oc = await getLastClosedCandle1H(symbol);
+    const oc = await getOpenCandle1H(symbol);
 
-    console.log(`[1H10m][${symbol}] getLastClosedCandle1H =`, oc);
+    console.log(`[1H10m][${symbol}] getOpenCandle1H =`, oc);
 
     if (!oc) {
       console.log(`[1H10m][${symbol}] ERROR: oc=null → NO es crea la vela`);
@@ -59,8 +56,6 @@ export async function fetchAndStoreCandles1H10m(symbol) {
     }
 
     // Crear la vela real 1H10m
-    console.log(`[1H10m][${symbol}] CREANT VELA REAL`);
-
     current[symbol] = {
       timeframe: "1H10m",
       open: oc.close,
@@ -73,10 +68,10 @@ export async function fetchAndStoreCandles1H10m(symbol) {
 
     // Crear la dummy oberta
     dummyOpen[symbol] = {
-      open: 0,
-      high: 0,
-      low: 0,
-      close: 0,
+      open: oc.close,
+      high: oc.close,
+      low: oc.close,
+      close: oc.close,
       volume: 0,
       timestamp: now
     };
@@ -89,16 +84,13 @@ export async function fetchAndStoreCandles1H10m(symbol) {
   // Si no hi ha vela real oberta → res
   // ---------------------------------------------------------
   if (!current[symbol]) {
-    console.log(`[1H10m][${symbol}] No hi ha vela oberta, sortint`);
     return;
   }
 
   // ---------------------------------------------------------
   // 2) ACTUALITZAR VELA REAL
   // ---------------------------------------------------------
-  const oc2 = await getLastClosedCandle1H(symbol);
-
-  console.log(`[1H10m][${symbol}] getLastClosedCandle1H DURANT VELA =`, oc2);
+  const oc2 = await getOpenCandle1H(symbol);
 
   if (!oc2) {
     console.log(`[1H10m][${symbol}] ERROR: oc=null DURANT actualització`);
@@ -113,23 +105,41 @@ export async function fetchAndStoreCandles1H10m(symbol) {
   current[symbol].close = price;
   current[symbol].volume += vol;
 
-  console.log(`[1H10m][${symbol}] Actualitzada vela real:`, current[symbol]);
-
   // ---------------------------------------------------------
   // 3) TANCAMENT (HH+1:10)
   // ---------------------------------------------------------
   const elapsed = now - current[symbol].startTs;
-  console.log(`[1H10m][${symbol}] elapsed=${elapsed} startTs=${current[symbol].startTs}`);
 
   if (elapsed >= 60 * 60 * 1000) {
 
-    console.log(`[1H10m][${symbol}] TANCANT VELA REAL`);
-
     const c = current[symbol];
 
+    // Convertir timestamps humans
+    const timestamp_es = new Date(
+      new Date(c.startTs).toLocaleString("en-US", {
+        timeZone: "Europe/Madrid"
+      })
+    ).getTime();
+
+    const date_es = new Date(c.startTs).toLocaleString("es-ES", {
+      timeZone: "Europe/Madrid",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit"
+    }).replace(",", "");
+
+    const created_at = Date.now();
+
+    // INSERT FIAT
     await client.query(`
-      INSERT INTO candles (symbol, timeframe, timestamp, open, high, low, close, volume)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+      INSERT INTO candles (
+        symbol, timeframe, timestamp,
+        open, high, low, close, volume,
+        timestamp_es, date_es, created_at
+      )
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
     `, [
       symbol,
       "1H10m",
@@ -138,9 +148,13 @@ export async function fetchAndStoreCandles1H10m(symbol) {
       c.high,
       c.low,
       c.close,
-      c.volume
+      c.volume,
+      timestamp_es,
+      date_es,
+      created_at
     ]);
 
+    // Dummy reflecteix nova vela oberta
     dummyOpen[symbol] = {
       open: c.close,
       high: c.close,
@@ -150,10 +164,7 @@ export async function fetchAndStoreCandles1H10m(symbol) {
       timestamp: now
     };
 
-    console.log(`[1H10m][${symbol}] DUMMY UPDATE`, dummyOpen[symbol]);
-
     current[symbol] = null;
-    console.log(`[1H10m][${symbol}] RESET VELA REAL`);
   }
 }
 
