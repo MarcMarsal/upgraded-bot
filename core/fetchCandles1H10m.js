@@ -75,7 +75,7 @@ function getIntervalStartTs(now) {
 // ---------------------------------------------------------
 async function storeCandle1H10m(symbol, c) {
 
-  // Obtenir hora local ES de manera FIAT i sense desfasaments
+  // Obtenir hora local ES FIAT
   const fmt = new Intl.DateTimeFormat("en-US", {
     timeZone: "Europe/Madrid",
     year: "numeric",
@@ -88,16 +88,16 @@ async function storeCandle1H10m(symbol, c) {
 
   const parts = fmt.formatToParts(c.timestamp);
 
-  const year   = parts.find(p => p.type === "year").value;
-  const month  = parts.find(p => p.type === "month").value;
-  const day    = parts.find(p => p.type === "day").value;
-  const hour   = parts.find(p => p.type === "hour").value;
-  const minute = parts.find(p => p.type === "minute").value;
+  const year   = parseInt(parts.find(p => p.type === "year").value);
+  const month  = parseInt(parts.find(p => p.type === "month").value);
+  const day    = parseInt(parts.find(p => p.type === "day").value);
+  const hour   = parseInt(parts.find(p => p.type === "hour").value);
+  const minute = parseInt(parts.find(p => p.type === "minute").value);
 
   // Construir data local ES manualment
   const d = new Date();
   d.setFullYear(year);
-  d.setMonth(parseInt(month) - 1);
+  d.setMonth(month - 1);
   d.setDate(day);
   d.setHours(hour);
   d.setMinutes(minute);
