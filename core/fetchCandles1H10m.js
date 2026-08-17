@@ -4,7 +4,9 @@ import { client } from "../db/client.js";
 const current = {};
 const dummyOpen = {};
 
-// Vela oberta 1H (última)
+// ---------------------------------------------------------
+// OBTENIR VELA OBERTA 1H (última)
+// ---------------------------------------------------------
 async function getOpenCandle1H(symbol) {
   try {
     const res = await client.query(`
@@ -16,26 +18,34 @@ async function getOpenCandle1H(symbol) {
     `, [symbol]);
 
     return res.rows[0] || null;
+
   } catch (err) {
     console.log(`[1H10m][${symbol}] ERROR getOpenCandle1H:`, err);
     return null;
   }
 }
 
-// Calcula l’inici teòric de l’interval 1H10m que conté "now"
+// ---------------------------------------------------------
+// CALCULAR INICI TEÒRIC DE L’INTERVAL 1H10m (hora local ES)
+// ---------------------------------------------------------
 function getIntervalStartTs(now) {
-  const d = new Date(now);
+
+  // Convertim "now" a hora local ES
+  const d = new Date(
+    new Date(now).toLocaleString("en-US", { timeZone: "Europe/Madrid" })
+  );
+
   const minute = d.getMinutes();
   const hour = d.getHours();
 
   const start = new Date(d);
 
   if (minute < 10) {
-    // Estem entre HH:00 i HH:09 → interval és [hora-1:10, hora:10)
+    // Interval anterior: [hora-1:10 → hora:10)
     start.setHours(hour - 1);
     start.setMinutes(10);
   } else {
-    // Estem entre HH:10 i HH:59 → interval és [hora:10, hora+1:10)
+    // Interval actual: [hora:10 → hora+1:10)
     start.setHours(hour);
     start.setMinutes(10);
   }
@@ -46,20 +56,27 @@ function getIntervalStartTs(now) {
   return start.getTime();
 }
 
+// ---------------------------------------------------------
+// FUNCIO PRINCIPAL 1H10m
+// ---------------------------------------------------------
 export async function fetchAndStoreCandles1H10m(symbol) {
+
   const now = Date.now();
-  const d = new Date(now);
-  const minute = d.getMinutes();
 
-  // Si no hi ha vela oberta, crear la de l’interval actual
+  // Interval teòric actual (basat en hora local ES)
+  const intervalStart = getIntervalStartTs(now);
+
+  // Obtenir vela oberta 1H
+  const oc = await getOpenCandle1H(symbol);
+  if (!oc) {
+    console.log(`[1H10m][${symbol}] NO TINC VELA 1H OBERTA`);
+    return;
+  }
+
+  // ---------------------------------------------------------
+  // 1) SI NO HI HA VELA OBERTA 1H10m → CREAR-LA
+  // ---------------------------------------------------------
   if (!current[symbol]) {
-    const oc = await getOpenCandle1H(symbol);
-    if (!oc) {
-      console.log(`[1H10m][${symbol}] NO TINC VELA 1H OBERTA, no puc iniciar`);
-      return;
-    }
-
-    const startTs = getIntervalStartTs(now);
 
     current[symbol] = {
       timeframe: "1H10m",
@@ -68,7 +85,7 @@ export async function fetchAndStoreCandles1H10m(symbol) {
       low: oc.close,
       close: oc.close,
       volume: oc.volume || 0,
-      startTs
+      startTs: intervalStart
     };
 
     dummyOpen[symbol] = {
@@ -77,38 +94,22 @@ export async function fetchAndStoreCandles1H10m(symbol) {
       low: oc.close,
       close: oc.close,
       volume: 0,
-      timestamp: startTs
+      timestamp: intervalStart
     };
 
-    console.log(`[1H10m][${symbol}] VELA 1H10m CREADA PER INTERVAL`, new Date(startTs).toISOString());
+    console.log(`[1H10m][${symbol}] VELA 1H10m CREADA PER INTERVAL`, new Date(intervalStart).toISOString());
     return;
   }
 
-  // Actualitzar vela oberta
-  const oc2 = await getOpenCandle1H(symbol);
-  if (!oc2) {
-    console.log(`[1H10m][${symbol}] ERROR: oc2=null DURANT actualització`);
-    return;
-  }
+  // ---------------------------------------------------------
+  // 2) SI L’INTERVAL HA CANVIAT → TANCAR I CREAR NOVA
+  // ---------------------------------------------------------
+  if (current[symbol].startTs !== intervalStart) {
 
-  const price = oc2.close;
-  const vol   = oc2.volume || 0;
-
-  current[symbol].high = Math.max(current[symbol].high, price);
-  current[symbol].low  = Math.min(current[symbol].low,  price);
-  current[symbol].close = price;
-  current[symbol].volume += vol;
-
-  // Tancament exactament a 1h de l’inici teòric (HH:10 → HH+1:10)
-  const elapsed = now - current[symbol].startTs;
-
-  if (elapsed >= 60 * 60 * 1000) {
     const c = current[symbol];
 
     const timestamp_es = new Date(
-      new Date(c.startTs).toLocaleString("en-US", {
-        timeZone: "Europe/Madrid"
-      })
+      new Date(c.startTs).toLocaleString("en-US", { timeZone: "Europe/Madrid" })
     ).getTime();
 
     const date_es = new Date(c.startTs).toLocaleString("es-ES", {
@@ -143,23 +144,56 @@ export async function fetchAndStoreCandles1H10m(symbol) {
       created_at
     ]);
 
-    // Dummy passa a reflectir el close de la vela tancada
-    dummyOpen[symbol] = {
-      open: c.close,
-      high: c.close,
-      low: c.close,
-      close: c.close,
-      volume: 0,
-      timestamp: now
-    };
-
     console.log(`[1H10m][${symbol}] VELA TANCADA INTERVAL`, new Date(c.startTs).toISOString());
 
-    // Reset per a que al següent minut es creï la nova (per l’interval següent)
-    current[symbol] = null;
+    // Crear nova vela per al nou interval
+    current[symbol] = {
+      timeframe: "1H10m",
+      open: oc.close,
+      high: oc.close,
+      low: oc.close,
+      close: oc.close,
+      volume: oc.volume || 0,
+      startTs: intervalStart
+    };
+
+    dummyOpen[symbol] = {
+      open: oc.close,
+      high: oc.close,
+      low: oc.close,
+      close: oc.close,
+      volume: 0,
+      timestamp: intervalStart
+    };
+
+    console.log(`[1H10m][${symbol}] NOVA VELA 1H10m PER INTERVAL`, new Date(intervalStart).toISOString());
+    return;
   }
+
+  // ---------------------------------------------------------
+  // 3) ACTUALITZAR VELA OBERTA (interval actual)
+  // ---------------------------------------------------------
+  const oc2 = await getOpenCandle1H(symbol);
+  if (!oc2) {
+    console.log(`[1H10m][${symbol}] ERROR: oc2=null DURANT actualització`);
+    return;
+  }
+
+  const price = oc2.close;
+  const vol   = oc2.volume || 0;
+
+  current[symbol].high = Math.max(current[symbol].high, price);
+  current[symbol].low  = Math.min(current[symbol].low,  price);
+  current[symbol].close = price;
+  current[symbol].volume += vol;
+
+  // Actualització correcta
+  // console.log(`[1H10m][${symbol}] Actualitzada vela oberta`);
 }
 
+// ---------------------------------------------------------
+// Funció per obtenir veles per detectMSES
+// ---------------------------------------------------------
 export function getCandlesForDetection1H10m(symbol, closedCandles) {
   return [...closedCandles, dummyOpen[symbol]];
 }
