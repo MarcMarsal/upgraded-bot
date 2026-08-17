@@ -26,56 +26,11 @@ async function getOpenCandle1H(symbol) {
 }
 
 // ---------------------------------------------------------
-// CALCULAR INICI TEÒRIC DE L’INTERVAL 1H10m (hora local ES)
-// ---------------------------------------------------------
-// ---------------------------------------------------------
-// CALCULAR INICI TEÒRIC DE L’INTERVAL 1H10m (hora local ES)
-// ---------------------------------------------------------
-function getIntervalStartTs(now) {
-
-  // Obtenir hora local ES sense trencar-la
-  const fmt = new Intl.DateTimeFormat("en-US", {
-    timeZone: "Europe/Madrid",
-    hour: "numeric",
-    minute: "numeric",
-    second: "numeric"
-  });
-
-  const parts = fmt.formatToParts(now);
-
-  const hour   = parseInt(parts.find(p => p.type === "hour").value);
-  const minute = parseInt(parts.find(p => p.type === "minute").value);
-
-  // Construir data local ES manualment
-  const d = new Date(now);
-  d.setHours(hour);
-  d.setMinutes(minute);
-  d.setSeconds(0);
-  d.setMilliseconds(0);
-
-  const start = new Date(d);
-
-  if (minute < 10) {
-    start.setHours(hour - 1);
-    start.setMinutes(10);
-  } else {
-    start.setHours(hour);
-    start.setMinutes(10);
-  }
-
-  start.setSeconds(0);
-  start.setMilliseconds(0);
-
-  return start.getTime();
-}
-
-
-// ---------------------------------------------------------
-// GUARDAR VELA (igual que 1H)
+// GUARDAR VELA 1H10m (FIAT, sense conversions trencades)
 // ---------------------------------------------------------
 async function storeCandle1H10m(symbol, c) {
 
-  // Aquí c.timestamp JA ÉS l'hora d'obertura que vols (intervalStart)
+  // timestamp_es = el mateix timestamp (ja és l’hora d’obertura)
   const timestamp_es = c.timestamp;
 
   const date_es = new Date(c.timestamp).toLocaleString("es-ES", {
@@ -116,20 +71,19 @@ async function storeCandle1H10m(symbol, c) {
   ]);
 }
 
-
 // ---------------------------------------------------------
-// FUNCIO PRINCIPAL 1H10m
+// FUNCIO PRINCIPAL 1H10m (Opció A FIAT)
 // ---------------------------------------------------------
 export async function fetchAndStoreCandles1H10m(symbol) {
-
-  const now = Date.now();
-  const intervalStart = getIntervalStartTs(now);
 
   const oc = await getOpenCandle1H(symbol);
   if (!oc) {
     console.log(`[1H10m][${symbol}] NO TINC VELA 1H OBERTA`);
     return;
   }
+
+  // ✔ Opció A: la 1H10m obre 10 minuts després de la 1H
+  const intervalStart = oc.timestamp + (10 * 60 * 1000);
 
   // ---------------------------------------------------------
   // 1) CREAR VELA OBERTA SI NO EXISTEIX
@@ -155,7 +109,6 @@ export async function fetchAndStoreCandles1H10m(symbol) {
       timestamp: intervalStart
     };
 
-    // ✔ GUARDAR VELA OBERTA (igual que 1H)
     await storeCandle1H10m(symbol, {
       timestamp: intervalStart,
       open: oc.close,
@@ -176,7 +129,6 @@ export async function fetchAndStoreCandles1H10m(symbol) {
 
     const c = current[symbol];
 
-    // ✔ GUARDAR VELA TANCADA
     await storeCandle1H10m(symbol, {
       timestamp: c.startTs,
       open: c.open,
@@ -188,7 +140,6 @@ export async function fetchAndStoreCandles1H10m(symbol) {
 
     console.log(`[1H10m][${symbol}] VELA TANCADA`, new Date(c.startTs).toISOString());
 
-    // Crear nova vela oberta
     current[symbol] = {
       timeframe: "1H10m",
       open: oc.close,
@@ -208,7 +159,6 @@ export async function fetchAndStoreCandles1H10m(symbol) {
       timestamp: intervalStart
     };
 
-    // ✔ GUARDAR NOVA VELA OBERTA
     await storeCandle1H10m(symbol, {
       timestamp: intervalStart,
       open: oc.close,
@@ -239,7 +189,6 @@ export async function fetchAndStoreCandles1H10m(symbol) {
   current[symbol].close = price;
   current[symbol].volume += vol;
 
-  // ✔ Actualitzar vela oberta a DB
   await storeCandle1H10m(symbol, {
     timestamp: current[symbol].startTs,
     open: current[symbol].open,
