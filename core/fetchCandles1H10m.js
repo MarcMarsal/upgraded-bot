@@ -28,14 +28,30 @@ async function getOpenCandle1H(symbol) {
 // ---------------------------------------------------------
 // CALCULAR INICI TEÒRIC DE L’INTERVAL 1H10m (hora local ES)
 // ---------------------------------------------------------
+// ---------------------------------------------------------
+// CALCULAR INICI TEÒRIC DE L’INTERVAL 1H10m (hora local ES)
+// ---------------------------------------------------------
 function getIntervalStartTs(now) {
 
-  const d = new Date(
-    new Date(now).toLocaleString("en-US", { timeZone: "Europe/Madrid" })
-  );
+  // Obtenir hora local ES sense trencar-la
+  const fmt = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Europe/Madrid",
+    hour: "numeric",
+    minute: "numeric",
+    second: "numeric"
+  });
 
-  const minute = d.getMinutes();
-  const hour = d.getHours();
+  const parts = fmt.formatToParts(now);
+
+  const hour   = parseInt(parts.find(p => p.type === "hour").value);
+  const minute = parseInt(parts.find(p => p.type === "minute").value);
+
+  // Construir data local ES manualment
+  const d = new Date(now);
+  d.setHours(hour);
+  d.setMinutes(minute);
+  d.setSeconds(0);
+  d.setMilliseconds(0);
 
   const start = new Date(d);
 
@@ -52,6 +68,7 @@ function getIntervalStartTs(now) {
 
   return start.getTime();
 }
+
 
 // ---------------------------------------------------------
 // GUARDAR VELA (igual que 1H)
