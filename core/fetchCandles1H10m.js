@@ -7,6 +7,7 @@ const dummyOpen = {};
 // ---------------------------------------------------------
 // OBTENIR VELA OBERTA 1H (última)
 // ---------------------------------------------------------
+
 async function getOpenCandle1H(symbol) {
   try {
     const res = await client.query(`
@@ -17,13 +18,19 @@ async function getOpenCandle1H(symbol) {
       LIMIT 1
     `, [symbol]);
 
-    return res.rows[0] || null;
+    if (!res.rows[0]) return null;
+
+    return {
+      ...res.rows[0],
+      timestamp: Number(res.rows[0].timestamp)   // 🔥 FIAT: evitar concatenació
+    };
 
   } catch (err) {
     console.log(`[1H10m][${symbol}] ERROR getOpenCandle1H:`, err);
     return null;
   }
 }
+
 
 // ---------------------------------------------------------
 // GUARDAR VELA 1H10m (FIAT, sense conversions trencades)
