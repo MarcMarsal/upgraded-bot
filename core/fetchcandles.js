@@ -189,7 +189,12 @@ async function fetchOKX(symbol, timeframe) {
     const res = await axios.get(url);
     const data = res.data.data;
 
-    if (!data || data.length === 0) return [];
+    //if (!data || data.length === 0) return [];
+    if (!data || data.length === 0) {
+      console.log(`⚠️ OKX sense dades per ${symbol} ${timeframe}`);
+      return [];
+    }
+
 
     return data.map(k => {
       const ts = normalizeTimestamp(parseInt(k[0]));
