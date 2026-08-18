@@ -1,26 +1,44 @@
-// fetchCandles1HCustom.js — versió FIAT, simple i funcional
+// fetchCandles1HCustom.js — versió FIAT corregida
 import { client } from "../db/client.js";
 
 const current = {};   // current[symbol][timeframe]
 
 // ---------------------------------------------------------
-// OBTENIR ÚLTIMA VELA 1H (la oberta, actualitzada cada minut)
+// OBTENIR ÚLTIMA VELA 1H (només veles obertes confirm=0)
 // ---------------------------------------------------------
 async function getOpenCandle1H(symbol) {
   try {
     const res = await client.query(`
-      SELECT timestamp, open, high, low, close, volume
+      SELECT timestamp, open, high, low, close, volume, confirm
       FROM candles
       WHERE symbol = $1 AND timeframe = '1H'
       ORDER BY timestamp DESC
       LIMIT 1
     `, [symbol]);
 
-    if (!res.rows[0]) return null;
+    if (!res.rows[0]) {
+      console.log(`[1HCustom][${symbol}] oc=NULL`);
+      return null;
+    }
+
+    const row = res.rows[0];
+
+    // Només acceptem veles obertes (confirm=0)
+    if (row.confirm !== false && row.confirm !== 0) {
+      console.log(`[1HCustom][${symbol}] oc descartada (confirm=1)`);
+      return null;
+    }
+
+    console.log(`[1HCustom][${symbol}] oc=OK ts=${row.timestamp}`);
 
     return {
-      ...res.rows[0],
-      timestamp: Number(res.rows[0].timestamp)
+      timestamp: Number(row.timestamp),
+      open: Number(row.open),
+      high: Number(row.high),
+      low: Number(row.low),
+      close: Number(row.close),
+      volume: Number(row.volume),
+      confirm: row.confirm
     };
 
   } catch (err) {
@@ -30,7 +48,7 @@ async function getOpenCandle1H(symbol) {
 }
 
 // ---------------------------------------------------------
-// GUARDAR VELA CUSTOM
+// GUARDAR VELA CUSTOM (inclou confirm)
 // ---------------------------------------------------------
 async function storeCandle1HCustom(symbol, timeframe, c) {
 
@@ -47,18 +65,21 @@ async function storeCandle1HCustom(symbol, timeframe, c) {
 
   const created_at = Date.now();
 
+  console.log(`[1HCustom][${symbol}] GUARDANT ${timeframe} confirm=${c.confirm}`);
+
   await client.query(`
     INSERT INTO candles (
       symbol, timeframe, timestamp,
       open, high, low, close, volume,
-      timestamp_es, date_es, created_at
+      timestamp_es, date_es, created_at, confirm
     )
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
     ON CONFLICT (symbol, timeframe, timestamp)
     DO UPDATE SET
       open=$4, high=$5, low=$6, close=$7, volume=$8,
       timestamp_es=$9, date_es=$10,
-      created_at=$11;
+      created_at=$11,
+      confirm=$12;
   `, [
     symbol,
     timeframe,
@@ -70,7 +91,8 @@ async function storeCandle1HCustom(symbol, timeframe, c) {
     c.volume,
     timestamp_es,
     date_es,
-    created_at
+    created_at,
+    c.confirm
   ]);
 }
 
@@ -87,23 +109,40 @@ function getHourOpenTs() {
 // ---------------------------------------------------------
 export async function fetchAndStoreCandles1HCustom(symbol, offsetMinutes) {
 
+  console.log(`\n[1HCustom][${symbol}] INICI offsetMinutes=${offsetMinutes}`);
+
+  if (!Number.isFinite(offsetMinutes)) {
+    console.log(`[1HCustom][${symbol}] ERROR: offsetMinutes undefined`);
+    return;
+  }
+
   const timeframe = `1H${offsetMinutes}m`;
   const offsetMs = offsetMinutes * 60000;
-
-  if (!current[symbol]) current[symbol] = {};
-  if (!current[symbol][timeframe]) current[symbol][timeframe] = null;
 
   const openHourTs = getHourOpenTs();
   const nextStart = openHourTs + offsetMs;
   const now = Date.now();
 
+  console.log(`[1HCustom][${symbol}] openHourTs=${openHourTs} nextStart=${nextStart} now=${now}`);
+
+  if (!current[symbol]) current[symbol] = {};
+  if (!current[symbol][timeframe]) current[symbol][timeframe] = null;
+
+  console.log(`[1HCustom][${symbol}] current=${JSON.stringify(current[symbol][timeframe])}`);
+
   // 1) NO HI HA VELA OBERTA → crear-la quan toca
   if (!current[symbol][timeframe]) {
 
-    if (now < nextStart) return;   // encara no toca crear-la
+    if (now < nextStart) {
+      console.log(`[1HCustom][${symbol}] Encara no toca crear la primera vela`);
+      return;
+    }
 
     const oc = await getOpenCandle1H(symbol);
-    if (!oc) return;
+    if (!oc) {
+      console.log(`[1HCustom][${symbol}] No hi ha oc → no es crea la primera vela`);
+      return;
+    }
 
     current[symbol][timeframe] = {
       startTs: nextStart,
@@ -111,8 +150,11 @@ export async function fetchAndStoreCandles1HCustom(symbol, offsetMinutes) {
       high: oc.close,
       low: oc.close,
       close: oc.close,
-      volume: oc.volume || 0
+      volume: oc.volume || 0,
+      confirm: 0
     };
+
+    console.log(`[1HCustom][${symbol}] PRIMERA VELA CREADA startTs=${nextStart}`);
 
     await storeCandle1HCustom(symbol, timeframe, current[symbol][timeframe]);
     return;
@@ -124,7 +166,10 @@ export async function fetchAndStoreCandles1HCustom(symbol, offsetMinutes) {
   if (now < c.startTs + 3600000) {
 
     const oc = await getOpenCandle1H(symbol);
-    if (!oc) return;
+    if (!oc) {
+      console.log(`[1HCustom][${symbol}] oc=NULL → no actualitzem`);
+      return;
+    }
 
     const price = oc.close;
     const vol   = oc.volume || 0;
@@ -133,18 +178,27 @@ export async function fetchAndStoreCandles1HCustom(symbol, offsetMinutes) {
     c.low  = Math.min(c.low,  price);
     c.close = price;
     c.volume += vol;
+    c.confirm = 0;
+
+    console.log(`[1HCustom][${symbol}] ACTUALITZANT VELA OBERTA`);
 
     await storeCandle1HCustom(symbol, timeframe, c);
     return;
   }
 
   // 3) TANCAR I CREAR NOVA
+  console.log(`[1HCustom][${symbol}] TANCANT VELA`);
+  c.confirm = 1;
+
   await storeCandle1HCustom(symbol, timeframe, c);
 
   const oc = await getOpenCandle1H(symbol);
-  if (!oc) return;
+  if (!oc) {
+    console.log(`[1HCustom][${symbol}] oc=NULL → no es crea nova vela`);
+    return;
+  }
 
-  const newStart = c.startTs + 3600000;   // següent vela 1h després de l’anterior
+  const newStart = c.startTs + 3600000;
 
   current[symbol][timeframe] = {
     startTs: newStart,
@@ -152,8 +206,11 @@ export async function fetchAndStoreCandles1HCustom(symbol, offsetMinutes) {
     high: oc.close,
     low: oc.close,
     close: oc.close,
-    volume: oc.volume || 0
+    volume: oc.volume || 0,
+    confirm: 0
   };
+
+  console.log(`[1HCustom][${symbol}] NOVA VELA CREADA startTs=${newStart}`);
 
   await storeCandle1HCustom(symbol, timeframe, current[symbol][timeframe]);
 }
