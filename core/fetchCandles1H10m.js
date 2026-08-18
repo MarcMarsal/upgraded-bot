@@ -65,9 +65,8 @@ async function storeCandle1HCustom(symbol, timeframe, c) {
 
   const created_at = Date.now();
 
-  console.log(`[1HCustom][${symbol}] GUARDANT ${timeframe} confirm=${c.confirm}`);
-
-  await client.query(`
+  // 🔥 FIAT: imprimir la query i els valors abans d'executar
+  const query = `
     INSERT INTO candles (
       symbol, timeframe, timestamp,
       open, high, low, close, volume,
@@ -80,7 +79,9 @@ async function storeCandle1HCustom(symbol, timeframe, c) {
       timestamp_es=$9, date_es=$10,
       created_at=$11,
       confirm=$12;
-  `, [
+  `;
+
+  const values = [
     symbol,
     timeframe,
     c.timestamp,
@@ -93,7 +94,19 @@ async function storeCandle1HCustom(symbol, timeframe, c) {
     date_es,
     created_at,
     c.confirm
-  ]);
+  ];
+
+  console.log("\n================ QUERY 1HCustom ================");
+  console.log(query);
+  console.log("VALUES:", JSON.stringify(values, null, 2));
+  console.log("================================================\n");
+
+  // 🔥 FIAT: executar amb try/catch per capturar errors silenciosos
+  try {
+    await client.query(query, values);
+  } catch (err) {
+    console.log(`[1HCustom][${symbol}] ERROR PG:`, err);
+  }
 }
 
 // ---------------------------------------------------------
