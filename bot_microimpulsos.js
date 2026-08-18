@@ -72,7 +72,7 @@ function applyMicroPulseFilters(candles, candleIndex, atrManual, type, timeframe
 //const TIMEFRAMES = ["1H","1H10m"];
 const TIMEFRAMES_DOWNLOAD = ["1H"];
 //const TIMEFRAMES_EXECUTE = ["1H", "1H10m"];
-const TIMEFRAMES_EXECUTE = ["1H","1H07m","1H30m","1H37m"];
+const TIMEFRAMES_EXECUTE = ["1H","1H07m","1H30m","1H33m","1H37m","1H40m"];
 
 
 
@@ -83,7 +83,9 @@ function timeframeToMs(tf) {
   if (tf === "1H") return 60 * 60 * 1000;
   if (tf === "1H07m") return 60 * 60 * 1000;   // continua sent 60 min
   if (tf === "1H30m") return 60 * 60 * 1000;   // continua sent 60 min
+  if (tf === "1H33m") return 60 * 60 * 1000;   // continua sent 60 min
   if (tf === "1H37m") return 60 * 60 * 1000;   // continua sent 60 min
+  if (tf === "1H40m") return 60 * 60 * 1000;   // continua sent 60 min
   if (tf === "15m") return 15 * 60 * 1000;
   throw new Error("Timeframe no suportat: " + tf);
 }
@@ -293,7 +295,9 @@ async function mainLoop() {
     //await fetchAndStoreCandles1H10m(symbol);
     await fetchAndStoreCandles1HCustom(symbol,7);
     await fetchAndStoreCandles1HCustom(symbol,30);
+    await fetchAndStoreCandles1HCustom(symbol,33);
     await fetchAndStoreCandles1HCustom(symbol,37);
+    await fetchAndStoreCandles1HCustom(symbol,40);
   }
 
   for (const symbol of ACTIVE_CRYPTO_LIST) {
