@@ -65,14 +65,15 @@ function normalizeTimeframeFor(exchange, timeframe) {
 // -------------------------------------------------------------
 // FORMAT INTERN MICRO‑PULSE
 // -------------------------------------------------------------
-function toInternal(ts, o, h, l, c, v) {
+function toInternal(ts, o, h, l, c, v, confirm) {
   return {
     timestamp: ts,
     open: o,
     high: h,
     low: l,
     close: c,
-    volume: v
+    volume: v,
+    confirm: confirm
   };
 }
 
@@ -109,9 +110,9 @@ async function storeCandle(table, symbol, timeframe, c) {
     INSERT INTO ${table} (
       symbol, timeframe, timestamp,
       open, high, low, close, volume,
-      timestamp_es, date_es, created_at
+      timestamp_es, date_es, created_at, confirm
     )
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11, $12)
     ON CONFLICT (symbol, timeframe, timestamp)
     DO UPDATE SET
       open=$4, high=$5, low=$6, close=$7, volume=$8,
@@ -129,7 +130,8 @@ async function storeCandle(table, symbol, timeframe, c) {
       c.volume,
       timestamp_es,
       date_es,
-      created_at
+      created_at,
+      c.confirm
     ]
   );
 }
@@ -201,12 +203,12 @@ async function fetchOKX(symbol, timeframe) {
       if (!ts) return null;
 
       // DEBUG FIAT: mostrar veles rebudes per cada símbol/timeframe
-      console.log(`📡 OKX → Bot | ${symbol} ${timeframe}`);
-      data.forEach(k => {
-         console.log(
-         `ts=${k[0]} | o=${k[1]} | h=${k[2]} | l=${k[3]} | c=${k[4]} | vol=${k[5]} | confirm=${k[8]}`
-         );
-      });
+      //console.log(`📡 OKX → Bot | ${symbol} ${timeframe}`);
+      //data.forEach(k => {
+      //   console.log(
+      //   `ts=${k[0]} | o=${k[1]} | h=${k[2]} | l=${k[3]} | c=${k[4]} | vol=${k[5]} | confirm=${k[8]}`
+      //   );
+      //});
 
 
       return toInternal(
@@ -215,7 +217,8 @@ async function fetchOKX(symbol, timeframe) {
         parseFloat(k[2]),
         parseFloat(k[3]),
         parseFloat(k[4]),
-        parseFloat(k[5])
+        parseFloat(k[5]),
+        parseInt(k[8])
       );
     }).filter(Boolean);
 
