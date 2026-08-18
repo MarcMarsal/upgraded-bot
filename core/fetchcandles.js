@@ -117,7 +117,8 @@ async function storeCandle(table, symbol, timeframe, c) {
     DO UPDATE SET
       open=$4, high=$5, low=$6, close=$7, volume=$8,
       timestamp_es=$9, date_es=$10,
-      created_at=$11;
+      created_at=$11,
+      confirm=$12;
     `,
     [
       symbol,
