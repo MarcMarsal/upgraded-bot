@@ -9,7 +9,7 @@ import { fetchAndStoreCandles } from "./core/fetchcandles.js";
 import { calculateRSI } from "./core/rsi.js";
 import { ACTIVE_CRYPTO_LIST, UNIVERSE } from "./core/activeCryptos.js";
 import { getPerformance48h } from "./core/stats.js";
-import { fetchAndStoreCandles1H10m } from "./core/fetchCandles1H10m.js";
+import { fetchAndStoreCandles1HCustom } from "./core/fetchCandles1H10m.js";
 
 
 function shouldProcess(symbol) {
@@ -287,7 +287,10 @@ async function mainLoop() {
     }
 
     // 🔥 nova temporalitat off-grid
-    await fetchAndStoreCandles1H10m(symbol);
+    //await fetchAndStoreCandles1H10m(symbol);
+    await fetchAndStoreCandles1HCustom(symbol,7);
+    await fetchAndStoreCandles1HCustom(symbol,30);
+    await fetchAndStoreCandles1HCustom(symbol,37);
   }
 
   for (const symbol of ACTIVE_CRYPTO_LIST) {
