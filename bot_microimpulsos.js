@@ -291,9 +291,9 @@ async function mainLoop() {
 
     // 🔥 nova temporalitat off-grid
     //await fetchAndStoreCandles1H10m(symbol);
-    //await fetchAndStoreCandles1HCustom(symbol,7);
-    //await fetchAndStoreCandles1HCustom(symbol,30);
-    //await fetchAndStoreCandles1HCustom(symbol,37);
+    await fetchAndStoreCandles1HCustom(symbol,7);
+    await fetchAndStoreCandles1HCustom(symbol,30);
+    await fetchAndStoreCandles1HCustom(symbol,37);
   }
 
   for (const symbol of ACTIVE_CRYPTO_LIST) {
