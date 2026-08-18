@@ -1,4 +1,4 @@
-// fetchCandles1HCustom.js — versió FIAT corregida
+// fetchCandles1HCustom.js — versió FIAT corregida amb timestamp
 import { client } from "../db/client.js";
 
 const current = {};   // current[symbol][timeframe]
@@ -23,7 +23,6 @@ async function getOpenCandle1H(symbol) {
 
     const row = res.rows[0];
 
-    // Només acceptem veles obertes (confirm=0)
     if (row.confirm !== false && row.confirm !== 0) {
       console.log(`[1HCustom][${symbol}] oc descartada (confirm=1)`);
       return null;
@@ -65,7 +64,6 @@ async function storeCandle1HCustom(symbol, timeframe, c) {
 
   const created_at = Date.now();
 
-  // 🔥 FIAT: imprimir la query i els valors abans d'executar
   const query = `
     INSERT INTO candles (
       symbol, timeframe, timestamp,
@@ -101,7 +99,6 @@ async function storeCandle1HCustom(symbol, timeframe, c) {
   console.log("VALUES:", JSON.stringify(values, null, 2));
   console.log("================================================\n");
 
-  // 🔥 FIAT: executar amb try/catch per capturar errors silenciosos
   try {
     await client.query(query, values);
   } catch (err) {
@@ -158,6 +155,7 @@ export async function fetchAndStoreCandles1HCustom(symbol, offsetMinutes) {
     }
 
     current[symbol][timeframe] = {
+      timestamp: nextStart,     // 🔥 FIAT CORREGIT
       startTs: nextStart,
       open: oc.close,
       high: oc.close,
@@ -192,6 +190,7 @@ export async function fetchAndStoreCandles1HCustom(symbol, offsetMinutes) {
     c.close = price;
     c.volume += vol;
     c.confirm = 0;
+    c.timestamp = c.startTs;   // 🔥 FIAT CORREGIT
 
     console.log(`[1HCustom][${symbol}] ACTUALITZANT VELA OBERTA`);
 
@@ -202,6 +201,7 @@ export async function fetchAndStoreCandles1HCustom(symbol, offsetMinutes) {
   // 3) TANCAR I CREAR NOVA
   console.log(`[1HCustom][${symbol}] TANCANT VELA`);
   c.confirm = 1;
+  c.timestamp = c.startTs;   // 🔥 FIAT CORREGIT
 
   await storeCandle1HCustom(symbol, timeframe, c);
 
@@ -214,6 +214,7 @@ export async function fetchAndStoreCandles1HCustom(symbol, offsetMinutes) {
   const newStart = c.startTs + 3600000;
 
   current[symbol][timeframe] = {
+    timestamp: newStart,     // 🔥 FIAT CORREGIT
     startTs: newStart,
     open: oc.close,
     high: oc.close,
