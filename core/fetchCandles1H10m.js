@@ -1,4 +1,4 @@
-// fitxer fetchCandles1H10m.js
+// fitxer fetchCandles1HCustom.js
 import { client } from "../db/client.js";
 
 const current = {};
@@ -7,7 +7,6 @@ const dummyOpen = {};
 // ---------------------------------------------------------
 // OBTENIR VELA OBERTA 1H (última)
 // ---------------------------------------------------------
-
 async function getOpenCandle1H(symbol) {
   try {
     const res = await client.query(`
@@ -22,22 +21,21 @@ async function getOpenCandle1H(symbol) {
 
     return {
       ...res.rows[0],
-      timestamp: Number(res.rows[0].timestamp)   // 🔥 FIAT: evitar concatenació
+      timestamp: Number(res.rows[0].timestamp)
     };
 
   } catch (err) {
-    console.log(`[1H10m][${symbol}] ERROR getOpenCandle1H:`, err);
+    console.log(`[1HCustom][${symbol}] ERROR getOpenCandle1H:`, err);
     return null;
   }
 }
 
 
 // ---------------------------------------------------------
-// GUARDAR VELA 1H10m (FIAT, sense conversions trencades)
+// GUARDAR VELA CUSTOM (1H + offset)
 // ---------------------------------------------------------
-async function storeCandle1H10m(symbol, c) {
+async function storeCandle1HCustom(symbol, timeframe, c) {
 
-  // timestamp_es = el mateix timestamp (ja és l’hora d’obertura)
   const timestamp_es = c.timestamp;
 
   const date_es = new Date(c.timestamp).toLocaleString("es-ES", {
@@ -65,7 +63,7 @@ async function storeCandle1H10m(symbol, c) {
       created_at=$11;
   `, [
     symbol,
-    "1H10m",
+    timeframe,
     c.timestamp,
     c.open,
     c.high,
@@ -78,30 +76,28 @@ async function storeCandle1H10m(symbol, c) {
   ]);
 }
 
+
 // ---------------------------------------------------------
-// FUNCIO PRINCIPAL 1H10m (Opció A FIAT)
+// FUNCIO PRINCIPAL (1H + offset)
 // ---------------------------------------------------------
-export async function fetchAndStoreCandles1H10m(symbol) {
+export async function fetchAndStoreCandles1HCustom(symbol, offsetMinutes) {
 
   const oc = await getOpenCandle1H(symbol);
   if (!oc) return;
 
-  const nextStart = oc.timestamp + (10 * 60 * 1000);   // hora d'obertura de la nova 1H10m
+  const offsetMs = offsetMinutes * 60 * 1000;
+  const timeframe = `1H${offsetMinutes}m`;
+
+  const nextStart = oc.timestamp + offsetMs;
   const now = Date.now();
 
-  // ---------------------------------------------------------
-  // 1) SI NO HI HA VELA OBERTA 1H10m → crear-la només quan toca
-  // ---------------------------------------------------------
+  // 1) CREAR VELA SI NO EXISTEIX
   if (!current[symbol]) {
 
-    if (now < nextStart) {
-      // Encara no toca crear la nova vela 1H10m
-      return;
-    }
+    if (now < nextStart) return;
 
-    // Ara sí toca crear-la
     current[symbol] = {
-      timeframe: "1H10m",
+      timeframe,
       open: oc.close,
       high: oc.close,
       low: oc.close,
@@ -119,7 +115,7 @@ export async function fetchAndStoreCandles1H10m(symbol) {
       timestamp: nextStart
     };
 
-    await storeCandle1H10m(symbol, {
+    await storeCandle1HCustom(symbol, timeframe, {
       timestamp: nextStart,
       open: oc.close,
       high: oc.close,
@@ -131,11 +127,9 @@ export async function fetchAndStoreCandles1H10m(symbol) {
     return;
   }
 
-  // ---------------------------------------------------------
-  // 2) SI JA HI HA UNA VELA OBERTA → actualitzar-la fins que toqui tancar-la
-  // ---------------------------------------------------------
+  // 2) ACTUALITZAR VELA OBERTA
   if (now < current[symbol].startTs + (60 * 60 * 1000)) {
-    // Encara estem dins de la vela oberta → actualitzar
+
     const oc2 = await getOpenCandle1H(symbol);
     if (!oc2) return;
 
@@ -147,7 +141,7 @@ export async function fetchAndStoreCandles1H10m(symbol) {
     current[symbol].close = price;
     current[symbol].volume += vol;
 
-    await storeCandle1H10m(symbol, {
+    await storeCandle1HCustom(symbol, timeframe, {
       timestamp: current[symbol].startTs,
       open: current[symbol].open,
       high: current[symbol].high,
@@ -159,12 +153,10 @@ export async function fetchAndStoreCandles1H10m(symbol) {
     return;
   }
 
-  // ---------------------------------------------------------
-  // 3) SI JA HA PASSAT L'HORA REAL → tancar la vela i crear la nova
-  // ---------------------------------------------------------
+  // 3) TANCAR I CREAR NOVA
   const c = current[symbol];
 
-  await storeCandle1H10m(symbol, {
+  await storeCandle1HCustom(symbol, timeframe, {
     timestamp: c.startTs,
     open: c.open,
     high: c.high,
@@ -173,11 +165,10 @@ export async function fetchAndStoreCandles1H10m(symbol) {
     volume: c.volume
   });
 
-  // Crear nova vela oberta
-  const newStart = oc.timestamp + (10 * 60 * 1000);
+  const newStart = oc.timestamp + offsetMs;
 
   current[symbol] = {
-    timeframe: "1H10m",
+    timeframe,
     open: oc.close,
     high: oc.close,
     low: oc.close,
@@ -195,7 +186,7 @@ export async function fetchAndStoreCandles1H10m(symbol) {
     timestamp: newStart
   };
 
-  await storeCandle1H10m(symbol, {
+  await storeCandle1HCustom(symbol, timeframe, {
     timestamp: newStart,
     open: oc.close,
     high: oc.close,
@@ -205,7 +196,8 @@ export async function fetchAndStoreCandles1H10m(symbol) {
   });
 }
 
+
 // ---------------------------------------------------------
-export function getCandlesForDetection1H10m(symbol, closedCandles) {
+export function getCandlesForDetection1HCustom(symbol, closedCandles) {
   return [...closedCandles, dummyOpen[symbol]];
 }
