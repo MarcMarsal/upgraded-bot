@@ -97,9 +97,7 @@ export async function fetchAndStoreCandles1HCustom(symbol, offsetMinutes) {
   const nextStart = openHourTs + offsetMs;
   const now = Date.now();
 
-  // ---------------------------------------------------------
   // 1) NO HI HA VELA OBERTA → crear-la quan toca
-  // ---------------------------------------------------------
   if (!current[symbol][timeframe]) {
 
     if (now < nextStart) return;   // encara no toca crear-la
@@ -122,9 +120,7 @@ export async function fetchAndStoreCandles1HCustom(symbol, offsetMinutes) {
 
   const c = current[symbol][timeframe];
 
-  // ---------------------------------------------------------
   // 2) ACTUALITZAR VELA OBERTA (encara no ha passat 1 hora)
-  // ---------------------------------------------------------
   if (now < c.startTs + 3600000) {
 
     const oc = await getOpenCandle1H(symbol);
@@ -142,15 +138,13 @@ export async function fetchAndStoreCandles1HCustom(symbol, offsetMinutes) {
     return;
   }
 
-  // ---------------------------------------------------------
   // 3) TANCAR I CREAR NOVA
-  // ---------------------------------------------------------
   await storeCandle1HCustom(symbol, timeframe, c);
 
   const oc = await getOpenCandle1H(symbol);
   if (!oc) return;
 
-  const newStart = openHourTs + offsetMs;
+  const newStart = c.startTs + 3600000;   // següent vela 1h després de l’anterior
 
   current[symbol][timeframe] = {
     startTs: newStart,
@@ -165,6 +159,9 @@ export async function fetchAndStoreCandles1HCustom(symbol, offsetMinutes) {
 }
 
 // ---------------------------------------------------------
-export function getCandlesForDetection1HCustom(symbol, closedCandles) {
-  return [...closedCandles, current[symbol]?.[`1H${offsetMinutes}m`]];
+// PER A LA DETECCIÓ: afegir la vela oberta al conjunt tancat
+// ---------------------------------------------------------
+export function getCandlesForDetection1HCustom(symbol, timeframe, closedCandles) {
+  const openCandle = current[symbol]?.[timeframe];
+  return openCandle ? [...closedCandles, openCandle] : closedCandles;
 }
