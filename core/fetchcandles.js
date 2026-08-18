@@ -200,6 +200,15 @@ async function fetchOKX(symbol, timeframe) {
       const ts = normalizeTimestamp(parseInt(k[0]));
       if (!ts) return null;
 
+      // DEBUG FIAT: mostrar veles rebudes per cada símbol/timeframe
+      console.log(`📡 OKX → Bot | ${symbol} ${timeframe}`);
+      data.forEach(k => {
+         console.log(
+         `ts=${k[0]} | o=${k[1]} | h=${k[2]} | l=${k[3]} | c=${k[4]} | vol=${k[5]} | confirm=${k[8]}`
+         );
+      });
+
+
       return toInternal(
         ts,
         parseFloat(k[1]),
