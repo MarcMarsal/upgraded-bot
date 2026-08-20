@@ -218,8 +218,10 @@ export async function processSymbol(symbol, timeframe) {
     //  ? sig.thirdCandle.close - body * 0.40
     //  : sig.thirdCandle.close + body * 0.40;
     const entryR = sig.type === "M"
-      ? sig.thirdCandle.close - body * 0.50
-      : sig.thirdCandle.close + body * 0.50;
+      //? sig.thirdCandle.close - body * 0.50
+      //: sig.thirdCandle.close + body * 0.50;
+      ? sig.thirdCandle.close - body * 0.35
+      : sig.thirdCandle.close + body * 0.35;
 
     sig.entryr = entryR;
 
