@@ -17,18 +17,18 @@ async function getOpenCandle1H(symbol) {
     `, [symbol]);
 
     if (!res.rows[0]) {
-      console.log(`[1HCustom][${symbol}] oc=NULL`);
+      //console.log(`[1HCustom][${symbol}] oc=NULL`);
       return null;
     }
 
     const row = res.rows[0];
 
     if (row.confirm !== false && row.confirm !== 0) {
-      console.log(`[1HCustom][${symbol}] oc descartada (confirm=1)`);
+      //console.log(`[1HCustom][${symbol}] oc descartada (confirm=1)`);
       return null;
     }
 
-    console.log(`[1HCustom][${symbol}] oc=OK ts=${row.timestamp}`);
+    //console.log(`[1HCustom][${symbol}] oc=OK ts=${row.timestamp}`);
 
     return {
       timestamp: Number(row.timestamp),
@@ -41,7 +41,7 @@ async function getOpenCandle1H(symbol) {
     };
 
   } catch (err) {
-    console.log(`[1HCustom][${symbol}] ERROR getOpenCandle1H:`, err);
+    //console.log(`[1HCustom][${symbol}] ERROR getOpenCandle1H:`, err);
     return null;
   }
 }
@@ -94,10 +94,10 @@ async function storeCandle1HCustom(symbol, timeframe, c) {
     c.confirm
   ];
 
-  console.log("\n================ QUERY 1HCustom ================");
-  console.log(query);
-  console.log("VALUES:", JSON.stringify(values, null, 2));
-  console.log("================================================\n");
+  //console.log("\n================ QUERY 1HCustom ================");
+  //console.log(query);
+  //console.log("VALUES:", JSON.stringify(values, null, 2));
+  //console.log("================================================\n");
 
   try {
     await client.query(query, values);
@@ -119,10 +119,10 @@ function getHourOpenTs() {
 // ---------------------------------------------------------
 export async function fetchAndStoreCandles1HCustom(symbol, offsetMinutes) {
 
-  console.log(`\n[1HCustom][${symbol}] INICI offsetMinutes=${offsetMinutes}`);
+  //console.log(`\n[1HCustom][${symbol}] INICI offsetMinutes=${offsetMinutes}`);
 
   if (!Number.isFinite(offsetMinutes)) {
-    console.log(`[1HCustom][${symbol}] ERROR: offsetMinutes undefined`);
+    //console.log(`[1HCustom][${symbol}] ERROR: offsetMinutes undefined`);
     return;
   }
 
@@ -133,24 +133,24 @@ export async function fetchAndStoreCandles1HCustom(symbol, offsetMinutes) {
   const nextStart = openHourTs + offsetMs;
   const now = Date.now();
 
-  console.log(`[1HCustom][${symbol}] openHourTs=${openHourTs} nextStart=${nextStart} now=${now}`);
+  //console.log(`[1HCustom][${symbol}] openHourTs=${openHourTs} nextStart=${nextStart} now=${now}`);
 
   if (!current[symbol]) current[symbol] = {};
   if (!current[symbol][timeframe]) current[symbol][timeframe] = null;
 
-  console.log(`[1HCustom][${symbol}] current=${JSON.stringify(current[symbol][timeframe])}`);
+  //console.log(`[1HCustom][${symbol}] current=${JSON.stringify(current[symbol][timeframe])}`);
 
   // 1) NO HI HA VELA OBERTA → crear-la quan toca
   if (!current[symbol][timeframe]) {
 
     if (now < nextStart) {
-      console.log(`[1HCustom][${symbol}] Encara no toca crear la primera vela`);
+      //console.log(`[1HCustom][${symbol}] Encara no toca crear la primera vela`);
       return;
     }
 
     const oc = await getOpenCandle1H(symbol);
     if (!oc) {
-      console.log(`[1HCustom][${symbol}] No hi ha oc → no es crea la primera vela`);
+      //console.log(`[1HCustom][${symbol}] No hi ha oc → no es crea la primera vela`);
       return;
     }
 
@@ -165,7 +165,7 @@ export async function fetchAndStoreCandles1HCustom(symbol, offsetMinutes) {
       confirm: 0
     };
 
-    console.log(`[1HCustom][${symbol}] PRIMERA VELA CREADA startTs=${nextStart}`);
+    //console.log(`[1HCustom][${symbol}] PRIMERA VELA CREADA startTs=${nextStart}`);
 
     await storeCandle1HCustom(symbol, timeframe, current[symbol][timeframe]);
     return;
@@ -178,7 +178,7 @@ export async function fetchAndStoreCandles1HCustom(symbol, offsetMinutes) {
 
     const oc = await getOpenCandle1H(symbol);
     if (!oc) {
-      console.log(`[1HCustom][${symbol}] oc=NULL → no actualitzem`);
+      //console.log(`[1HCustom][${symbol}] oc=NULL → no actualitzem`);
       return;
     }
 
@@ -192,14 +192,14 @@ export async function fetchAndStoreCandles1HCustom(symbol, offsetMinutes) {
     c.confirm = 0;
     c.timestamp = c.startTs;   // 🔥 FIAT CORREGIT
 
-    console.log(`[1HCustom][${symbol}] ACTUALITZANT VELA OBERTA`);
+    //console.log(`[1HCustom][${symbol}] ACTUALITZANT VELA OBERTA`);
 
     await storeCandle1HCustom(symbol, timeframe, c);
     return;
   }
 
   // 3) TANCAR I CREAR NOVA
-  console.log(`[1HCustom][${symbol}] TANCANT VELA`);
+  //console.log(`[1HCustom][${symbol}] TANCANT VELA`);
   c.confirm = 1;
   c.timestamp = c.startTs;   // 🔥 FIAT CORREGIT
 
@@ -207,7 +207,7 @@ export async function fetchAndStoreCandles1HCustom(symbol, offsetMinutes) {
 
   const oc = await getOpenCandle1H(symbol);
   if (!oc) {
-    console.log(`[1HCustom][${symbol}] oc=NULL → no es crea nova vela`);
+    //console.log(`[1HCustom][${symbol}] oc=NULL → no es crea nova vela`);
     return;
   }
 
@@ -224,7 +224,7 @@ export async function fetchAndStoreCandles1HCustom(symbol, offsetMinutes) {
     confirm: 0
   };
 
-  console.log(`[1HCustom][${symbol}] NOVA VELA CREADA startTs=${newStart}`);
+  //console.log(`[1HCustom][${symbol}] NOVA VELA CREADA startTs=${newStart}`);
 
   await storeCandle1HCustom(symbol, timeframe, current[symbol][timeframe]);
 }
