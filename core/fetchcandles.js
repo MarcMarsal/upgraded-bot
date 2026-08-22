@@ -114,8 +114,9 @@ async function fetchOKX(symbol, timeframe) {
     const sym = normalizeSymbolFor("OKX", symbol);
     const tf  = normalizeTimeframeFor("OKX", timeframe);
 
-    const url = `${API_OKX}?instId=${sym}&bar=${tf}&limit=4`;
+    //const url = `${API_OKX}?instId=${sym}&bar=${tf}&limit=4`;
     //const url = `${API_OKX}?instId=${sym}&bar=${tf}&limit=50`;
+    const url = `${API_OKX}?instId=${sym}&bar=${tf}&limit=300`;
     const res = await axios.get(url);
     const data = res.data.data;
 
@@ -150,80 +151,16 @@ async function fetchOKX(symbol, timeframe) {
 // -------------------------------------------------------------
 // FETCH + STORE (OKX → candles, WEEX → candles_weex, BITUNIX → candles_bitunix)
 // -------------------------------------------------------------
-//export async function fetchAndStoreCandles(symbol, timeframe) {
-//  try {
-    // OKX
-//    const okx = await fetchOKX(symbol, timeframe);
-//    for (const c of okx) await storeCandle("candles", symbol, timeframe, c);
-
-//  } catch (err) {
-//    console.log("❌ Error general descarregant veles:", symbol, timeframe, err.message);
-//  }
-//}
-
 export async function fetchAndStoreCandles(symbol, timeframe) {
   try {
-
-    // 🔵 MODE CÀRREGA INICIAL (variables d'entorn)
-    if (process.env.INITIAL_LOAD === "true") {
-      console.log(`🔵 Càrrega inicial OKX 15m → ${symbol}`);
-      //await fetchHistoricalOKX(symbol, timeframe);   // guarda a candles_15m
-      return; // evitar baixar veles recents
-    }
-
-    // 🟢 MODE NORMAL (últimes veles)
-    const okx = await fetchOKX(symbol, timeframe);   // limit=4
-    for (const c of okx) {
-      await storeCandle("candles", symbol, timeframe, c);
-    }
+    // OKX
+    const okx = await fetchOKX(symbol, timeframe);
+    for (const c of okx) await storeCandle("candles", symbol, timeframe, c);
 
   } catch (err) {
     console.log("❌ Error general descarregant veles:", symbol, timeframe, err.message);
   }
 }
 
-export async function fetchHistoricalOKX(symbol, timeframe) {
-  const start = 1722470400000;   // 2024-08-01
-  const end   = 1725148799000;   // 2024-08-31
 
-  let before = end; // ms
 
-  while (true) {
-    const url = `https://www.okx.com/api/v5/market/candles?instId=${symbol}&bar=${timeframe}&limit=300&before=${before}`;
-    const res = await axios.get(url);
-    const data = res.data.data;
-
-    if (!data || data.length === 0) {
-      console.log(`🔵 Històric OKX finalitzat per ${symbol}`);
-      break;
-    }
-
-    for (const k of data) {
-      const ts = parseInt(k[0]); // ms
-
-      if (ts < start) {
-        console.log(`🔵 Arribats a l’inici del rang per ${symbol}`);
-        return;
-      }
-
-      const candle = toInternal(
-        ts,
-        parseFloat(k[1]),
-        parseFloat(k[2]),
-        parseFloat(k[3]),
-        parseFloat(k[4]),
-        parseFloat(k[5]),
-        parseInt(k[8])
-      );
-
-      await storeCandle("candles_15m", symbol, timeframe, candle);
-    }
-
-    // timestamp més antic → ÚLTIM element
-    before = parseInt(data[data.length - 1][0]);
-
-    console.log(`🔵 Nova pàgina OKX → before=${before} (${symbol})`);
-  }
-
-  console.log(`🔵 COMPLETAT: ${symbol} ${timeframe}`);
-}
