@@ -167,7 +167,7 @@ export async function fetchAndStoreCandles(symbol, timeframe) {
     // 🔵 MODE CÀRREGA INICIAL (variables d'entorn)
     if (process.env.INITIAL_LOAD === "true") {
       console.log(`🔵 Càrrega inicial OKX 15m → ${symbol}`);
-      await fetchHistoricalOKX(symbol, timeframe);   // guarda a candles_15m
+      //await fetchHistoricalOKX(symbol, timeframe);   // guarda a candles_15m
       return; // evitar baixar veles recents
     }
 
