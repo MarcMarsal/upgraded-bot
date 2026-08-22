@@ -168,15 +168,12 @@ export async function processSymbol(symbol, timeframe) {
 
   if (!shouldProcess(symbol)) return;
 
-  //const candles = await getCandlesFromDB(symbol, timeframe, 120);
-  //const candles = await getCandlesFromDB(symbol, timeframe, 25);
   let candles = await getCandlesFromDB(symbol, timeframe, 25);
-  //let candles = await getCandlesFromDB(symbol, timeframe, 120);
   if (!candles || candles.length < 20) return;
 
   candles.sort((a, b) => a.timestamp - b.timestamp);
 
-   // NORMALITZACIÓ PEPE (una sola vegada, per tot el bot)
+  // NORMALITZACIÓ PEPE
   if (symbol === "PEPE-USDT") {
     const k = 1000;
     candles = candles.map(c => ({
@@ -212,16 +209,21 @@ export async function processSymbol(symbol, timeframe) {
     sig.color = color;
 
     // -------------------------------------------------------------
+    // TERCERA VELA (FIAT per backtest)
+    // -------------------------------------------------------------
+    sig.third_open      = sig.thirdCandle.open;
+    sig.third_close     = sig.thirdCandle.close;
+    sig.third_high      = sig.thirdCandle.high;
+    sig.third_low       = sig.thirdCandle.low;
+    sig.third_body      = Math.abs(sig.thirdCandle.close - sig.thirdCandle.open);
+    sig.third_timestamp = sig.thirdCandle.timestamp;
+
+    // -------------------------------------------------------------
     // ENTRYR MICRO‑PULSE (20–40% del cos de la 3a vela)
     // -------------------------------------------------------------
-    const body = Math.abs(sig.thirdCandle.close - sig.thirdCandle.open);
+    const body = sig.third_body;
 
-    //const entryR = sig.type === "M"
-    //  ? sig.thirdCandle.close - body * 0.40
-    //  : sig.thirdCandle.close + body * 0.40;
     const entryR = sig.type === "M"
-      //? sig.thirdCandle.close - body * 0.50
-      //: sig.thirdCandle.close + body * 0.50;
       ? sig.thirdCandle.close - body * 0.35
       : sig.thirdCandle.close + body * 0.35;
 
@@ -231,13 +233,15 @@ export async function processSymbol(symbol, timeframe) {
     // TP/SL amb ENTRYR
     // -------------------------------------------------------------
     const atrEv = atrManual[candleIndex];
+    sig.atr = atrEv;
+
     const { tp, sl } = tpSlMicroPulse(sig.type === "M", entryR, atrEv);
 
     sig.tp = tp;
     sig.sl = sl;
 
     // -------------------------------------------------------------
-    // ENTRY original del patró (no es toca)
+    // ENTRY original del patró
     // -------------------------------------------------------------
     sig.entry = candles[candleIndex].close;
 
@@ -255,33 +259,48 @@ export async function processSymbol(symbol, timeframe) {
     const closes = q.rows.map(r => Number(r.close)).reverse();
     sig.rsi = calculateRSI(closes);
 
-    const perf = await getPerformance48h(symbol,timeframe);
+    // -------------------------------------------------------------
+    // PANELL 48h
+    // -------------------------------------------------------------
+    const perf = await getPerformance48h(symbol, timeframe);
     sig.tps48h = perf.tps;
     sig.percent48h = perf.percent;
-    
+
     // -------------------------------------------------------------
-    // GUARDAR SENYAL
+    // GUARDAR SENYAL (FIAT complet)
     // -------------------------------------------------------------
     await saveSignal2({
-      symbol:   sig.symbol,
-      timeframe:sig.timeframe,
-      type:     sig.type,
-      entry:    sig.entry,
-      entryr:   sig.entryr,
-      tp:       sig.tp,
-      sl:       sig.sl,
-      timestamp:sig.timestamp,
-      color:    sig.color,
-      isGood:   sig.isGood,
-      slope:    sig.slope,
-      wicksBoth:sig.wicksBoth,
-      rsi:      sig.rsi,
-      // 🔥 nous camps del panell
-      tps48h:     sig.tps48h,
-      percent48h: sig.percent48h
+      symbol:        sig.symbol,
+      timeframe:     sig.timeframe,
+      type:          sig.type,
+
+      entry:         sig.entry,
+      entryr:        sig.entryr,
+      tp:            sig.tp,
+      sl:            sig.sl,
+      timestamp:     sig.timestamp,
+
+      color:         sig.color,
+      isGood:        sig.isGood,
+      slope:         sig.slope,
+      wicksBoth:     sig.wicksBoth,
+
+      rsi:           sig.rsi,
+      tps48h:        sig.tps48h,
+      percent48h:    sig.percent48h,
+
+      // 🔥 nous camps per backtest
+      third_open:      sig.third_open,
+      third_close:     sig.third_close,
+      third_high:      sig.third_high,
+      third_low:       sig.third_low,
+      third_body:      sig.third_body,
+      third_timestamp: sig.third_timestamp,
+      atr:             sig.atr
     });
   }
 }
+
 
 // -------------------------------------------------------------
 // LOOP PRINCIPAL MICRO‑PULSE
