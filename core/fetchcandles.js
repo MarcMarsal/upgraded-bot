@@ -184,10 +184,10 @@ export async function fetchAndStoreCandles(symbol, timeframe) {
 
 
 export async function fetchHistoricalOKX(symbol, timeframe) {
-  const start = 1722470400000;   // 2024-08-01 00:00:00 UTC (ms)
-  const end   = 1725148799000;   // 2024-08-31 23:59:59 UTC (ms)
+  const start = 1722470400000;   // ms
+  const end   = 1725148799000;   // ms
 
-  // OKX vol "before" en segons, no en ms
+  // OKX vol before en segons
   let before = Math.floor(end / 1000);
 
   while (true) {
@@ -201,7 +201,9 @@ export async function fetchHistoricalOKX(symbol, timeframe) {
     }
 
     for (const k of data) {
-      const ts = parseInt(k[0]); // ms
+      // 🔥 k[0] ja ve en segons, cal convertir-lo a ms
+      const ts = parseInt(k[0]) * 1000;
+
       if (ts < start) {
         console.log(`🔵 Arribats a l’inici del rang per ${symbol}`);
         return;
@@ -220,9 +222,8 @@ export async function fetchHistoricalOKX(symbol, timeframe) {
       await storeCandle("candles_15m", symbol, timeframe, candle);
     }
 
-    // 🔥 OKX retorna timestamps en ms → convertir a segons
-    const oldestTsMs = parseInt(data[data.length - 1][0]);
-    before = Math.floor(oldestTsMs / 1000);
+    // 🔥 OKX retorna timestamps en segons → NO dividir per 1000
+    before = parseInt(data[data.length - 1][0]);
 
     console.log(`🔵 Nova pàgina OKX → before=${before} (${symbol})`);
   }
