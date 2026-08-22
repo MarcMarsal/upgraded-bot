@@ -3,8 +3,6 @@ import { client } from "../db/client.js";
 
 // Variables d'entorn
 const API_OKX     = process.env.API_URL;
-//const API_WEEX    = process.env.API_WEEX;
-//const API_BITUNIX = process.env.API_BITUNIX;
 
 // -------------------------------------------------------------
 // NORMALITZAR TIMESTAMP
@@ -16,35 +14,6 @@ function normalizeTimestamp(raw) {
   if (raw < 1600000000000) return null; // ms (2020+)
   return raw;
 }
-
-//function normalizeTimestamp_WEEX(raw) {
-//  if (raw === undefined || raw === null) return null;
-
-//  const ts = Number(raw);
-//  if (!Number.isFinite(ts)) return null;
-
-  // Si és en segons (10 dígits), convertir a ms
-//  if (ts < 1000000000000) return ts * 1000;
-
-  // Si és en ms (13 dígits), acceptar-lo
-//  if (ts >= 1600000000000) return ts;
-
-//  return null;
-//}
-
-//function normalizeTimestamp_BITUNIX(raw) {
-//  if (raw === undefined || raw === null) return null;
-
-//  const ts = Number(raw);
-//  if (!Number.isFinite(ts)) return null;
-
-  // Bitunix sempre ms (>= 1600000000000)
-//  if (ts < 1600000000000) return null;
-
-//  return ts;
-//}
-
-
 
 // -------------------------------------------------------------
 // NORMALITZAR SYMBOL PER EXCHANGE
@@ -80,9 +49,7 @@ function toInternal(ts, o, h, l, c, v, confirm) {
 // -------------------------------------------------------------
 // GUARDAR A TAULA
 // -------------------------------------------------------------
-// -------------------------------------------------------------
-// GUARDAR A TAULA (1H, 30m, etc.)
-// -------------------------------------------------------------
+
 async function storeCandle(table, symbol, timeframe, c) {
 
   // Timestamp en hora espanyola
@@ -137,48 +104,6 @@ async function storeCandle(table, symbol, timeframe, c) {
   );
 }
 
-
-//async function storeCandle(table, symbol, timeframe, c) {
-
-//  const timestamp_es = new Date(
-//    new Date(c.timestamp).toLocaleString("en-US", {
-//      timeZone: "Europe/Madrid"
-//    })
-//  ).getTime();
-
-//  const date_es = new Date(c.timestamp).toLocaleString("es-ES", {
-//    timeZone: "Europe/Madrid",
-//    year: "numeric",
-//    month: "2-digit",
-//    day: "2-digit",
-//    hour: "2-digit",
-//    minute: "2-digit"
-//  }).replace(",", "");
-
-//  await client.query(
-//    `
-//    INSERT INTO ${table} (symbol, timeframe, timestamp, open, high, low, close, volume, timestamp_es, date_es)
-//    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
-//    ON CONFLICT (symbol, timeframe, timestamp)
-//    DO UPDATE SET
-//      open=$4, high=$5, low=$6, close=$7, volume=$8,
-//      timestamp_es=$9, date_es=$10;
-//    `,
-//    [
-//      symbol,
-//      timeframe,
-//      c.timestamp,
-//      c.open,
-//      c.high,
-//      c.low,
-//      c.close,
-//      c.volume,
-//      timestamp_es,
-//      date_es
-//    ]
-//  );
-//}
-
 // -------------------------------------------------------------
 // FETCH OKX → TAULA candles
 // -------------------------------------------------------------
@@ -203,15 +128,6 @@ async function fetchOKX(symbol, timeframe) {
       const ts = normalizeTimestamp(parseInt(k[0]));
       if (!ts) return null;
 
-      // DEBUG FIAT: mostrar veles rebudes per cada símbol/timeframe
-      //console.log(`📡 OKX → Bot | ${symbol} ${timeframe}`);
-      //data.forEach(k => {
-      //   console.log(
-      //   `ts=${k[0]} | o=${k[1]} | h=${k[2]} | l=${k[3]} | c=${k[4]} | vol=${k[5]} | confirm=${k[8]}`
-      //   );
-      //});
-
-
       return toInternal(
         ts,
         parseFloat(k[1]),
@@ -230,74 +146,6 @@ async function fetchOKX(symbol, timeframe) {
 }
 
 // -------------------------------------------------------------
-// FETCH WEEX → TAULA candles_weex
-// -------------------------------------------------------------
-//async function fetchWeex(symbol, timeframe) {
-//  try {
-//    const sym = normalizeSymbolFor("WEEX", symbol);
-//    const tf  = normalizeTimeframeFor("WEEX", timeframe);
-
-//    const url = `${API_WEEX}?symbol=${sym}&interval=${tf}&limit=4`;
-   
-//    const res = await axios.get(url, {headers: {"User-Agent": "Mozilla/5.0","Accept": "application/json"}});
-
-//    const data = res.data;
-  
-//    if (!data || data.length === 0) return [];
-   
-//    return data.map(k => {
-//      const ts = normalizeTimestamp_WEEX(k[0]); // timestamp
-//      if (!ts) return null;
-    
-//      return toInternal(
-//        ts,
-//        parseFloat(k[1]), // open
-//        parseFloat(k[2]), // high
-//        parseFloat(k[3]), // low
-//        parseFloat(k[4]), // close
-//        parseFloat(k[5])  // volume
-//      );
-//    }).filter(Boolean);
-
-//  } catch (err) {
-//    console.log("❌ Error WEEX:", symbol, timeframe, err.message);
-//    return [];
-//  }
-//}
-
-//async function fetchBitunix(symbol, timeframe) {
-//  try {
-//    const sym = normalizeSymbolFor("BITUNIX", symbol);
-//    const tf  = normalizeTimeframeFor("BITUNIX", timeframe);
-
-//    const url = `${API_BITUNIX}?symbol=${sym}&interval=${tf}&limit=4`;
-//    const res = await axios.get(url);
-
-//    const data = res.data.data;
-//    if (!data || data.length === 0) return [];
-
-//    return data.map(k => {
-//      const ts = normalizeTimestamp_BITUNIX(k.time);   // <-- CORRECTE
-//      if (!ts) return null;
-
-//      return toInternal(
-//        ts,
-//        parseFloat(k.open),
-//        parseFloat(k.high),
-//        parseFloat(k.low),
-//        parseFloat(k.close),
-//        parseFloat(k.quoteVol)   // <-- CORRECTE (o baseVol si vols)
-//      );
-//    }).filter(Boolean);
-
-//  } catch (err) {
-//    console.log("❌ Error BITUNIX:", symbol, timeframe, err.message);
-//    return [];
-//  }
-//}
-
-
-// -------------------------------------------------------------
 // FETCH + STORE (OKX → candles, WEEX → candles_weex, BITUNIX → candles_bitunix)
 // -------------------------------------------------------------
 export async function fetchAndStoreCandles(symbol, timeframe) {
@@ -306,17 +154,32 @@ export async function fetchAndStoreCandles(symbol, timeframe) {
     const okx = await fetchOKX(symbol, timeframe);
     for (const c of okx) await storeCandle("candles", symbol, timeframe, c);
 
-    // WEEX
-//    const weex = await fetchWeex(symbol, timeframe);
-//    for (const c of weex) await storeCandle("candles_weex", symbol, timeframe, c);
-
-    // BITUNIX
-    //const bitunix = await fetchBitunix(symbol, timeframe);
-    //for (const c of bitunix) await storeCandle("candles_bitunix", symbol, timeframe, c);
-
-    //console.log(`✔ Candles guardades: ${symbol} ${timeframe}`);
-
   } catch (err) {
     console.log("❌ Error general descarregant veles:", symbol, timeframe, err.message);
   }
 }
+
+export async function fetchHistoricalOKX(symbol, timeframe) {
+  const start = 1722470400000;   // 2024-08-01 00:00:00 UTC
+  const end   = 1725148799000;   // 2024-08-31 23:59:59 UTC
+
+  let before = end;
+
+  while (true) {
+    const url = `https://www.okx.com/api/v5/market/history-candles?instId=${symbol}&bar=${timeframe}&limit=300&before=${before}`;
+    const res = await axios.get(url);
+    const data = res.data.data;
+
+    if (!data || data.length === 0) break;
+
+    for (const c of data) {
+      const ts = parseInt(c[0]);
+      if (ts < start) return;   // ja hem arribat a l’inici del mes
+      await storeCandle("candles_15m", symbol, timeframe, c);
+    }
+
+    // actualitzar "before" amb la vela més antiga
+    before = parseInt(data[data.length - 1][0]);
+  }
+}
+
