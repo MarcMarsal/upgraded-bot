@@ -174,14 +174,27 @@ export async function fetchHistoricalOKX(symbol, timeframe) {
 
     if (!data || data.length === 0) break;
 
-    for (const c of data) {
-      const ts = parseInt(c[0]);
-      if (ts < start) return;   // ja hem arribat a l’inici del mes
-      await storeCandle("candles_15m", symbol, timeframe, c);
+    for (const k of data) {
+      const ts = normalizeTimestamp(parseInt(k[0]));
+      if (!ts) continue;
+
+      // Si hem arribat abans del rang → parar
+      if (ts < start) return;
+
+      const candle = toInternal(
+        ts,
+        parseFloat(k[1]), // open
+        parseFloat(k[2]), // high
+        parseFloat(k[3]), // low
+        parseFloat(k[4]), // close
+        parseFloat(k[5]), // volume
+        parseInt(k[8])    // confirm
+      );
+
+      await storeCandle("candles_15m", symbol, timeframe, candle);
     }
 
     // actualitzar "before" amb la vela més antiga
     before = parseInt(data[data.length - 1][0]);
   }
 }
-
