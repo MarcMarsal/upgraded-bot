@@ -184,39 +184,46 @@ export async function fetchAndStoreCandles(symbol, timeframe) {
 
 
 export async function fetchHistoricalOKX(symbol, timeframe) {
-  const start = 1722470400000;   // 2024-08-01 00:00:00 UTC
-  const end   = 1725148799000;   // 2024-08-31 23:59:59 UTC
+  const start = 1722470400000;   // 2024-08-01 00:00:00 UTC (ms)
+  const end   = 1725148799000;   // 2024-08-31 23:59:59 UTC (ms)
 
-  let before = end;
+  let before = Math.floor(end / 1000); // 🔥 OKX vol segons, no ms
 
   while (true) {
     const url = `https://www.okx.com/api/v5/market/history-candles?instId=${symbol}&bar=${timeframe}&limit=300&before=${before}`;
     const res = await axios.get(url);
     const data = res.data.data;
 
-    if (!data || data.length === 0) break;
+    if (!data || data.length === 0) {
+      console.log(`🔵 Històric OKX finalitzat per ${symbol}`);
+      break;
+    }
 
     for (const k of data) {
       const ts = normalizeTimestamp(parseInt(k[0]));
       if (!ts) continue;
 
-      // Si hem arribat abans del rang → parar
-      if (ts < start) return;
+      if (ts < start) {
+        console.log(`🔵 Arribats a l’inici del rang per ${symbol}`);
+        return;
+      }
 
       const candle = toInternal(
         ts,
-        parseFloat(k[1]), // open
-        parseFloat(k[2]), // high
-        parseFloat(k[3]), // low
-        parseFloat(k[4]), // close
-        parseFloat(k[5]), // volume
-        parseInt(k[8])    // confirm
+        parseFloat(k[1]),
+        parseFloat(k[2]),
+        parseFloat(k[3]),
+        parseFloat(k[4]),
+        parseFloat(k[5]),
+        parseInt(k[8])
       );
 
       await storeCandle("candles_15m", symbol, timeframe, candle);
     }
 
-    // actualitzar "before" amb la vela més antiga
-    before = parseInt(data[data.length - 1][0]);
+    // 🔥 OKX retorna timestamps en ms → convertir a segons
+    before = Math.floor(parseInt(data[data.length - 1][0]) / 1000);
   }
+
+  console.log(`🔵 COMPLETAT: ${symbol} ${timeframe}`);
 }
