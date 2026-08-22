@@ -126,7 +126,8 @@ export function detectMSES(candles, symbol, timeframe) {
         open: c3.open,
         close: c3.close,
         high: c3.high,
-        low: c3.low
+        low: c3.low,
+        timestamp: c3.timestamp   // 🔥 FIAT
       },
 
       body3,
