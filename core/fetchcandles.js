@@ -150,16 +150,38 @@ async function fetchOKX(symbol, timeframe) {
 // -------------------------------------------------------------
 // FETCH + STORE (OKX → candles, WEEX → candles_weex, BITUNIX → candles_bitunix)
 // -------------------------------------------------------------
+//export async function fetchAndStoreCandles(symbol, timeframe) {
+//  try {
+    // OKX
+//    const okx = await fetchOKX(symbol, timeframe);
+//    for (const c of okx) await storeCandle("candles", symbol, timeframe, c);
+
+//  } catch (err) {
+//    console.log("❌ Error general descarregant veles:", symbol, timeframe, err.message);
+//  }
+//}
+
 export async function fetchAndStoreCandles(symbol, timeframe) {
   try {
-    // OKX
-    const okx = await fetchOKX(symbol, timeframe);
-    for (const c of okx) await storeCandle("candles", symbol, timeframe, c);
+
+    // 🔵 MODE CÀRREGA INICIAL (variables d'entorn)
+    if (process.env.INITIAL_LOAD === "true") {
+      console.log(`🔵 Càrrega inicial OKX 15m → ${symbol}`);
+      await fetchHistoricalOKX(symbol, timeframe);   // guarda a candles_15m
+      return; // evitar baixar veles recents
+    }
+
+    // 🟢 MODE NORMAL (últimes veles)
+    const okx = await fetchOKX(symbol, timeframe);   // limit=4
+    for (const c of okx) {
+      await storeCandle("candles", symbol, timeframe, c);
+    }
 
   } catch (err) {
     console.log("❌ Error general descarregant veles:", symbol, timeframe, err.message);
   }
 }
+
 
 export async function fetchHistoricalOKX(symbol, timeframe) {
   const start = 1722470400000;   // 2024-08-01 00:00:00 UTC
