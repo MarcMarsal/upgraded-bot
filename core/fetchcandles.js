@@ -219,7 +219,7 @@ export async function fetchHistoricalOKX(symbol, timeframe) {
       await storeCandle("candles_15m", symbol, timeframe, candle);
     }
 
-    // timestamp més antic → últim element
+    // timestamp més antic → ÚLTIM element
     before = parseInt(data[data.length - 1][0]);
 
     console.log(`🔵 Nova pàgina OKX → before=${before} (${symbol})`);
