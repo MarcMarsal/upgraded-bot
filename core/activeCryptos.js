@@ -61,6 +61,7 @@ export const DECIMALS = {
   
   
   "TRUMP-USDT": 3,
+  "TRX-USDT": 5,
   "VIRTUAL-USDT": 4,
   "XRP-USDT": 4 
 };
