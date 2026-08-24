@@ -11,6 +11,13 @@ import { ACTIVE_CRYPTO_LIST, UNIVERSE } from "./core/activeCryptos.js";
 import { getPerformance48h } from "./core/stats.js";
 import { fetchAndStoreCandles1HCustom } from "./core/fetchCandles1H10m.js";
 
+import { calcFourthExtreme } from "./core/calcFourthExtreme.js";
+import { calcRetroces } from "./core/calcRetroces.js";
+import { loadRetrocesPctCripto } from "./core/loadRetrocesPctCripto.js";
+import { calcEntryR } from "./core/calcEntryR.js";
+import { calcTpSlFiat } from "./core/calcTpSlFiat.js";
+
+
 
 function shouldProcess(symbol) {
   return ACTIVE_CRYPTO_LIST.includes(symbol);
