@@ -58,95 +58,105 @@ export async function saveSignal2({
   third_body   = fmt(third_body,   symbol);
   atr          = fmt(atr,          symbol);
 
-  await client.query(
-    `
-    INSERT INTO signals_upgraded (
-      symbol,
-      timeframe,
-      type,
-      color,
+ await client.query(
+  `
+  INSERT INTO signals_upgraded (
+    symbol,
+    timeframe,
+    type,
+    color,
 
-      entry,
-      entryr,
-      tp,
-      sl,
+    entry,
+    entryr,
+    tp,
+    sl,
 
-      timestamp,
-      timestamp_ms,
-      timestamp_es,
-      date_es,
-      hora_es,
-      created_at,
-      closed,
+    timestamp,
+    timestamp_ms,
+    timestamp_es,
+    date_es,
+    hora_es,
+    created_at,
+    closed,
 
-      is_good,
-      slope,
-      wicks_both,
-      rsi,
-      tps48h,
-      percent48h,
+    is_good,
+    slope,
+    wicks_both,
+    rsi,
+    tps48h,
+    percent48h,
 
-      -- 🔥 nous camps
-      third_open,
-      third_close,
-      third_high,
-      third_low,
-      third_body,
-      third_timestamp,
-      atr
-    )
-    VALUES (
-      $1,$2,$3,
-      $4,
+    third_open,
+    third_close,
+    third_high,
+    third_low,
+    third_body,
+    third_timestamp,
+    atr,
 
-      $5,$6,
-      $7,$8,
+    -- 🔥 FIAT: camps nous
+    fourth_extreme,
+    retroces_pct,
+    retroces_pct_cripto
+  )
+  VALUES (
+    $1,$2,$3,
+    $4,
 
-      $9,$10,$11,$12,$13,
-      $14,
-      false,
+    $5,$6,$7,$8,
 
-      $15,$16,$17,
-      $18,$19,$20,
+    $9,$10,$11,$12,$13,
+    $14,
+    false,
 
-      -- 🔥 nous camps
-      $21,$22,$23,$24,$25,$26,$27
-    )
-    ON CONFLICT DO NOTHING
-    `,
-    [
-      symbol,
-      timeframe,
-      type,
-      color,
+    $15,$16,$17,
+    $18,$19,$20,
 
-      entry,
-      entryr,
-      tp,
-      sl,
+    $21,$22,$23,$24,$25,$26,$27,
 
-      tsMs,
-      tsMs,
-      timestamp_es,
-      date_es,
-      hora_es,
-      createdAt,
+    -- 🔥 FIAT: camps nous
+    $28,$29,$30
+  )
+  ON CONFLICT DO NOTHING
+  `,
+  [
+    symbol,
+    timeframe,
+    type,
+    color,
 
-      isGood,
-      slope,
-      wicksBoth,
-      rsi,
-      tps48h,
-      percent48h,
+    entry,
+    entryr,
+    tp,
+    sl,
 
-      // 🔥 nous camps
-      third_open,
-      third_close,
-      third_high,
-      third_low,
-      third_body,
-      third_timestamp,
-      atr
-    ]
-  );
+    tsMs,
+    tsMs,
+    timestamp_es,
+    date_es,
+    hora_es,
+    createdAt,
+
+    isGood,
+    slope,
+    wicksBoth,
+    rsi,
+    tps48h,
+    percent48h,
+
+    third_open,
+    third_close,
+    third_high,
+    third_low,
+    third_body,
+    third_timestamp,
+    atr,
+
+    // 🔥 FIAT: camps nous
+    fourth_extreme,
+    retroces_pct,
+    retroces_pct_cripto
+  ]
+);
+
 }
