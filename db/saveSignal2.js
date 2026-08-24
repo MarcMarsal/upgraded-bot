@@ -1,4 +1,4 @@
-// db/saveSignal2.js — FIAT‑MS/ES v2.5 (patrons + ATR + tracking + entryR + tercera vela)
+// db/saveSignal2.js — FIAT‑MS/ES v2.6 (patrons + ATR + tracking + entryR + tercera/quarta vela)
 
 import { client } from "./client.js";
 import { splitSpainDate } from "../core/utils.js";
@@ -31,14 +31,21 @@ export async function saveSignal2({
   tps48h,
   percent48h,
 
-  // 🔥 nous camps
+  // tercera vela
   third_open,
   third_close,
   third_high,
   third_low,
   third_body,
   third_timestamp,
-  atr
+
+  // ATR
+  atr,
+
+  // 🔥 FIAT: camps nous
+  fourth_extreme,
+  retroces_pct,
+  retroces_pct_cripto
 }) {
 
   const tsMs = Number(timestamp);
@@ -47,116 +54,118 @@ export async function saveSignal2({
   const { date_es, hora_es, timestamp_es } = splitSpainDate(tsMs);
 
   // format FIAT per cryptos (ADA, PEPE, etc.)
-  entry        = fmt(entry,        symbol);
-  entryr       = fmt(entryr,       symbol);
-  tp           = fmt(tp,           symbol);
-  sl           = fmt(sl,           symbol);
-  third_open   = fmt(third_open,   symbol);
-  third_close  = fmt(third_close,  symbol);
-  third_high   = fmt(third_high,   symbol);
-  third_low    = fmt(third_low,    symbol);
-  third_body   = fmt(third_body,   symbol);
-  atr          = fmt(atr,          symbol);
+  entry              = fmt(entry,              symbol);
+  entryr             = fmt(entryr,             symbol);
+  tp                 = fmt(tp,                 symbol);
+  sl                 = fmt(sl,                 symbol);
+  third_open         = fmt(third_open,         symbol);
+  third_close        = fmt(third_close,        symbol);
+  third_high         = fmt(third_high,         symbol);
+  third_low          = fmt(third_low,          symbol);
+  third_body         = fmt(third_body,         symbol);
+  atr                = fmt(atr,                symbol);
+  fourth_extreme     = fmt(fourth_extreme,     symbol);
+  retroces_pct       = fmt(retroces_pct,       symbol);
+  retroces_pct_cripto = fmt(retroces_pct_cripto, symbol);
 
- await client.query(
-  `
-  INSERT INTO signals_upgraded (
-    symbol,
-    timeframe,
-    type,
-    color,
+  await client.query(
+    `
+    INSERT INTO signals_upgraded (
+      symbol,
+      timeframe,
+      type,
+      color,
 
-    entry,
-    entryr,
-    tp,
-    sl,
+      entry,
+      entryr,
+      tp,
+      sl,
 
-    timestamp,
-    timestamp_ms,
-    timestamp_es,
-    date_es,
-    hora_es,
-    created_at,
-    closed,
+      timestamp,
+      timestamp_ms,
+      timestamp_es,
+      date_es,
+      hora_es,
+      created_at,
+      closed,
 
-    is_good,
-    slope,
-    wicks_both,
-    rsi,
-    tps48h,
-    percent48h,
+      is_good,
+      slope,
+      wicks_both,
+      rsi,
+      tps48h,
+      percent48h,
 
-    third_open,
-    third_close,
-    third_high,
-    third_low,
-    third_body,
-    third_timestamp,
-    atr,
+      third_open,
+      third_close,
+      third_high,
+      third_low,
+      third_body,
+      third_timestamp,
+      atr,
 
-    -- 🔥 FIAT: camps nous
-    fourth_extreme,
-    retroces_pct,
-    retroces_pct_cripto
-  )
-  VALUES (
-    $1,$2,$3,
-    $4,
+      -- 🔥 FIAT: camps nous
+      fourth_extreme,
+      retroces_pct,
+      retroces_pct_cripto
+    )
+    VALUES (
+      $1,$2,$3,
+      $4,
 
-    $5,$6,$7,$8,
+      $5,$6,$7,$8,
 
-    $9,$10,$11,$12,$13,
-    $14,
-    false,
+      $9,$10,$11,$12,$13,
+      $14,
+      false,
 
-    $15,$16,$17,
-    $18,$19,$20,
+      $15,$16,$17,
+      $18,$19,$20,
 
-    $21,$22,$23,$24,$25,$26,$27,
+      $21,$22,$23,$24,$25,$26,$27,
 
-    -- 🔥 FIAT: camps nous
-    $28,$29,$30
-  )
-  ON CONFLICT DO NOTHING
-  `,
-  [
-    symbol,
-    timeframe,
-    type,
-    color,
+      -- 🔥 FIAT: camps nous
+      $28,$29,$30
+    )
+    ON CONFLICT DO NOTHING
+    `,
+    [
+      symbol,
+      timeframe,
+      type,
+      color,
 
-    entry,
-    entryr,
-    tp,
-    sl,
+      entry,
+      entryr,
+      tp,
+      sl,
 
-    tsMs,
-    tsMs,
-    timestamp_es,
-    date_es,
-    hora_es,
-    createdAt,
+      tsMs,
+      tsMs,
+      timestamp_es,
+      date_es,
+      hora_es,
+      createdAt,
 
-    isGood,
-    slope,
-    wicksBoth,
-    rsi,
-    tps48h,
-    percent48h,
+      isGood,
+      slope,
+      wicksBoth,
+      rsi,
+      tps48h,
+      percent48h,
 
-    third_open,
-    third_close,
-    third_high,
-    third_low,
-    third_body,
-    third_timestamp,
-    atr,
+      third_open,
+      third_close,
+      third_high,
+      third_low,
+      third_body,
+      third_timestamp,
+      atr,
 
-    // 🔥 FIAT: camps nous
-    fourth_extreme,
-    retroces_pct,
-    retroces_pct_cripto
-  ]
-);
-
+      // 🔥 FIAT: camps nous
+      fourth_extreme,
+      retroces_pct,
+      retroces_pct_cripto
+    ]
+  );
 }
