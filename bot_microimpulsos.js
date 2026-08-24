@@ -172,6 +172,9 @@ function tpSlMicroPulse(isLong, entry, atr) {
 // -------------------------------------------------------------
 // PROCESSAR UN SÍMBOL (MICRO‑PULSE)
 // -------------------------------------------------------------
+// -------------------------------------------------------------
+// PROCESSAR UN SÍMBOL (MICRO‑PULSE)
+// -------------------------------------------------------------
 export async function processSymbol(symbol, timeframe) {
 
   if (!shouldProcess(symbol)) return;
@@ -208,6 +211,9 @@ export async function processSymbol(symbol, timeframe) {
     const candleIndex = candles.findIndex(c => c.timestamp === sig.timestamp);
     if (candleIndex === -1) continue;
 
+    // -------------------------------------------------------------
+    // FILTRES MICRO‑PULSE
+    // -------------------------------------------------------------
     const { isGood, slope, wicksBoth, color } =
       applyMicroPulseFilters(candles, candleIndex, atrManual, sig.type, timeframe);
 
@@ -217,7 +223,7 @@ export async function processSymbol(symbol, timeframe) {
     sig.color = color;
 
     // -------------------------------------------------------------
-    // TERCERA VELA (FIAT per backtest)
+    // TERCERA VELA (FIAT)
     // -------------------------------------------------------------
     sig.third_open      = sig.thirdCandle.open;
     sig.third_close     = sig.thirdCandle.close;
@@ -227,23 +233,51 @@ export async function processSymbol(symbol, timeframe) {
     sig.third_timestamp = sig.thirdCandle.timestamp;
 
     // -------------------------------------------------------------
-    // ENTRYR MICRO‑PULSE (20–40% del cos de la 3a vela)
+    // QUARTA VELA (FIAT)
     // -------------------------------------------------------------
-    const body = sig.third_body;
-
-    const entryR = sig.type === "M"
-      ? sig.thirdCandle.close - body * 0.30
-      : sig.thirdCandle.close + body * 0.30;
-
-    sig.entryr = entryR;
+    sig.fourth_extreme = calcFourthExtreme(candles, candleIndex, sig.type);
+    if (!sig.fourth_extreme) continue;
 
     // -------------------------------------------------------------
-    // TP/SL amb ENTRYR
+    // RETROCES (FIAT)
     // -------------------------------------------------------------
-    const atrEv = atrManual[candleIndex];
-    sig.atr = atrEv;
+    sig.retroces_pct = calcRetroces(
+      sig.third_close,
+      sig.fourth_extreme,
+      sig.third_body
+    );
 
-    const { tp, sl } = tpSlMicroPulse(sig.type === "M", entryR, atrEv);
+    // -------------------------------------------------------------
+    // RETROCES P50 PER CRIPTO (FIAT)
+    // -------------------------------------------------------------
+    sig.retroces_pct_cripto = await loadRetrocesPctCripto(symbol);
+    if (!sig.retroces_pct_cripto) continue;
+
+    // -------------------------------------------------------------
+    // ENTRYR FIAT
+    // -------------------------------------------------------------
+    sig.entryr = calcEntryR(
+      sig.type,
+      sig.third_close,
+      sig.third_body,
+      sig.retroces_pct_cripto
+    );
+
+    // -------------------------------------------------------------
+    // ATR
+    // -------------------------------------------------------------
+    sig.atr = atrManual[candleIndex];
+    if (!sig.atr) continue;
+
+    // -------------------------------------------------------------
+    // TP/SL FIAT
+    // -------------------------------------------------------------
+    const { tp, sl } = calcTpSlFiat(
+      sig.type,
+      sig.entryr,
+      sig.third_body,
+      sig.atr
+    );
 
     sig.tp = tp;
     sig.sl = sl;
@@ -297,17 +331,22 @@ export async function processSymbol(symbol, timeframe) {
       tps48h:        sig.tps48h,
       percent48h:    sig.percent48h,
 
-      // 🔥 nous camps per backtest
       third_open:      sig.third_open,
       third_close:     sig.third_close,
       third_high:      sig.third_high,
       third_low:       sig.third_low,
       third_body:      sig.third_body,
       third_timestamp: sig.third_timestamp,
+
+      fourth_extreme:  sig.fourth_extreme,
+      retroces_pct:    sig.retroces_pct,
+      retroces_pct_cripto: sig.retroces_pct_cripto,
+
       atr:             sig.atr
     });
   }
 }
+
 
 
 // -------------------------------------------------------------
