@@ -77,9 +77,9 @@ function applyMicroPulseFilters(candles, candleIndex, atrManual, type, timeframe
 // -------------------------------------------------------------
 //const TIMEFRAMES = ["1H"];
 //const TIMEFRAMES = ["1H","1H10m"];
-const TIMEFRAMES_DOWNLOAD = ["5m","1H"];
+const TIMEFRAMES_DOWNLOAD = ["5m","15m","1H"];
 //const TIMEFRAMES_EXECUTE = ["1H", "1H10m"];
-const TIMEFRAMES_EXECUTE = ["1H","1H03m","1H10m","1H33m","1H40m"];
+const TIMEFRAMES_EXECUTE = ["15m","1H","1H03m","1H10m","1H33m","1H40m"];
 
 
 
