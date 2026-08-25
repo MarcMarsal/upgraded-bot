@@ -68,10 +68,12 @@ async function getActiveSignals() {
 }
 
 // 🟩 Render taula sense Exchange i sense Entrada
-function renderActiveSignalsTable(signals) {
+function renderActiveSignalsTable(signals, timeframeFilter) {
+  const filtered = signals.filter(s => s.timeframe === timeframeFilter);
+
   let rows = "";
 
-  for (const s of signals) {
+  for (const s of filtered) {
     let color = s.color || "#00ff00";
     if (color.toLowerCase() === "blue") color = "cyan";
 
@@ -97,6 +99,27 @@ function renderActiveSignalsTable(signals) {
 
   return `
     <h2>Últimes 20 alertes — MicroPulse (OKX)</h2>
+
+    <label style="font-size:18px;">Temporalitat:</label>
+    <select id="timeframeSelector" style="font-size:18px; margin-left:10px;">
+      <option value="1H">1H</option>
+      <option value="15m">15m</option>
+      <option value="1H03m">1H03m</option>
+      <option value="1H10m">1H10m</option>
+      <option value="1H33m">1H33m</option>
+      <option value="1H40m">1H40m</option>
+    </select>
+
+    <script>
+      const saved = localStorage.getItem('mp_timeframe') || '1H';
+      document.getElementById('timeframeSelector').value = saved;
+
+      document.getElementById('timeframeSelector').addEventListener('change', (e) => {
+        localStorage.setItem('mp_timeframe', e.target.value);
+        location.reload();
+      });
+    </script>
+
     <table>
       <thead>
         <tr>
@@ -130,7 +153,6 @@ async function startPanel() {
   http.createServer(async (req, res) => {
     if (req.url === "/") {
       const signals = await getActiveSignals();
-      const signalsHTML = renderActiveSignalsTable(signals);
       const lastUpdate = formatSpainTime(Date.now());
       const marketState = await getMarketState();
 
@@ -168,7 +190,7 @@ async function startPanel() {
         <h2>Estat del Mercat BTC (1H)</h2>
         <p><b>${marketState}</b></p>
 
-        ${signalsHTML}
+        ${renderActiveSignalsTable(signals, "1H")}
 
       </body>
       </html>
