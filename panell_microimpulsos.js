@@ -55,13 +55,13 @@ async function getMarketState() {
   }
 }
 
-// 🟩 Llegir 20 senyals — NOMÉS OKX
+// 🟩 Llegir 40 senyals — NOMÉS OKX
 async function getActiveSignals() {
   const q = await client.query(`
     SELECT *
     FROM signals_upgraded
     ORDER BY created_at DESC
-    LIMIT 20;
+    LIMIT 40;
   `);
 
   return q.rows;
@@ -98,7 +98,7 @@ function renderActiveSignalsTable(signals, timeframeFilter) {
   }
 
   return `
-    <h2>Últimes 20 alertes — MicroPulse (OKX)</h2>
+    <h2>Últimes 40 alertes — MicroPulse (OKX)</h2>
 
     <label style="font-size:18px;">Temporalitat:</label>
     <select id="timeframeSelector" style="font-size:18px; margin-left:10px;">
