@@ -116,7 +116,7 @@ function renderActiveSignalsTable(signals, timeframeFilter) {
 
       document.getElementById('timeframeSelector').addEventListener('change', (e) => {
         localStorage.setItem('mp_timeframe', e.target.value);
-        location.reload();
+        window.location.href = "/?tf=" + e.target.value;
       });
     </script>
 
@@ -151,7 +151,15 @@ async function startPanel() {
   await initDB();
 
   http.createServer(async (req, res) => {
-    if (req.url === "/") {
+
+    // 🔥 Llegir temporalitat del navegador
+    let timeframeFilter = "1H";
+    if (req.url.includes("?tf=")) {
+      const tf = req.url.split("?tf=")[1];
+      if (tf) timeframeFilter = tf;
+    }
+
+    if (req.url.startsWith("/")) {
       const signals = await getActiveSignals();
       const lastUpdate = formatSpainTime(Date.now());
       const marketState = await getMarketState();
@@ -190,7 +198,7 @@ async function startPanel() {
         <h2>Estat del Mercat BTC (1H)</h2>
         <p><b>${marketState}</b></p>
 
-        ${renderActiveSignalsTable(signals, "1H")}
+        ${renderActiveSignalsTable(signals, timeframeFilter)}
 
       </body>
       </html>
