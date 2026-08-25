@@ -160,7 +160,7 @@ function calcATRManualSeries(candles, atrLen = 10) {
 function tpSlMicroPulse(isLong, entry, atr) {
   //const tpMult = 0.5;
   //const slMult = 1.0;
-  const tpMult = 0.6;
+  const tpMult = 0.4;
   const slMult = 0.8;
 
   const tp = isLong ? entry + atr * tpMult : entry - atr * tpMult;
