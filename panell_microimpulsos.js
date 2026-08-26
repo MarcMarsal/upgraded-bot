@@ -60,6 +60,7 @@ async function getActiveSignals() {
   const q = await client.query(`
     SELECT *
     FROM signals_upgraded
+    WHERE timeframe='15m'
     ORDER BY created_at DESC
     LIMIT 40;
     
