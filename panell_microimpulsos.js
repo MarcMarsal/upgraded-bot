@@ -73,7 +73,7 @@ async function getActiveSignals() {
   const q = await client.query(`
     SELECT *
     FROM signals_upgraded
-    WHERE pattern_valid = true
+    --WHERE pattern_valid = true
     ORDER BY
       third_timestamp DESC,        -- 1) primer les tandes més recents
       retroces_pct_cripto DESC,    -- 2) dins la tanda, les que retrocedeixen més
