@@ -80,7 +80,7 @@ async function getActiveSignals() {
       third_body DESC,             -- 3) impuls més clar
       atr ASC,                     -- 4) ATR més segur
       slope DESC,                  -- 5) direcció més forta
-      wicksBoth DESC               -- 6) patró més net
+      wicks_both DESC               -- 6) patró més net
     LIMIT 40;
   `);
 
