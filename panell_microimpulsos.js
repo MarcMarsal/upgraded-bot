@@ -75,7 +75,7 @@ async function getActiveSignals(timeframeFilter) {
     SELECT *
     FROM signals_upgraded
     WHERE timeframe = $1
-      AND pattern_valid = true
+      --AND pattern_valid = true
     ORDER BY
       created_at DESC,            -- 1) última alerta generada
       third_timestamp DESC,       -- 2) agrupació per vela (tanda)
