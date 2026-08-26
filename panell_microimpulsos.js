@@ -56,42 +56,45 @@ async function getMarketState() {
 }
 
 // 🟩 Llegir 40 senyals — NOMÉS OKX
-async function getActiveSignals() {
-  const q = await client.query(`
-    SELECT *
-    FROM signals_upgraded
-    WHERE timeframe='15m'
-    ORDER BY created_at DESC
-    LIMIT 40;
-    
-  `);
-
-  return q.rows;
-}
-
-// 🟩 Llegir 40 senyals — ordenats per tanda i qualitat FIAT
 //async function getActiveSignals() {
 //  const q = await client.query(`
 //    SELECT *
 //    FROM signals_upgraded
-//    --WHERE pattern_valid = true
 //    WHERE timeframe='15m'
-//    ORDER BY
-//      third_timestamp DESC,        -- 1) primer les tandes més recents
-//      retroces_pct_cripto DESC,    -- 2) dins la tanda, les que retrocedeixen més
-//      third_body DESC,             -- 3) impuls més clar
-//      atr ASC,                     -- 4) ATR més segur
-//      slope DESC,                  -- 5) direcció més forta
-//      wicks_both DESC               -- 6) patró més net
+//    ORDER BY created_at DESC
 //    LIMIT 40;
-//  `);
+    
+ // `);
 
-//  return q.rows;
+ // return q.rows;
 //}
+
+// 🟩 Llegir 40 senyals — ordenats per última tanda i qualitat FIAT
+async function getActiveSignals(timeframeFilter) {
+  const q = await client.query(`
+    SELECT *
+    FROM signals_upgraded
+    WHERE timeframe = $1
+      AND pattern_valid = true
+    ORDER BY
+      created_at DESC,            -- 1) última alerta generada
+      third_timestamp DESC,       -- 2) agrupació per vela (tanda)
+      retroces_pct_cripto DESC,   -- 3) retrocés històric
+      third_body DESC,            -- 4) impuls
+      atr ASC,                    -- 5) ATR segur
+      slope DESC,                 -- 6) direcció
+      wicks_both DESC             -- 7) patró net
+    LIMIT 40;
+  `, [timeframeFilter]);
+
+  return q.rows;
+}
+
 
 // 🟩 Render taula sense Exchange i sense Entrada
 function renderActiveSignalsTable(signals, timeframeFilter) {
-  const filtered = signals.filter(s => s.timeframe === timeframeFilter);
+  //const filtered = signals.filter(s => s.timeframe === timeframeFilter);
+  const filtered = signals;
 
   let rows = "";
 
@@ -182,7 +185,9 @@ async function startPanel() {
     }
 
     if (req.url.startsWith("/")) {
-      const signals = await getActiveSignals();
+      //const signals = await getActiveSignals();
+      const signals = await getActiveSignals(timeframeFilter);
+
       const lastUpdate = formatSpainTime(Date.now());
       const marketState = await getMarketState();
 
