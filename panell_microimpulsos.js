@@ -74,6 +74,7 @@ async function getActiveSignals() {
     SELECT *
     FROM signals_upgraded
     --WHERE pattern_valid = true
+    WHERE timeframe='15m'
     ORDER BY
       third_timestamp DESC,        -- 1) primer les tandes més recents
       retroces_pct_cripto DESC,    -- 2) dins la tanda, les que retrocedeixen més
