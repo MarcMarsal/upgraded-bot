@@ -56,37 +56,37 @@ async function getMarketState() {
 }
 
 // 🟩 Llegir 40 senyals — NOMÉS OKX
-//async function getActiveSignals() {
-//  const q = await client.query(`
-//    SELECT *
-//    FROM signals_upgraded
-//    ORDER BY created_at DESC
-//    LIMIT 40;
-    
-//  `);
-
-//  return q.rows;
-//}
-
-// 🟩 Llegir 40 senyals — ordenats per tanda i qualitat FIAT
 async function getActiveSignals() {
   const q = await client.query(`
     SELECT *
     FROM signals_upgraded
-    --WHERE pattern_valid = true
-    WHERE timeframe='15m'
-    ORDER BY
-      third_timestamp DESC,        -- 1) primer les tandes més recents
-      retroces_pct_cripto DESC,    -- 2) dins la tanda, les que retrocedeixen més
-      third_body DESC,             -- 3) impuls més clar
-      atr ASC,                     -- 4) ATR més segur
-      slope DESC,                  -- 5) direcció més forta
-      wicks_both DESC               -- 6) patró més net
+    ORDER BY created_at DESC
     LIMIT 40;
+    
   `);
 
   return q.rows;
 }
+
+// 🟩 Llegir 40 senyals — ordenats per tanda i qualitat FIAT
+//async function getActiveSignals() {
+//  const q = await client.query(`
+//    SELECT *
+//    FROM signals_upgraded
+//    --WHERE pattern_valid = true
+//    WHERE timeframe='15m'
+//    ORDER BY
+//      third_timestamp DESC,        -- 1) primer les tandes més recents
+//      retroces_pct_cripto DESC,    -- 2) dins la tanda, les que retrocedeixen més
+//      third_body DESC,             -- 3) impuls més clar
+//      atr ASC,                     -- 4) ATR més segur
+//      slope DESC,                  -- 5) direcció més forta
+//      wicks_both DESC               -- 6) patró més net
+//    LIMIT 40;
+//  `);
+
+//  return q.rows;
+//}
 
 // 🟩 Render taula sense Exchange i sense Entrada
 function renderActiveSignalsTable(signals, timeframeFilter) {
