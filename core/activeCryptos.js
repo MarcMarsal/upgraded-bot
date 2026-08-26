@@ -47,7 +47,7 @@ export const DECIMALS = {
   "LTC-USDT": 2,
   "NEAR-USDT": 3,
   "ONDO-USDT":4,
-  "OP-USDT": 4,
+  "OP-USDT": 5,
   "PAXG-USDT": 2,
   "PENGU-USDT": 6,
   "PEPE-USDT": 7,
