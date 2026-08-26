@@ -1,7 +1,5 @@
 // core/activeCryptos.js — Micrpulse
-
-//Retirats per baix winrate: FET-USDT, ASTER-USDT, XRP-USDT, ARB-USDT, INJ-USDT, BCH-USDT, VIRTUAL-USDT, LTC-USDT
-//Retirats per baix guanys: BNB-USDT, BTC-USDT, ETH-USDT
+//Retirats per baix guanys: TRX-USDT
 
 export const UNIVERSE = [
   "ADA-USDT","APT-USDT","ARB-USDT","ASTER-USDT","ATOM-USDT",
@@ -10,7 +8,7 @@ export const UNIVERSE = [
   "HBAR-USDT","INJ-USDT","KAITO-USDT","LINK-USDT","LTC-USDT",
   "NEAR-USDT","ONDO-USDT","OP-USDT","PAXG-USDT","PENGU-USDT",
   "PEPE-USDT","RENDER-USDT","RON-USDT","SEI-USDT","SOL-USDT",
-  "SUI-USDT","TRUMP-USDT","TRX-USDT","VIRTUAL-USDT","XRP-USDT"
+  "SUI-USDT","TRUMP-USDT","VIRTUAL-USDT","XRP-USDT"
 ];
 
 export const ACTIVE_CRYPTO_LIST = [
@@ -20,7 +18,7 @@ export const ACTIVE_CRYPTO_LIST = [
   "HBAR-USDT","INJ-USDT","KAITO-USDT","LINK-USDT","LTC-USDT",
   "NEAR-USDT","ONDO-USDT","OP-USDT","PAXG-USDT","PENGU-USDT",
   "PEPE-USDT","RENDER-USDT","RON-USDT","SEI-USDT","SOL-USDT",
-  "SUI-USDT","TRUMP-USDT","TRX-USDT","VIRTUAL-USDT","XRP-USDT"
+  "SUI-USDT","TRUMP-USDT","VIRTUAL-USDT","XRP-USDT"
 ];
 
 // -------------------------------------------------------------
