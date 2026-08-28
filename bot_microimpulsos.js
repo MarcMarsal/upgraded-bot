@@ -330,7 +330,21 @@ export async function processSymbol(symbol, timeframe) {
       rsi:           sig.rsi,
       tps48h:        sig.tps48h,
       percent48h:    sig.percent48h,
+      
+      // 🔥 FIAT — PRIMERA VELA
+      first_open:    sig.firstCandle.open,
+      first_close:   sig.firstCandle.close,
+      first_high:    sig.firstCandle.high,
+      first_low:     sig.firstCandle.low,
+      first_body:    sig.firstCandle.body,
 
+      // 🔥 FIAT — SEGONA VELA
+      second_open:   sig.secondCandle.open,
+      second_close:  sig.secondCandle.close,
+      second_high:   sig.secondCandle.high,
+      second_low:    sig.secondCandle.low,
+      second_body:   sig.secondCandle.body,
+      
       third_open:      sig.third_open,
       third_close:     sig.third_close,
       third_high:      sig.third_high,
@@ -342,7 +356,10 @@ export async function processSymbol(symbol, timeframe) {
       retroces_pct:    sig.retroces_pct,
       retroces_pct_cripto: sig.retroces_pct_cripto,
 
-      atr:             sig.atr
+      atr:             sig.atr,
+      
+      // 🔥 FIAT — CONTAMINACIÓ (de moment false)
+      wick_contaminated: false
     });
   }
 }
