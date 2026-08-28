@@ -96,12 +96,33 @@ export function detectMSES(candles, symbol, timeframe) {
       type,
       timestamp: ts,
 
+      // 🔥 FIAT — PRIMERA VELA
+      firstCandle: {
+        open: c1.open,
+        close: c1.close,
+        high: c1.high,
+        low: c1.low,
+        body: Math.abs(c1.close - c1.open),
+        timestamp: c1.timestamp
+      },
+
+      // 🔥 FIAT — SEGONA VELA
+      secondCandle: {
+        open: c2.open,
+        close: c2.close,
+        high: c2.high,
+        low: c2.low,
+        body: Math.abs(c2.close - c2.open),
+        timestamp: c2.timestamp
+      },
+
+      // 🔥 FIAT — TERCERA VELA (ja existia)
       thirdCandle: {
         open: c3.open,
         close: c3.close,
         high: c3.high,
         low: c3.low,
-        timestamp: c3.timestamp   // 🔥 FIAT
+        timestamp: c3.timestamp
       },
 
       body3,
@@ -110,6 +131,7 @@ export function detectMSES(candles, symbol, timeframe) {
       isGood,
       color
     });
+
   }
 
   return { signals };
