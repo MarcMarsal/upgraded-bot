@@ -386,7 +386,8 @@ export async function processSymbol(symbol, timeframe) {
       atr:             sig.atr,
       
       // 🔥 FIAT — CONTAMINACIÓ (de moment false)
-      //wick_contaminated: false
+      wick_contaminated: sig.wick_contaminated
+
     });
   }
 }
