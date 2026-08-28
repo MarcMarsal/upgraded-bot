@@ -232,6 +232,33 @@ export async function processSymbol(symbol, timeframe) {
     sig.third_body      = Math.abs(sig.thirdCandle.close - sig.thirdCandle.open);
     sig.third_timestamp = sig.thirdCandle.timestamp;
 
+
+    // -------------------------------------------------------------
+    // CONTAMINACIÓ FIAT (metxes grans en qualsevol de les 3 veles)
+    // -------------------------------------------------------------
+    const body1 = Math.abs(sig.firstCandle.open - sig.firstCandle.close);
+
+    // metxes primera vela
+    const wick1_up = sig.firstCandle.high - Math.max(sig.firstCandle.open, sig.firstCandle.close);
+    const wick1_dn = Math.min(sig.firstCandle.open, sig.firstCandle.close) - sig.firstCandle.low;
+
+    // metxes segona vela
+    const wick2_up = sig.secondCandle.high - Math.max(sig.secondCandle.open, sig.secondCandle.close);
+    const wick2_dn = Math.min(sig.secondCandle.open, sig.secondCandle.close) - sig.secondCandle.low;
+
+    // metxes tercera vela
+    const wick3_up = sig.thirdCandle.high - Math.max(sig.thirdCandle.open, sig.thirdCandle.close);
+    const wick3_dn = Math.min(sig.thirdCandle.open, sig.thirdCandle.close) - sig.thirdCandle.low;
+
+    // regla FIAT institucional
+    sig.wick_contaminated =
+      wick1_up > body1 ||
+      wick1_dn > body1 ||
+      wick2_up > body1 ||
+      wick2_dn > body1 ||
+      wick3_up > body1 ||
+      wick3_dn > body1;
+
     // -------------------------------------------------------------
     // QUARTA VELA (FIAT)
     // -------------------------------------------------------------
