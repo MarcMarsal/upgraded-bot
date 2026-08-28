@@ -2,7 +2,7 @@
 //Retirats per baix guanys: "TRX-USDT", "PAXG-USDT"
 
 export const UNIVERSE = [
-  "ADA-USDT","APT-USDT","ARB-USDT","ASTER-USDT","ATOM-USDT",
+  "AAVE-USDT","ADA-USDT","APT-USDT","ARB-USDT","ASTER-USDT","ATOM-USDT",
   "AVAX-USDT","BCH-USDT","BNB-USDT","BTC-USDT","DOGE-USDT",
   "DOT-USDT","ENA-USDT","ETH-USDT","FET-USDT","GRAM-USDT",
   "HBAR-USDT","INJ-USDT","KAITO-USDT","LINK-USDT","LTC-USDT",
@@ -12,7 +12,7 @@ export const UNIVERSE = [
 ];
 
 export const ACTIVE_CRYPTO_LIST = [
-  "ADA-USDT","APT-USDT","ARB-USDT","ASTER-USDT","ATOM-USDT",
+  "AAVE-USDT","ADA-USDT","APT-USDT","ARB-USDT","ASTER-USDT","ATOM-USDT",
   "AVAX-USDT","BCH-USDT","BNB-USDT","BTC-USDT","DOGE-USDT",
   "DOT-USDT","ENA-USDT","ETH-USDT","FET-USDT","GRAM-USDT",
   "HBAR-USDT","INJ-USDT","KAITO-USDT","LINK-USDT","LTC-USDT",
@@ -25,6 +25,7 @@ export const ACTIVE_CRYPTO_LIST = [
 // DECIMALS PER SIMBOL (FIAT)
 // -------------------------------------------------------------
 export const DECIMALS = {
+  "AAVE-USDT": 2,
   "ADA-USDT": 4,
   "APT-USDT": 4,
   "ARB-USDT": 5,
