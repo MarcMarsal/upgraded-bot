@@ -5,6 +5,49 @@ import { initDB, client } from "./db/client.js";
 import { formatSpainTime } from "./core/utils.js";
 import { fmt } from "./core/activeCryptos.js";
 
+async function isMarketAptForMicroPulse() {
+  const q = await client.query(`
+    SELECT open, high, low, close
+    FROM candles
+    WHERE symbol='BTC-USDT' AND timeframe='15m'
+    ORDER BY timestamp DESC
+    LIMIT 8
+  `);
+
+  const c = q.rows;
+  if (c.length < 8) return false;
+
+  // ATR manual
+  const atr = c.reduce((a, x) => a + (x.high - x.low), 0) / c.length;
+
+  // body
+  const bodyAvg = c.reduce((a, x) => a + Math.abs(x.close - x.open), 0) / c.length;
+
+  // wick
+  const wickAvg = c.reduce((a, x) => {
+    const up = x.high - Math.max(x.open, x.close);
+    const dn = Math.min(x.open, x.close) - x.low;
+    return a + up + dn;
+  }, 0) / c.length;
+
+  // range
+  const rangeAvg = c.reduce((a, x) => a + (x.high - x.low), 0) / c.length;
+
+  // slope (direcció)
+  const slope = Math.abs(c[0].close - c[c.length - 1].close);
+
+  // Condicions FIAT
+  const condATR   = atr > bodyAvg * 0.7;
+  const condSlope = slope > atr * 1.2;
+  const condBody  = bodyAvg > atr * 0.4;
+  const condWick  = wickAvg < atr * 0.8;
+  const condRange = rangeAvg > atr * 1.0;
+
+  const score = [condATR, condSlope, condBody, condWick, condRange].filter(Boolean).length;
+
+  return score >= 3;   // apte per MicroPulse
+}
+
 // 🟩 MicroPulse — Estat del Mercat BTC (1H)
 async function getMarketState() {
   try {
@@ -189,7 +232,8 @@ async function startPanel() {
       const signals = await getActiveSignals(timeframeFilter);
 
       const lastUpdate = formatSpainTime(Date.now());
-      const marketState = await getMarketState();
+      //const marketState = await getMarketState();
+      const marketState = await isMarketAptForMicroPulse();
 
       const html = `
       <html>
@@ -222,7 +266,7 @@ async function startPanel() {
         <h1>Panell Microimpulsos — MicroPulse</h1>
         <p><b>Última actualització:</b> ${lastUpdate}</p>
 
-        <h2>Estat del Mercat BTC (1H)</h2>
+        <h2>Mercat apte per Micropulse? </h2>
         <p><b>${marketState}</b></p>
 
         ${renderActiveSignalsTable(signals, timeframeFilter)}
