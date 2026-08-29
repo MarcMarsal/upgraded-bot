@@ -17,24 +17,17 @@ async function isMarketAptForMicroPulse() {
   const c = q.rows;
   if (c.length < 8) return false;
 
-  // ATR curt (volatilitat útil)
   const atr = c.reduce((a, x) => a + (x.high - x.low), 0) / c.length;
-
-  // Cos mitjà (impuls)
   const bodyAvg = c.reduce((a, x) => a + Math.abs(x.close - x.open), 0) / c.length;
-
-  // Direcció (slope)
   const slope = Math.abs(c[0].close - c[c.length - 1].close);
 
-  // 🔥 Condicions institucionals (Pattern Impulse Trading)
-  const condSlope = slope > atr * 2.0;     // direcció real
-  const condATR   = atr > bodyAvg * 0.7;   // volatilitat útil
-  const condBody  = bodyAvg > atr * 0.4;   // impuls útil
+  // 🔥 FIAT institucional: direcció binària
+  if (slope <= atr * 2.0) return false;
 
-  // 🔥 Regla d’or: sense direcció → NO APTE
-  if (!condSlope) return false;
+  // 🔥 Volatilitat útil + impuls útil
+  const condATR  = atr > bodyAvg * 0.7;
+  const condBody = bodyAvg > atr * 0.4;
 
-  // 🔥 Necessitem 2 de 2: ATR + impuls
   return condATR && condBody;
 }
 
