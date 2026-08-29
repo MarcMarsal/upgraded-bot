@@ -17,15 +17,25 @@ async function isMarketAptForMicroPulse() {
   const c = q.rows;
   if (c.length < 8) return false;
 
+  // ATR curt (volatilitat útil)
   const atr = c.reduce((a, x) => a + (x.high - x.low), 0) / c.length;
+
+  // Cos mitjà (impuls)
   const bodyAvg = c.reduce((a, x) => a + Math.abs(x.close - x.open), 0) / c.length;
+
+  // Direcció (slope)
   const slope = Math.abs(c[0].close - c[c.length - 1].close);
 
-  const condATR   = atr > bodyAvg * 0.7;
-  const condSlope = slope > atr * 1.2;
-  const condBody  = bodyAvg > atr * 0.4;
+  // 🔥 Condicions institucionals (Pattern Impulse Trading)
+  const condSlope = slope > atr * 2.0;     // direcció real
+  const condATR   = atr > bodyAvg * 0.7;   // volatilitat útil
+  const condBody  = bodyAvg > atr * 0.4;   // impuls útil
 
-  return condATR && condSlope && condBody;
+  // 🔥 Regla d’or: sense direcció → NO APTE
+  if (!condSlope) return false;
+
+  // 🔥 Necessitem 2 de 2: ATR + impuls
+  return condATR && condBody;
 }
 
 // 🟩 MicroPulse — Estat del Mercat BTC (1H)
