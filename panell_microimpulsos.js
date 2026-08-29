@@ -13,7 +13,7 @@ async function getMarketState() {
       FROM candles
       WHERE symbol='BTC-USDT' AND timeframe='1H'
       ORDER BY timestamp DESC
-      LIMIT 24
+      LIMIT 6
     `);
 
     const candles = q.rows;
