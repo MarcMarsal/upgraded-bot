@@ -21,15 +21,15 @@ async function isMarketAptForMicroPulse() {
   const bodyAvg = c.reduce((a, x) => a + Math.abs(x.close - x.open), 0) / c.length;
   const slope = Math.abs(c[0].close - c[c.length - 1].close);
 
-  // 🔥 FIAT institucional: direcció binària
-  if (slope <= atr * 2.0) return false;
+  // 🔥 FIAT institucional real: direcció forta
+  if (slope <= atr * 3.0) return false;   // o 4.0 si vols ser més estricte
 
-  // 🔥 Volatilitat útil + impuls útil
   const condATR  = atr > bodyAvg * 0.7;
   const condBody = bodyAvg > atr * 0.4;
 
   return condATR && condBody;
 }
+
 
 // 🟩 MicroPulse — Estat del Mercat BTC (1H)
 async function getMarketState() {
