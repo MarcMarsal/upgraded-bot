@@ -17,35 +17,15 @@ async function isMarketAptForMicroPulse() {
   const c = q.rows;
   if (c.length < 8) return false;
 
-  // ATR manual
   const atr = c.reduce((a, x) => a + (x.high - x.low), 0) / c.length;
-
-  // body
   const bodyAvg = c.reduce((a, x) => a + Math.abs(x.close - x.open), 0) / c.length;
-
-  // wick
-  const wickAvg = c.reduce((a, x) => {
-    const up = x.high - Math.max(x.open, x.close);
-    const dn = Math.min(x.open, x.close) - x.low;
-    return a + up + dn;
-  }, 0) / c.length;
-
-  // range
-  const rangeAvg = c.reduce((a, x) => a + (x.high - x.low), 0) / c.length;
-
-  // slope (direcció)
   const slope = Math.abs(c[0].close - c[c.length - 1].close);
 
-  // Condicions FIAT
   const condATR   = atr > bodyAvg * 0.7;
   const condSlope = slope > atr * 1.2;
   const condBody  = bodyAvg > atr * 0.4;
-  const condWick  = wickAvg < atr * 0.8;
-  const condRange = rangeAvg > atr * 1.0;
 
-  const score = [condATR, condSlope, condBody, condWick, condRange].filter(Boolean).length;
-
-  return score >= 3;   // apte per MicroPulse
+  return condATR && condSlope && condBody;
 }
 
 // 🟩 MicroPulse — Estat del Mercat BTC (1H)
