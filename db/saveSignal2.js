@@ -1,4 +1,4 @@
-// db/saveSignal2.js — FIAT‑MS/ES v2.7 (primera/segona vela + wick_contaminated)
+// db/saveSignal2.js — FIAT‑MS/ES v2.7 (primera/segona vela + wick_contaminated + slope30m/atr30m/apte_status)
 
 import { client } from "./client.js";
 import { splitSpainDate } from "../core/utils.js";
@@ -62,7 +62,12 @@ export async function saveSignal2({
   retroces_pct_cripto,
 
   // contaminació 🔥
-  wick_contaminated
+  wick_contaminated,
+
+  // 🔥 NOUS CAMPS FIAT 30m
+  slope30m,
+  atr30m,
+  apte_status
 }) {
 
   const tsMs = Number(timestamp);
@@ -98,6 +103,10 @@ export async function saveSignal2({
   fourth_extreme     = fmt(fourth_extreme,     symbol);
   retroces_pct       = fmt(retroces_pct,       symbol);
   retroces_pct_cripto = fmt(retroces_pct_cripto, symbol);
+
+  // 🔥 slope30m i atr30m NO es formategen amb fmt()
+  // perquè són valors de tendència/volatilitat, no preus.
+  // apte_status és TEXT → tampoc fmt()
 
   await client.query(
     `
@@ -157,7 +166,12 @@ export async function saveSignal2({
       retroces_pct_cripto,
 
       -- CONTAMINACIÓ 🔥
-      wick_contaminated
+      wick_contaminated,
+
+      -- 🔥 FIAT 30m
+      slope30m,
+      atr30m,
+      apte_status
     )
     VALUES (
       $1,$2,$3,
@@ -187,7 +201,10 @@ export async function saveSignal2({
       $38,$39,$40,
 
       -- CONTAMINACIÓ 🔥
-      $41
+      $41,
+
+      -- 🔥 FIAT 30m
+      $42,$43,$44
     )
     ON CONFLICT DO NOTHING
     `,
@@ -246,7 +263,12 @@ export async function saveSignal2({
       retroces_pct_cripto,
 
       // CONTAMINACIÓ 🔥
-      wick_contaminated
+      wick_contaminated,
+
+      // 🔥 FIAT 30m
+      slope30m,
+      atr30m,
+      apte_status
     ]
   );
 }
