@@ -385,38 +385,43 @@ export async function processSymbol(symbol, timeframe) {
     // -------------------------------------------------------------
     function calcApteStatus(slope30m, atr30m) {
       if (slope30m === null || atr30m === null) {
-        return { status: "NO_APTE", reason: "missing_data" };
+        return "NO_APTE, missing_data";
       }
 
       const lastClose = candles30m[candles30m.length - 1].close;
       const volPct = atr30m / lastClose;
 
       // Volatilitat FIAT
-      if (volPct < 0.0025 || volPct > 0.0065) {
-        return { status: "NO_APTE", reason: "volatility_out_of_range" };
+      if (volPct < 0.0025) {
+        return "NO_APTE, low_volatility";
+      }
+
+      if (volPct > 0.0065) {
+        return "NO_APTE, high_volatility";
       }
 
       // Rang dur (no operable)
       if (Math.abs(slope30m) < atr30m * 0.10) {
-        return { status: "NO_APTE", reason: "hard_range_low_slope" };
+        return "NO_APTE, hard_range_low_slope";
       }
 
       // Rang suau (operable M i E)
       if (Math.abs(slope30m) < atr30m * 0.35) {
-        return { status: "APTE_ALL", reason: "soft_range" };
+        return "APTE_ALL, soft_range";
       }
 
       // Tendència clara
       if (slope30m > 0) {
-        return { status: "APTE_M", reason: "clear_uptrend" };
+        return "APTE_M, clear_uptrend";
       }
 
       if (slope30m < 0) {
-        return { status: "APTE_E", reason: "clear_downtrend" };
+        return "APTE_E, clear_downtrend";
       }
 
-      return { status: "NO_APTE", reason: "unknown" };
+      return "NO_APTE, unknown";
     }
+
 
     sig.apteStatus = calcApteStatus(sig.slope30m, sig.atr30m);
 
