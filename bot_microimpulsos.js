@@ -337,6 +337,63 @@ export async function processSymbol(symbol, timeframe) {
     sig.percent48h = perf.percent;
 
     // -------------------------------------------------------------
+    // VELAS 30m (FIAT tendència + volatilitat)
+    // -------------------------------------------------------------
+    const candles30m = await getCandlesFromDB(symbol, "30m", 50);
+    if (!candles30m || candles30m.length < 20) continue;
+
+    candles30m.sort((a, b) => a.timestamp - b.timestamp);
+
+    const atr30mSeries = calcATRManualSeries(candles30m, 10);
+    const atr30m = atr30mSeries[atr30mSeries.length - 1];
+    sig.atr30m = atr30m;
+
+    // slope FIAT 30m (5/10)
+    const lenA = 5;
+    const lenB = 10;
+
+    if (candles30m.length > lenB) {
+      const cA = candles30m[candles30m.length - 1].close;
+      const pA = candles30m[candles30m.length - lenA].close;
+
+      const cB = candles30m[candles30m.length - 1].close;
+      const pB = candles30m[candles30m.length - lenB].close;
+
+      const slopeA = cA - pA;
+      const slopeB = cB - pB;
+
+      sig.slope30m = (slopeA + slopeB) / 2;
+    } else {
+      sig.slope30m = null;
+    }
+
+    // -------------------------------------------------------------
+    // APTE STATUS FIAT (volatilitat + slope)
+    // -------------------------------------------------------------
+    function calcApteStatus(slope30m, atr30m) {
+      if (!slope30m || !atr30m) return "NO_APTE";
+
+      // volatilitat FIAT
+      const volPct = atr30m / candles30m[candles30m.length - 1].close;
+
+      if (volPct < 0.0035 || volPct > 0.0085) {
+        return "NO_APTE";
+      }
+
+      // slope FIAT
+      if (slope30m > 0) return "APTE_M";
+      if (slope30m < 0) return "APTE_E";
+
+      // rang FIAT
+      if (Math.abs(slope30m) < atr30m * 0.25) return "APTE_ALL";
+
+      return "NO_APTE";
+    }
+
+    sig.apteStatus = calcApteStatus(sig.slope30m, sig.atr30m);
+
+
+    // -------------------------------------------------------------
     // GUARDAR SENYAL (FIAT complet)
     // -------------------------------------------------------------
     await saveSignal2({
