@@ -23,6 +23,36 @@ function shouldProcess(symbol) {
   return ACTIVE_CRYPTO_LIST.includes(symbol);
 }
 
+function linRegSlope(candles, len = 10) {
+  if (candles.length < len) return null;
+
+  const slice = candles.slice(candles.length - len);
+  const n = len;
+
+  let sumX = 0;
+  let sumY = 0;
+  let sumXY = 0;
+  let sumX2 = 0;
+
+  for (let i = 0; i < len; i++) {
+    const x = i;
+    const y = slice[i].close;
+
+    sumX += x;
+    sumY += y;
+    sumXY += x * y;
+    sumX2 += x * x;
+  }
+
+  const numerator = n * sumXY - sumX * sumY;
+  const denominator = n * sumX2 - sumX * sumX;
+
+  if (denominator === 0) return null;
+
+  return numerator / denominator;
+}
+
+
 // -------------------------------------------------------------
 // FILTRES MICRO‑PULSE (abans FIAT‑PRO)
 // -------------------------------------------------------------
@@ -348,21 +378,7 @@ export async function processSymbol(symbol, timeframe) {
     const atr30m = atr30mSeries[atr30mSeries.length - 1];
     sig.atr30m = atr30m;
 
-    // slope FIAT 30m (5/10)
-    const lenA = 5;
-    const lenB = 10;
-
-    if (candles30m.length > lenB) {
-
-      const lastClose = candles30m[candles30m.length - 1].close;
-      const slopeA = lastClose - candles30m[candles30m.length - lenA].close;
-      const slopeB = lastClose - candles30m[candles30m.length - lenB].close;
-
-      sig.slope30m = (slopeA + slopeB) / 2;
-     
-    } else {
-      sig.slope30m = null;
-    }
+    sig.slope30m = linRegSlope(candles30m, 10);
 
     // -------------------------------------------------------------
     // APTE STATUS FIAT (volatilitat + slope)
@@ -396,6 +412,7 @@ export async function processSymbol(symbol, timeframe) {
    }
 
 
+   sig.apteStatus = calcApteStatus(sig.slope30m, sig.atr30m);
 
 
     // -------------------------------------------------------------
