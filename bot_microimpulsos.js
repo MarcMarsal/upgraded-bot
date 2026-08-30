@@ -378,15 +378,23 @@ export async function processSymbol(symbol, timeframe) {
         return "NO_APTE";
       }
 
-      // Tendència FIAT
+      // Rang dur (no operable)
+      if (Math.abs(slope30m) < atr30m * 0.10) {
+        return "NO_APTE";
+      }
+
+      // Rang suau (operable M i E)
+      if (Math.abs(slope30m) < atr30m * 0.35) {
+        return "APTE_ALL";
+      }
+
+      // Tendència clara
       if (slope30m > 0) return "APTE_M";
       if (slope30m < 0) return "APTE_E";
 
-      // Rang FIAT
-      if (Math.abs(slope30m) < atr30m * 0.25) return "APTE_ALL";
-
       return "NO_APTE";
-    }
+   }
+
 
 
 
