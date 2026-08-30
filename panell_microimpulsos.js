@@ -128,9 +128,7 @@ async function startPanel() {
       const signals = await getActiveSignals(timeframeFilter);
 
       const lastUpdate = formatSpainTime(Date.now());
-      //const marketState = await getMarketState();
-      const marketState = await isMarketAptForMicroPulse();
-
+      
       const html = `
       <html>
       <head>
