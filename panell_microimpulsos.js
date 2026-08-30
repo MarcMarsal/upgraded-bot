@@ -5,96 +5,6 @@ import { initDB, client } from "./db/client.js";
 import { formatSpainTime } from "./core/utils.js";
 import { fmt } from "./core/activeCryptos.js";
 
-async function isMarketAptForMicroPulse() {
-  const q = await client.query(`
-    SELECT open, high, low, close
-    FROM candles
-    WHERE symbol='BTC-USDT' AND timeframe='15m'
-    ORDER BY timestamp DESC
-    LIMIT 8
-  `);
-
-  const c = q.rows;
-  if (c.length < 8) return false;
-
-  const atr = c.reduce((a, x) => a + (x.high - x.low), 0) / c.length;
-  const bodyAvg = c.reduce((a, x) => a + Math.abs(x.close - x.open), 0) / c.length;
-  const slope = Math.abs(c[0].close - c[c.length - 1].close);
-
-  // 🔥 FIAT institucional real: direcció forta
-  if (slope <= atr * 3.0) return false;   // o 4.0 si vols ser més estricte
-
-  const condATR  = atr > bodyAvg * 0.7;
-  const condBody = bodyAvg > atr * 0.4;
-
-  return condATR && condBody;
-}
-
-
-// 🟩 MicroPulse — Estat del Mercat BTC (1H)
-async function getMarketState() {
-  try {
-    const q = await client.query(`
-      SELECT open, high, low, close, volume
-      FROM candles
-      WHERE symbol='BTC-USDT' AND timeframe='1H'
-      ORDER BY timestamp DESC
-      LIMIT 6
-    `);
-
-    const candles = q.rows;
-    if (!candles || candles.length === 0) return "MORT";
-
-    const avgVolume =
-      candles.reduce((a, c) => a + Number(c.volume || 0), 0) / candles.length;
-
-    const avgBody =
-      candles.reduce((a, c) => a + Math.abs((c.close || 0) - (c.open || 0)), 0) /
-      candles.length;
-
-    const highs = candles.map(c => Number(c.high || 0));
-    const lows = candles.map(c => Number(c.low || 0));
-    const maxHigh = Math.max(...highs);
-    const minLow = Math.min(...lows);
-    const range = maxHigh - minLow;
-
-    const avgWick =
-      candles.reduce((a, c) => {
-        const upper = (c.high || 0) - Math.max(c.open || 0, c.close || 0);
-        const lower = Math.min(c.open || 0, c.close || 0) - (c.low || 0);
-        return a + (upper + lower);
-      }, 0) / candles.length;
-
-    let score = 0;
-    if (avgVolume > 150) score++;
-    if (avgBody > 80) score++;
-    if (range > 150) score++;
-    if (avgWick > 40) score++;
-
-    if (score >= 3) return "VIU";
-    if (score === 2) return "RECONSTRUCCIO";
-    return "MORT";
-
-  } catch (err) {
-    console.error("❌ Error getMarketState:", err);
-    return "ERROR";
-  }
-}
-
-// 🟩 Llegir 40 senyals — NOMÉS OKX
-//async function getActiveSignals() {
-//  const q = await client.query(`
-//    SELECT *
-//    FROM signals_upgraded
-//    WHERE timeframe='15m'
-//    ORDER BY created_at DESC
-//    LIMIT 40;
-    
- // `);
-
- // return q.rows;
-//}
-
 // 🟩 Llegir 40 senyals — ordenats per última tanda i qualitat FIAT
 async function getActiveSignals(timeframeFilter) {
   const q = await client.query(`
@@ -137,9 +47,11 @@ function renderActiveSignalsTable(signals, timeframeFilter) {
         <td>${fmt(s.entryr, s.symbol)}</td>
         <td>${fmt(s.tp, s.symbol)}</td>
         <td>${fmt(s.sl, s.symbol)}</td>
+   
+        <td>${Number(s.slope30m).toFixed(6)}</td>
+        <td>${Number(s.atr30m).toFixed(6)}</td>
+        <td>${s.apte_status}</td>
 
-        <td>${s.tps48h}</td>
-        <td>${s.percent48h}%</td>
 
         <td>${s.date_es}</td>
         <td>${s.hora_es}</td>
@@ -182,8 +94,9 @@ function renderActiveSignalsTable(signals, timeframeFilter) {
           <th>TP</th>
           <th>SL</th>
 
-          <th>TPs 48h</th>
-          <th>%TP 48h</th>
+          <th>slope30m</th>
+          <th>atr30m</th>
+          <th>apte_status</th>
 
           <th>Data vela</th>
           <th>Hora vela</th>
@@ -248,9 +161,6 @@ async function startPanel() {
       <body>
         <h1>Panell Microimpulsos — MicroPulse</h1>
         <p><b>Última actualització:</b> ${lastUpdate}</p>
-
-        <h2>Mercat apte per Micropulse? </h2>
-        <p><b>${marketState}</b></p>
 
         ${renderActiveSignalsTable(signals, timeframeFilter)}
 
