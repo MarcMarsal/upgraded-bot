@@ -114,8 +114,8 @@ async function fetchOKX(symbol, timeframe) {
     const sym = normalizeSymbolFor("OKX", symbol);
     const tf  = normalizeTimeframeFor("OKX", timeframe);
 
-    //const url = `${API_OKX}?instId=${sym}&bar=${tf}&limit=4`;
-    const url = `${API_OKX}?instId=${sym}&bar=${tf}&limit=20`;
+    const url = `${API_OKX}?instId=${sym}&bar=${tf}&limit=4`;
+    //const url = `${API_OKX}?instId=${sym}&bar=${tf}&limit=20`;
     //const url = `${API_OKX}?instId=${sym}&bar=${tf}&limit=50`;
     //const url = `${API_OKX}?instId=${sym}&bar=${tf}&limit=300`;
     const res = await axios.get(url);
