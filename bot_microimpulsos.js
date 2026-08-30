@@ -353,16 +353,13 @@ export async function processSymbol(symbol, timeframe) {
     const lenB = 10;
 
     if (candles30m.length > lenB) {
-      const cA = candles30m[candles30m.length - 1].close;
-      const pA = candles30m[candles30m.length - lenA].close;
 
-      const cB = candles30m[candles30m.length - 1].close;
-      const pB = candles30m[candles30m.length - lenB].close;
-
-      const slopeA = cA - pA;
-      const slopeB = cB - pB;
+      const lastClose = candles30m[candles30m.length - 1].close;
+      const slopeA = lastClose - candles30m[candles30m.length - lenA].close;
+      const slopeB = lastClose - candles30m[candles30m.length - lenB].close;
 
       sig.slope30m = (slopeA + slopeB) / 2;
+     
     } else {
       sig.slope30m = null;
     }
@@ -371,26 +368,26 @@ export async function processSymbol(symbol, timeframe) {
     // APTE STATUS FIAT (volatilitat + slope)
     // -------------------------------------------------------------
     function calcApteStatus(slope30m, atr30m) {
-      if (!slope30m || !atr30m) return "NO_APTE";
+      if (slope30m === null || atr30m === null) return "NO_APTE";
 
-      // volatilitat FIAT
-      const volPct = atr30m / candles30m[candles30m.length - 1].close;
+      const lastClose = candles30m[candles30m.length - 1].close;
+      const volPct = atr30m / lastClose;
 
-      if (volPct < 0.0035 || volPct > 0.0085) {
+      // Volatilitat FIAT
+      if (volPct < 0.0025 || volPct > 0.0065) {
         return "NO_APTE";
       }
 
-      // slope FIAT
+      // Tendència FIAT
       if (slope30m > 0) return "APTE_M";
       if (slope30m < 0) return "APTE_E";
 
-      // rang FIAT
+      // Rang FIAT
       if (Math.abs(slope30m) < atr30m * 0.25) return "APTE_ALL";
 
       return "NO_APTE";
     }
 
-    sig.apteStatus = calcApteStatus(sig.slope30m, sig.atr30m);
 
 
     // -------------------------------------------------------------
