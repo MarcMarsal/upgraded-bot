@@ -374,7 +374,8 @@ export async function processSymbol(symbol, timeframe) {
 
     candles30m.sort((a, b) => a.timestamp - b.timestamp);
 
-    const atr30mSeries = calcATRManualSeries(candles30m, 10);
+    //const atr30mSeries = calcATRManualSeries(candles30m, 10);
+    const atr30mSeries = calcATRManualSeries(candles30m, 5);
     const atr30m = atr30mSeries[atr30mSeries.length - 1];
     sig.atr30m = atr30m;
 
