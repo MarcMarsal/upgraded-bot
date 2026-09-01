@@ -6,9 +6,9 @@ import { alreadySent2 } from "./db/alreadySent2.js";
 import { saveSignal2 } from "./db/saveSignal2.js";
 import { detectMSES } from "./core/patterns.js";
 import { fetchAndStoreCandles } from "./core/fetchcandles.js";
-import { calculateRSI } from "./core/rsi.js";
+//import { calculateRSI } from "./core/rsi.js";
 import { ACTIVE_CRYPTO_LIST, UNIVERSE } from "./core/activeCryptos.js";
-import { getPerformance48h } from "./core/stats.js";
+//import { getPerformance48h } from "./core/stats.js";
 import { fetchAndStoreCandles1HCustom } from "./core/fetchCandles1H10m.js";
 
 import { calcFourthExtreme } from "./core/calcFourthExtreme.js";
@@ -355,15 +355,15 @@ export async function processSymbol(symbol, timeframe) {
       LIMIT 15
     `, [symbol, timeframe]);
 
-    const closes = q.rows.map(r => Number(r.close)).reverse();
-    sig.rsi = calculateRSI(closes);
+    //const closes = q.rows.map(r => Number(r.close)).reverse();
+    //sig.rsi = calculateRSI(closes);
 
     // -------------------------------------------------------------
     // PANELL 48h
     // -------------------------------------------------------------
-    const perf = await getPerformance48h(symbol, timeframe);
-    sig.tps48h = perf.tps;
-    sig.percent48h = perf.percent;
+    //const perf = await getPerformance48h(symbol, timeframe);
+    //sig.tps48h = perf.tps;
+    //sig.percent48h = perf.percent;
 
     // -------------------------------------------------------------
     // VELAS 30m (FIAT tendència + volatilitat)
