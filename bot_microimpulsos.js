@@ -16,8 +16,7 @@ import { calcRetroces } from "./core/calcRetroces.js";
 import { loadRetrocesPctCripto } from "./core/loadRetrocesPctCripto.js";
 import { calcEntryR } from "./core/calcEntryR.js";
 import { calcTpSlFiat } from "./core/calcTpSlFiat.js";
-
-
+import { calcSimpleTrend } from "./core/utils.js";
 
 function shouldProcess(symbol) {
   return ACTIVE_CRYPTO_LIST.includes(symbol);
@@ -384,47 +383,64 @@ export async function processSymbol(symbol, timeframe) {
     // -------------------------------------------------------------
     // APTE STATUS FIAT (volatilitat + slope)
     // -------------------------------------------------------------
-    function calcApteStatus(slope30m, atr30m) {
-      if (slope30m === null || atr30m === null) {
-        return "NO_APTE, missing_data";
-      }
+   function calcApteStatus(slope30m, atr30m, atrSeries30m, candles30m) {
+  if (
+    slope30m === null ||
+    atr30m === null ||
+    !atrSeries30m ||
+    atrSeries30m.length < 20 ||
+    !candles30m ||
+    candles30m.length < 21
+  ) {
+    return "NO_APTE, missing_data";
+  }
 
-      const lastClose = candles30m[candles30m.length - 1].close;
-      const volPct = atr30m / lastClose;
+  const lastClose = candles30m[candles30m.length - 1].close;
 
-      // Volatilitat FIAT
-      if (volPct < 0.0025) {
-        return "NO_APTE, low_volatility";
-      }
+  // ATR mitjà 20 veles
+  const atrAvg20 =
+    atrSeries30m.slice(-20).reduce((a, b) => a + b, 0) / 20;
 
-      if (volPct > 0.0065) {
-        return "NO_APTE, high_volatility";
-      }
+  // Volatilitat relativa
+  const atrRel = atr30m / atrAvg20;
 
-      // Rang dur (no operable)
-      if (Math.abs(slope30m) < atr30m * 0.10) {
-        return "NO_APTE, hard_range_low_slope";
-      }
+  // Volatilitat FIAT (dinàmica)
+  if (atrRel < 0.8) {
+    return "NO_APTE, low_volatility";
+  }
 
-      // Rang suau (operable M i E)
-      if (Math.abs(slope30m) < atr30m * 0.35) {
-        return "APTE_ALL, soft_range";
-      }
+  if (atrRel > 1.3) {
+    return "NO_APTE, high_volatility";
+  }
 
-      // Tendència clara
-      if (slope30m > 0) {
-        return "APTE_M, clear_uptrend";
-      }
+  // Rang dur (no operable)
+  if (Math.abs(slope30m) < atr30m * 0.10) {
+    return "NO_APTE, hard_range_low_slope";
+  }
 
-      if (slope30m < 0) {
-        return "APTE_E, clear_downtrend";
-      }
+  // Rang suau (operable M i E)
+  if (Math.abs(slope30m) < atr30m * 0.35) {
+    return "APTE_ALL, soft_range";
+  }
 
-      return "NO_APTE, unknown";
-    }
+  // Tendència simple per màxims/mínims
+  const simpleTrend = calcSimpleTrend(candles30m, 20);
+
+  if (simpleTrend === +1) {
+    return "APTE_M, clear_uptrend";
+  }
+
+  if (simpleTrend === -1) {
+    return "APTE_E, clear_downtrend";
+  }
+
+  return "NO_APTE, unknown";
+}
 
 
-    sig.apteStatus = calcApteStatus(sig.slope30m, sig.atr30m);
+    //sig.apteStatus = calcApteStatus(sig.slope30m, sig.atr30m);
+    sig.apteStatus = calcApteStatus(sig.slope30m,sig.atr30m,atr30mSeries,candles30m);
+
 
 
     // -------------------------------------------------------------
