@@ -87,7 +87,7 @@ export function getDay(tsMs) {
   return d.getDay();
 }
 
-function calcSimpleTrend(candles30m, lookback = 20) {
+export function calcSimpleTrend(candles30m, lookback = 20) {
   if (!candles30m || candles30m.length < lookback + 1) {
     return 0; // sense dades
   }
