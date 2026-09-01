@@ -16,9 +16,6 @@ export function body(o, c) {
 }
 
 // -----------------------------
-// DATE HELPERS (igual que abans)
-// -----------------------------
-// -----------------------------
 // DATE HELPERS FIAT v1 (robustos)
 // -----------------------------
 export function formatSpainTime(tsMs) {
@@ -88,4 +85,34 @@ export function getDay(tsMs) {
   const d = new Date(n);
   if (isNaN(d.getTime())) return null;
   return d.getDay();
+}
+
+function calcSimpleTrend(candles30m, lookback = 20) {
+  if (!candles30m || candles30m.length < lookback + 1) {
+    return 0; // sense dades
+  }
+
+  const slice = candles30m.slice(-lookback - 1);
+  let higherHighs = 0;
+  let lowerLows = 0;
+
+  for (let i = 1; i < slice.length; i++) {
+    const prev = slice[i - 1];
+    const curr = slice[i];
+
+    if (curr.high > prev.high) higherHighs++;
+    if (curr.low < prev.low) lowerLows++;
+  }
+
+  // tendència clara alcista
+  if (higherHighs >= lookback * 0.6 && lowerLows <= lookback * 0.3) {
+    return +1;
+  }
+
+  // tendència clara baixista
+  if (lowerLows >= lookback * 0.6 && higherHighs <= lookback * 0.3) {
+    return -1;
+  }
+
+  return 0; // rang / mixt
 }
