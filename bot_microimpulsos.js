@@ -512,21 +512,21 @@ export async function processSymbol(symbol, timeframe) {
 async function mainLoop() {
 
   for (const symbol of UNIVERSE) {
-    //for (const timeframe of TIMEFRAMES) {
-    for (const timeframe of TIMEFRAMES_DOWNLOAD) {
-      await fetchAndStoreCandles(symbol, timeframe);   // 1H intacte
-    }
+    
+    //for (const timeframe of TIMEFRAMES_DOWNLOAD) {
+    //  await fetchAndStoreCandles(symbol, timeframe);   // 1H intacte
+    //}
 
     // 🔥 nova temporalitat off-grid
     //await fetchAndStoreCandles1H10m(symbol);
-    await fetchAndStoreCandles1HCustom(symbol,3);
-    await fetchAndStoreCandles1HCustom(symbol,10);
-    await fetchAndStoreCandles1HCustom(symbol,33);
-    await fetchAndStoreCandles1HCustom(symbol,40);
+    //await fetchAndStoreCandles1HCustom(symbol,3);
+    //await fetchAndStoreCandles1HCustom(symbol,10);
+    //await fetchAndStoreCandles1HCustom(symbol,33);
+    //await fetchAndStoreCandles1HCustom(symbol,40);
   }
 
   for (const symbol of ACTIVE_CRYPTO_LIST) {
-    //for (const timeframe of TIMEFRAMES) {
+   
     for (const timeframe of TIMEFRAMES_EXECUTE) {
       try {
         await processSymbol(symbol, timeframe);   // ara també processa 1H10m
