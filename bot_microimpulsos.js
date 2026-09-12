@@ -106,7 +106,8 @@ function applyMicroPulseFilters(candles, candleIndex, atrManual, type, timeframe
 // -------------------------------------------------------------
 //const TIMEFRAMES = ["1H"];
 //const TIMEFRAMES = ["1H","1H10m"];
-const TIMEFRAMES_DOWNLOAD = ["5m","15m","30m","1H"];
+//const TIMEFRAMES_DOWNLOAD = ["5m","15m","30m","1H"];
+const TIMEFRAMES_DOWNLOAD = ["15m"];
 //const TIMEFRAMES_EXECUTE = ["1H", "1H10m"];
 const TIMEFRAMES_EXECUTE = ["15m","1H","1H03m","1H10m","1H33m","1H40m"];
 
@@ -513,9 +514,9 @@ async function mainLoop() {
 
   for (const symbol of UNIVERSE) {
     
-    //for (const timeframe of TIMEFRAMES_DOWNLOAD) {
-    //  await fetchAndStoreCandles(symbol, timeframe);   // 1H intacte
-    //}
+    for (const timeframe of TIMEFRAMES_DOWNLOAD) {
+      await fetchAndStoreCandles(symbol, timeframe);   // 1H intacte
+    }
 
     // 🔥 nova temporalitat off-grid
     //await fetchAndStoreCandles1H10m(symbol);
